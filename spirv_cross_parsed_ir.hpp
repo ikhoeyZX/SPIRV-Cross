@@ -87,7 +87,7 @@ public:
 
 	// Declared capabilities and extensions in the SPIR-V module.
 	// Not really used except for reflection at the moment.
-	SmallVector<spv::Capability> declared_capabilities;
+	SmallVector<spvc::Capability> declared_capabilities;
 	SmallVector<std::string> declared_extensions;
 
 	// Meta data about blocks. The cross-compiler needs to query if a block is either of these types.
@@ -121,8 +121,8 @@ public:
 
 	Source source;
 
-	spv::AddressingModel addressing_model = spv::AddressingModelMax;
-	spv::MemoryModel memory_model = spv::MemoryModelMax;
+	spvc::AddressingModel addressing_model = spvc::AddressingModelMax;
+	spvc::MemoryModel memory_model = spvc::MemoryModelMax;
 
 	// Decoration handling methods.
 	// Can be useful for simple "raw" reflection.
@@ -130,25 +130,25 @@ public:
 	// and might as well just have the whole suite of decoration/name handling in one place.
 	void set_name(ID id, const std::string &name);
 	const std::string &get_name(ID id) const;
-	void set_decoration(ID id, spv::Decoration decoration, uint32_t argument = 0);
-	void set_decoration_string(ID id, spv::Decoration decoration, const std::string &argument);
-	bool has_decoration(ID id, spv::Decoration decoration) const;
-	uint32_t get_decoration(ID id, spv::Decoration decoration) const;
-	const std::string &get_decoration_string(ID id, spv::Decoration decoration) const;
+	void set_decoration(ID id, spvc::Decoration decoration, uint32_t argument = 0);
+	void set_decoration_string(ID id, spvc::Decoration decoration, const std::string &argument);
+	bool has_decoration(ID id, spvc::Decoration decoration) const;
+	uint32_t get_decoration(ID id, spvc::Decoration decoration) const;
+	const std::string &get_decoration_string(ID id, spvc::Decoration decoration) const;
 	const Bitset &get_decoration_bitset(ID id) const;
-	void unset_decoration(ID id, spv::Decoration decoration);
+	void unset_decoration(ID id, spvc::Decoration decoration);
 
 	// Decoration handling methods (for members of a struct).
 	void set_member_name(TypeID id, uint32_t index, const std::string &name);
 	const std::string &get_member_name(TypeID id, uint32_t index) const;
-	void set_member_decoration(TypeID id, uint32_t index, spv::Decoration decoration, uint32_t argument = 0);
-	void set_member_decoration_string(TypeID id, uint32_t index, spv::Decoration decoration,
+	void set_member_decoration(TypeID id, uint32_t index, spvc::Decoration decoration, uint32_t argument = 0);
+	void set_member_decoration_string(TypeID id, uint32_t index, spvc::Decoration decoration,
 	                                  const std::string &argument);
-	uint32_t get_member_decoration(TypeID id, uint32_t index, spv::Decoration decoration) const;
-	const std::string &get_member_decoration_string(TypeID id, uint32_t index, spv::Decoration decoration) const;
-	bool has_member_decoration(TypeID id, uint32_t index, spv::Decoration decoration) const;
+	uint32_t get_member_decoration(TypeID id, uint32_t index, spvc::Decoration decoration) const;
+	const std::string &get_member_decoration_string(TypeID id, uint32_t index, spvc::Decoration decoration) const;
+	bool has_member_decoration(TypeID id, uint32_t index, spvc::Decoration decoration) const;
 	const Bitset &get_member_decoration_bitset(TypeID id, uint32_t index) const;
-	void unset_member_decoration(TypeID id, uint32_t index, spv::Decoration decoration);
+	void unset_member_decoration(TypeID id, uint32_t index, spvc::Decoration decoration);
 
 	void mark_used_as_array_length(ID id);
 	uint32_t increase_bound_by(uint32_t count);
