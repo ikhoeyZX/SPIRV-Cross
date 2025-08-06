@@ -25,7 +25,7 @@
 #include "spirv_glsl.hpp"
 #include <iomanip>
 
-using namespace spv;
+using namespace spvc;
 using namespace SPIRV_CROSS_NAMESPACE;
 using namespace std;
 
