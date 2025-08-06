@@ -525,7 +525,7 @@ struct SPIRConstantOp : IVariant
 		type = TypeConstantOp
 	};
 
-	SPIRConstantOp(TypeID result_type, spv::Op op, const uint32_t *args, uint32_t length)
+	SPIRConstantOp(TypeID result_type, spvc::Op op, const uint32_t *args, uint32_t length)
 	    : opcode(op)
 	    , basetype(result_type)
 	{
@@ -534,7 +534,7 @@ struct SPIRConstantOp : IVariant
 			arguments.push_back(args[i]);
 	}
 
-	spv::Op opcode;
+	spvc::Op opcode;
 	SmallVector<uint32_t> arguments;
 	TypeID basetype;
 
@@ -548,8 +548,8 @@ struct SPIRType : IVariant
 		type = TypeType
 	};
 
-	spv::Op op = spv::Op::OpNop;
-	explicit SPIRType(spv::Op op_) : op(op_) {}
+	spvc::Op op = spvc::Op::OpNop;
+	explicit SPIRType(spvc::Op op_) : op(op_) {}
 
 	enum BaseType
 	{
@@ -635,7 +635,7 @@ struct SPIRType : IVariant
 		} tensor;
 	} ext;
 
-	spv::StorageClass storage = spv::StorageClassGeneric;
+	spvc::StorageClass storage = spvc::StorageClassGeneric;
 
 	SmallVector<TypeID> member_types;
 
@@ -646,13 +646,13 @@ struct SPIRType : IVariant
 	struct ImageType
 	{
 		TypeID type;
-		spv::Dim dim;
+		spvc::Dim dim;
 		bool depth;
 		bool arrayed;
 		bool ms;
 		uint32_t sampled;
-		spv::ImageFormat format;
-		spv::AccessQualifier access;
+		spvc::ImageFormat format;
+		spvc::AccessQualifier access;
 	} image = {};
 
 	// Structs can be declared multiple times if they are used as part of interface blocks.
@@ -710,7 +710,7 @@ struct SPIRExtension : IVariant
 // so in order to avoid conflicts, we can't stick them in the ids array.
 struct SPIREntryPoint
 {
-	SPIREntryPoint(FunctionID self_, spv::ExecutionModel execution_model, const std::string &entry_name)
+	SPIREntryPoint(FunctionID self_, spvc::ExecutionModel execution_model, const std::string &entry_name)
 	    : self(self_)
 	    , name(entry_name)
 	    , orig_name(entry_name)
@@ -735,7 +735,7 @@ struct SPIREntryPoint
 	uint32_t invocations = 0;
 	uint32_t output_vertices = 0;
 	uint32_t output_primitives = 0;
-	spv::ExecutionModel model = spv::ExecutionModelMax;
+	spvc::ExecutionModel model = spvc::ExecutionModelMax;
 	bool geometry_passthrough = false;
 };
 
@@ -1080,7 +1080,7 @@ struct SPIRAccessChain : IVariant
 		type = TypeAccessChain
 	};
 
-	SPIRAccessChain(TypeID basetype_, spv::StorageClass storage_, std::string base_, std::string dynamic_index_,
+	SPIRAccessChain(TypeID basetype_, spvc::StorageClass storage_, std::string base_, std::string dynamic_index_,
 	                int32_t static_index_)
 	    : basetype(basetype_)
 	    , storage(storage_)
@@ -1096,7 +1096,7 @@ struct SPIRAccessChain : IVariant
 	// StructuredBuffer is too limited, so our only option is to deal with ByteAddressBuffer which works with raw addresses.
 
 	TypeID basetype;
-	spv::StorageClass storage;
+	spvc::StorageClass storage;
 	std::string base;
 	std::string dynamic_index;
 	int32_t static_index;
@@ -1122,7 +1122,7 @@ struct SPIRVariable : IVariant
 	};
 
 	SPIRVariable() = default;
-	SPIRVariable(TypeID basetype_, spv::StorageClass storage_, ID initializer_ = 0, VariableID basevariable_ = 0)
+	SPIRVariable(TypeID basetype_, spvc::StorageClass storage_, ID initializer_ = 0, VariableID basevariable_ = 0)
 	    : basetype(basetype_)
 	    , storage(storage_)
 	    , initializer(initializer_)
@@ -1131,7 +1131,7 @@ struct SPIRVariable : IVariant
 	}
 
 	TypeID basetype = 0;
-	spv::StorageClass storage = spv::StorageClassGeneric;
+	spvc::StorageClass storage = spvc::StorageClassGeneric;
 	uint32_t decoration = 0;
 	ID initializer = 0;
 	VariableID basevariable = 0;
@@ -1691,7 +1691,7 @@ struct AccessChainMeta
 	bool relaxed_precision = false;
 	bool access_meshlet_position_y = false;
 	bool chain_is_builtin = false;
-	spv::BuiltIn builtin = {};
+	spvc::BuiltIn builtin = {};
 };
 
 enum ExtendedDecorations
@@ -1779,7 +1779,7 @@ struct Meta
 		std::string hlsl_semantic;
 		std::string user_type;
 		Bitset decoration_flags;
-		spv::BuiltIn builtin_type = spv::BuiltInMax;
+		spvc::BuiltIn builtin_type = spvc::BuiltInMax;
 		uint32_t location = 0;
 		uint32_t component = 0;
 		uint32_t set = 0;
@@ -1793,8 +1793,8 @@ struct Meta
 		uint32_t input_attachment = 0;
 		uint32_t spec_id = 0;
 		uint32_t index = 0;
-		spv::FPRoundingMode fp_rounding_mode = spv::FPRoundingModeMax;
-		spv::FPFastMathModeMask fp_fast_math_mode = spv::FPFastMathModeMaskNone;
+		spvc::FPRoundingMode fp_rounding_mode = spvc::FPRoundingModeMax;
+		spvc::FPFastMathModeMask fp_fast_math_mode = spvc::FPFastMathModeMaskNone;
 		bool builtin = false;
 		bool qualified_alias_explicit_override = false;
 
@@ -1895,19 +1895,19 @@ static inline SPIRType::BaseType to_unsigned_basetype(uint32_t width)
 }
 
 // Returns true if an arithmetic operation does not change behavior depending on signedness.
-static inline bool opcode_is_sign_invariant(spv::Op opcode)
+static inline bool opcode_is_sign_invariant(spvc::Op opcode)
 {
 	switch (opcode)
 	{
-	case spv::OpIEqual:
-	case spv::OpINotEqual:
-	case spv::OpISub:
-	case spv::OpIAdd:
-	case spv::OpIMul:
-	case spv::OpShiftLeftLogical:
-	case spv::OpBitwiseOr:
-	case spv::OpBitwiseXor:
-	case spv::OpBitwiseAnd:
+	case spvc::OpIEqual:
+	case spvc::OpINotEqual:
+	case spvc::OpISub:
+	case spvc::OpIAdd:
+	case spvc::OpIMul:
+	case spvc::OpShiftLeftLogical:
+	case spvc::OpBitwiseOr:
+	case spvc::OpBitwiseXor:
+	case spvc::OpBitwiseAnd:
 		return true;
 
 	default:
@@ -1915,26 +1915,26 @@ static inline bool opcode_is_sign_invariant(spv::Op opcode)
 	}
 }
 
-static inline bool opcode_can_promote_integer_implicitly(spv::Op opcode)
+static inline bool opcode_can_promote_integer_implicitly(spvc::Op opcode)
 {
 	switch (opcode)
 	{
-	case spv::OpSNegate:
-	case spv::OpNot:
-	case spv::OpBitwiseAnd:
-	case spv::OpBitwiseOr:
-	case spv::OpBitwiseXor:
-	case spv::OpShiftLeftLogical:
-	case spv::OpShiftRightLogical:
-	case spv::OpShiftRightArithmetic:
-	case spv::OpIAdd:
-	case spv::OpISub:
-	case spv::OpIMul:
-	case spv::OpSDiv:
-	case spv::OpUDiv:
-	case spv::OpSRem:
-	case spv::OpUMod:
-	case spv::OpSMod:
+	case spvc::OpSNegate:
+	case spvc::OpNot:
+	case spvc::OpBitwiseAnd:
+	case spvc::OpBitwiseOr:
+	case spvc::OpBitwiseXor:
+	case spvc::OpShiftLeftLogical:
+	case spvc::OpShiftRightLogical:
+	case spvc::OpShiftRightArithmetic:
+	case spvc::OpIAdd:
+	case spvc::OpISub:
+	case spvc::OpIMul:
+	case spvc::OpSDiv:
+	case spvc::OpUDiv:
+	case spvc::OpSRem:
+	case spvc::OpUMod:
+	case spvc::OpSMod:
 		return true;
 
 	default:
@@ -1976,7 +1976,7 @@ struct LocationComponentPair
 
 struct StageSetBinding
 {
-	spv::ExecutionModel model;
+	spvc::ExecutionModel model;
 	uint32_t desc_set;
 	uint32_t binding;
 
