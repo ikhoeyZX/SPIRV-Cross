@@ -24,7 +24,7 @@
 #include "spirv_cross_util.hpp"
 #include "spirv_common.hpp"
 
-using namespace spv;
+using namespace spvc;
 using namespace SPIRV_CROSS_NAMESPACE;
 
 namespace spirv_cross_util
