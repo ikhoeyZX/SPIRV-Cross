@@ -628,7 +628,7 @@ bool Compiler::is_immutable(uint32_t id) const
 		return false;
 }
 
-static inline bool storage_class_is_interface(spv::StorageClass storage)
+static inline bool storage_class_is_interface(spvc::StorageClass storage)
 {
 	switch (storage)
 	{
@@ -661,8 +661,8 @@ bool Compiler::is_hidden_variable(const SPIRVariable &var, bool include_builtins
 
 	// In SPIR-V 1.4 and up we must also use the active variable interface to disable global variables
 	// which are not part of the entry point.
-	if (ir.get_spirv_version() >= 0x10400 && var.storage != spv::StorageClassGeneric &&
-	    var.storage != spv::StorageClassFunction && !interface_variable_exists_in_entry_point(var.self))
+	if (ir.get_spirv_version() >= 0x10400 && var.storage != spvc::StorageClassGeneric &&
+	    var.storage != spvc::StorageClassFunction && !interface_variable_exists_in_entry_point(var.self))
 	{
 		return true;
 	}
@@ -1336,7 +1336,7 @@ const SPIRType &Compiler::get_pointee_type(uint32_t type_id) const
 
 uint32_t Compiler::get_variable_data_type_id(const SPIRVariable &var) const
 {
-	if (var.phi_variable || var.storage == spv::StorageClass::StorageClassAtomicCounter)
+	if (var.phi_variable || var.storage == spvc::StorageClass::StorageClassAtomicCounter)
 		return var.basetype;
 	return get_pointee_type_id(var.basetype);
 }
@@ -1373,7 +1373,7 @@ bool Compiler::is_sampled_image_type(const SPIRType &type)
 	       type.image.dim != DimBuffer;
 }
 
-void Compiler::set_member_decoration_string(TypeID id, uint32_t index, spv::Decoration decoration,
+void Compiler::set_member_decoration_string(TypeID id, uint32_t index, spvc::Decoration decoration,
                                             const std::string &argument)
 {
 	ir.set_member_decoration_string(id, index, decoration, argument);
@@ -1434,7 +1434,7 @@ void Compiler::unset_member_decoration(TypeID id, uint32_t index, Decoration dec
 	ir.unset_member_decoration(id, index, decoration);
 }
 
-void Compiler::set_decoration_string(ID id, spv::Decoration decoration, const std::string &argument)
+void Compiler::set_decoration_string(ID id, spvc::Decoration decoration, const std::string &argument)
 {
 	ir.set_decoration_string(id, decoration, argument);
 }
@@ -1597,7 +1597,7 @@ void Compiler::unset_decoration(ID id, Decoration decoration)
 	ir.unset_decoration(id, decoration);
 }
 
-bool Compiler::get_binary_offset_for_decoration(VariableID id, spv::Decoration decoration, uint32_t &word_offset) const
+bool Compiler::get_binary_offset_for_decoration(VariableID id, spvc::Decoration decoration, uint32_t &word_offset) const
 {
 	auto *m = ir.find_meta(id);
 	if (!m)
@@ -2452,7 +2452,7 @@ uint32_t Compiler::get_work_group_size_specialization_constants(SpecializationCo
 	return execution.workgroup_size.constant;
 }
 
-uint32_t Compiler::get_execution_mode_argument(spv::ExecutionMode mode, uint32_t index) const
+uint32_t Compiler::get_execution_mode_argument(spvc::ExecutionMode mode, uint32_t index) const
 {
 	auto &execution = get_entry_point();
 	switch (mode)
@@ -2638,14 +2638,14 @@ SmallVector<EntryPoint> Compiler::get_entry_points_and_stages() const
 	return entries;
 }
 
-void Compiler::rename_entry_point(const std::string &old_name, const std::string &new_name, spv::ExecutionModel model)
+void Compiler::rename_entry_point(const std::string &old_name, const std::string &new_name, spvc::ExecutionModel model)
 {
 	auto &entry = get_entry_point(old_name, model);
 	entry.orig_name = new_name;
 	entry.name = new_name;
 }
 
-void Compiler::set_entry_point(const std::string &name, spv::ExecutionModel model)
+void Compiler::set_entry_point(const std::string &name, spvc::ExecutionModel model)
 {
 	auto &entry = get_entry_point(name, model);
 	ir.default_entry_point = entry.self;
@@ -3459,7 +3459,7 @@ bool Compiler::AnalyzeVariableScopeAccessHandler::handle_terminator(const SPIRBl
 	return true;
 }
 
-bool Compiler::AnalyzeVariableScopeAccessHandler::handle(spv::Op op, const uint32_t *args, uint32_t length)
+bool Compiler::AnalyzeVariableScopeAccessHandler::handle(spvc::Op op, const uint32_t *args, uint32_t length)
 {
 	// Keep track of the types of temporaries, so we can hoist them out as necessary.
 	uint32_t result_type = 0, result_id = 0;
@@ -3816,7 +3816,7 @@ bool Compiler::StaticExpressionAccessHandler::follow_function_call(const SPIRFun
 	return false;
 }
 
-bool Compiler::StaticExpressionAccessHandler::handle(spv::Op op, const uint32_t *args, uint32_t length)
+bool Compiler::StaticExpressionAccessHandler::handle(spvc::Op op, const uint32_t *args, uint32_t length)
 {
 	switch (op)
 	{
@@ -4376,7 +4376,7 @@ bool Compiler::may_read_undefined_variable_in_block(const SPIRBlock &block, uint
 	return true;
 }
 
-bool Compiler::GeometryEmitDisocveryHandler::handle(spv::Op opcode, const uint32_t *, uint32_t)
+bool Compiler::GeometryEmitDisocveryHandler::handle(spvc::Op opcode, const uint32_t *, uint32_t)
 {
 	if (opcode == OpEmitVertex || opcode == OpEndPrimitive)
 	{
@@ -4516,7 +4516,7 @@ void Compiler::ActiveBuiltinHandler::add_if_builtin_or_block(uint32_t id)
 	add_if_builtin(id, true);
 }
 
-bool Compiler::ActiveBuiltinHandler::handle(spv::Op opcode, const uint32_t *args, uint32_t length)
+bool Compiler::ActiveBuiltinHandler::handle(spvc::Op opcode, const uint32_t *args, uint32_t length)
 {
 	switch (opcode)
 	{
@@ -4711,7 +4711,7 @@ void Compiler::analyze_image_and_sampler_usage()
 			comparison_ids.insert(combined.combined_id);
 }
 
-bool Compiler::CombinedImageSamplerDrefHandler::handle(spv::Op opcode, const uint32_t *args, uint32_t)
+bool Compiler::CombinedImageSamplerDrefHandler::handle(spvc::Op opcode, const uint32_t *args, uint32_t)
 {
 	// Mark all sampled images which are used with Dref.
 	switch (opcode)
@@ -4824,7 +4824,7 @@ Compiler::CFGBuilder::CFGBuilder(Compiler &compiler_)
 {
 }
 
-bool Compiler::CFGBuilder::handle(spv::Op, const uint32_t *, uint32_t)
+bool Compiler::CFGBuilder::handle(spvc::Op, const uint32_t *, uint32_t)
 {
 	return true;
 }
@@ -5000,7 +5000,7 @@ void Compiler::make_constant_null(uint32_t id, uint32_t type)
 	}
 }
 
-const SmallVector<spv::Capability> &Compiler::get_declared_capabilities() const
+const SmallVector<spvc::Capability> &Compiler::get_declared_capabilities() const
 {
 	return ir.declared_capabilities;
 }
@@ -5075,7 +5075,7 @@ bool Compiler::reflection_ssbo_instance_name_is_significant() const
 	return aliased_ssbo_types;
 }
 
-bool Compiler::instruction_to_result_type(uint32_t &result_type, uint32_t &result_id, spv::Op op,
+bool Compiler::instruction_to_result_type(uint32_t &result_type, uint32_t &result_id, spvc::Op op,
                                           const uint32_t *args, uint32_t length)
 {
 	if (length < 2)
@@ -5122,7 +5122,7 @@ Bitset Compiler::combined_decoration_for_member(const SPIRType &type, uint32_t i
 	return flags;
 }
 
-bool Compiler::is_desktop_only_format(spv::ImageFormat format)
+bool Compiler::is_desktop_only_format(spvc::ImageFormat format)
 {
 	switch (format)
 	{
@@ -5241,7 +5241,7 @@ bool Compiler::PhysicalStorageBufferPointerHandler::type_is_bda_block_entry(uint
 
 uint32_t Compiler::PhysicalStorageBufferPointerHandler::get_minimum_scalar_alignment(const SPIRType &type) const
 {
-	if (type.storage == spv::StorageClassPhysicalStorageBuffer)
+	if (type.storage == spvc::StorageClassPhysicalStorageBuffer)
 		return 8;
 	else if (type.basetype == SPIRType::Struct)
 	{
