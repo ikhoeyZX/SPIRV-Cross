@@ -67,7 +67,7 @@ public:
 	std::string compile() override;
 
 private:
-	static std::string execution_model_to_str(spv::ExecutionModel model);
+	static std::string execution_model_to_str(spvc::ExecutionModel model);
 
 	void emit_entry_points();
 	void emit_types();
