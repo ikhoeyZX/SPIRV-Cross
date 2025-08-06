@@ -26,7 +26,7 @@
 #include <assert.h>
 
 using namespace std;
-using namespace spv;
+using namespace spvc;
 
 namespace SPIRV_CROSS_NAMESPACE
 {
