@@ -18,8 +18,8 @@
 **   C, C++, C++11, JSON, Lua, Python, C#, D, Beef
 ** 
 ** - C will have tokens with a "Spv" prefix, e.g.: SpvSourceLanguageGLSL
-** - C++ will have tokens in the "spv" name space, e.g.: spv::SourceLanguageGLSL
-** - C++11 will use enum classes in the spv namespace, e.g.: spv::SourceLanguage::GLSL
+** - C++ will have tokens in the "spv" name space, e.g.: spvc::SourceLanguageGLSL
+** - C++11 will use enum classes in the spv namespace, e.g.: spvc::SourceLanguage::GLSL
 ** - Lua will use tables, e.g.: spv.SourceLanguage.GLSL
 ** - Python will use dictionaries, e.g.: spv['SourceLanguage']['GLSL']
 ** - C# will use enum classes in the Specification class located in the "Spv" namespace,
@@ -5219,4 +5219,3 @@ inline const char* SpvOpToString(SpvOp value) {
 #endif /* SPV_ENABLE_UTILITY_CODE */
 
 #endif
-
