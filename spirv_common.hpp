@@ -525,7 +525,7 @@ struct SPIRConstantOp : IVariant
 		type = TypeConstantOp
 	};
 
-	SPIRConstantOp(TypeID result_type, spv::Op op, const uint32_t *args, uint32_t length)
+	SPIRConstantOp(TypeID result_type, spv::Op::Op op, const uint32_t *args, uint32_t length)
 	    : opcode(op)
 	    , basetype(result_type)
 	{
@@ -534,7 +534,7 @@ struct SPIRConstantOp : IVariant
 			arguments.push_back(args[i]);
 	}
 
-	spv::Op opcode;
+	spv::Op::Op opcode;
 	SmallVector<uint32_t> arguments;
 	TypeID basetype;
 
@@ -548,8 +548,8 @@ struct SPIRType : IVariant
 		type = TypeType
 	};
 
-	spv::Op op = spv::Op::OpNop;
-	explicit SPIRType(spv::Op op_) : op(op_) {}
+	spv::Op::Op op = spv::Op::Op::OpNop;
+	explicit SPIRType(spv::Op::Op op_) : op(op_) {}
 
 	enum BaseType
 	{
@@ -1895,19 +1895,19 @@ static inline SPIRType::BaseType to_unsigned_basetype(uint32_t width)
 }
 
 // Returns true if an arithmetic operation does not change behavior depending on signedness.
-static inline bool opcode_is_sign_invariant(spv::Op opcode)
+static inline bool opcode_is_sign_invariant(spv::Op::Op opcode)
 {
 	switch (opcode)
 	{
-	case spv::OpIEqual:
-	case spv::OpINotEqual:
-	case spv::OpISub:
-	case spv::OpIAdd:
-	case spv::OpIMul:
-	case spv::OpShiftLeftLogical:
-	case spv::OpBitwiseOr:
-	case spv::OpBitwiseXor:
-	case spv::OpBitwiseAnd:
+	case spv::Op::OpIEqual:
+	case spv::Op::OpINotEqual:
+	case spv::Op::OpISub:
+	case spv::Op::OpIAdd:
+	case spv::Op::OpIMul:
+	case spv::Op::OpShiftLeftLogical:
+	case spv::Op::OpBitwiseOr:
+	case spv::Op::OpBitwiseXor:
+	case spv::Op::OpBitwiseAnd:
 		return true;
 
 	default:
@@ -1915,26 +1915,26 @@ static inline bool opcode_is_sign_invariant(spv::Op opcode)
 	}
 }
 
-static inline bool opcode_can_promote_integer_implicitly(spv::Op opcode)
+static inline bool opcode_can_promote_integer_implicitly(spv::Op::Op opcode)
 {
 	switch (opcode)
 	{
-	case spv::OpSNegate:
-	case spv::OpNot:
-	case spv::OpBitwiseAnd:
-	case spv::OpBitwiseOr:
-	case spv::OpBitwiseXor:
-	case spv::OpShiftLeftLogical:
-	case spv::OpShiftRightLogical:
-	case spv::OpShiftRightArithmetic:
-	case spv::OpIAdd:
-	case spv::OpISub:
-	case spv::OpIMul:
-	case spv::OpSDiv:
-	case spv::OpUDiv:
-	case spv::OpSRem:
-	case spv::OpUMod:
-	case spv::OpSMod:
+	case spv::Op::OpSNegate:
+	case spv::Op::OpNot:
+	case spv::Op::OpBitwiseAnd:
+	case spv::Op::OpBitwiseOr:
+	case spv::Op::OpBitwiseXor:
+	case spv::Op::OpShiftLeftLogical:
+	case spv::Op::OpShiftRightLogical:
+	case spv::Op::OpShiftRightArithmetic:
+	case spv::Op::OpIAdd:
+	case spv::Op::OpISub:
+	case spv::Op::OpIMul:
+	case spv::Op::OpSDiv:
+	case spv::Op::OpUDiv:
+	case spv::Op::OpSRem:
+	case spv::Op::OpUMod:
+	case spv::Op::OpSMod:
 		return true;
 
 	default:
