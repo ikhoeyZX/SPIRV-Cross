@@ -1,4 +1,4 @@
-/* reset
+/*
  * Copyright 2015-2021 Arm Limited
  * SPDX-License-Identifier: Apache-2.0 OR MIT
  *
@@ -548,7 +548,7 @@ struct SPIRType : IVariant
 		type = TypeType
 	};
 
-	spv::Op op = spv::Op::Op::OpNop;
+	spv::Op op = spv::Op::OpNop;
 	explicit SPIRType(spv::Op op_) : op(op_) {}
 
 	enum BaseType
