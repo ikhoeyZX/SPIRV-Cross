@@ -525,7 +525,7 @@ struct SPIRConstantOp : IVariant
 		type = TypeConstantOp
 	};
 
-	SPIRConstantOp(TypeID result_type, spv::Op::Op op, const uint32_t *args, uint32_t length)
+	SPIRConstantOp(TypeID result_type, spv::Op op, const uint32_t *args, uint32_t length)
 	    : opcode(op)
 	    , basetype(result_type)
 	{
@@ -534,7 +534,7 @@ struct SPIRConstantOp : IVariant
 			arguments.push_back(args[i]);
 	}
 
-	spv::Op::Op opcode;
+	spv::Op opcode;
 	SmallVector<uint32_t> arguments;
 	TypeID basetype;
 
@@ -548,8 +548,8 @@ struct SPIRType : IVariant
 		type = TypeType
 	};
 
-	spv::Op::Op op = spv::Op::Op::OpNop;
-	explicit SPIRType(spv::Op::Op op_) : op(op_) {}
+	spv::Op op = spv::Op::Op::OpNop;
+	explicit SPIRType(spv::Op op_) : op(op_) {}
 
 	enum BaseType
 	{
@@ -1895,7 +1895,7 @@ static inline SPIRType::BaseType to_unsigned_basetype(uint32_t width)
 }
 
 // Returns true if an arithmetic operation does not change behavior depending on signedness.
-static inline bool opcode_is_sign_invariant(spv::Op::Op opcode)
+static inline bool opcode_is_sign_invariant(spv::Op opcode)
 {
 	switch (opcode)
 	{
@@ -1915,7 +1915,7 @@ static inline bool opcode_is_sign_invariant(spv::Op::Op opcode)
 	}
 }
 
-static inline bool opcode_can_promote_integer_implicitly(spv::Op::Op opcode)
+static inline bool opcode_can_promote_integer_implicitly(spv::Op opcode)
 {
 	switch (opcode)
 	{
