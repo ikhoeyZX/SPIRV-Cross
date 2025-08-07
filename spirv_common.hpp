@@ -635,7 +635,7 @@ struct SPIRType : IVariant
 		} tensor;
 	} ext;
 
-	spv::StorageClass storage = spv::StorageClass::Generic;
+	spv::StorageClass storage = spv::StorageClass::StorageClassGeneric;
 
 	SmallVector<TypeID> member_types;
 
@@ -1131,7 +1131,7 @@ struct SPIRVariable : IVariant
 	}
 
 	TypeID basetype = 0;
-	spv::StorageClass storage = spv::StorageClass::Generic;
+	spv::StorageClass storage = spv::StorageClass::StorageClassGeneric;
 	uint32_t decoration = 0;
 	ID initializer = 0;
 	VariableID basevariable = 0;
@@ -1779,7 +1779,7 @@ struct Meta
 		std::string hlsl_semantic;
 		std::string user_type;
 		Bitset decoration_flags;
-		spv::BuiltIn builtin_type = spv::BuiltIn::Max;
+		spv::BuiltIn builtin_type = spv::BuiltIn::BuiltInMax;
 		uint32_t location = 0;
 		uint32_t component = 0;
 		uint32_t set = 0;
