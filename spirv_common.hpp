@@ -1793,7 +1793,7 @@ struct Meta
 		uint32_t input_attachment = 0;
 		uint32_t spec_id = 0;
 		uint32_t index = 0;
-		spv::FPRoundingMode fp_rounding_mode = spv::FPRoundingMode::FPRoundingModeMax;;
+		spv::FPRoundingMode fp_rounding_mode = spv::FPRoundingMode::FPRoundingModeMax;
 		spv::FPFastMathModeMask fp_fast_math_mode = spv::FPFastMathModeMask::FPFastMathModeMaskNone;
 		
         bool builtin = false;
