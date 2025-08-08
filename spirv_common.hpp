@@ -635,7 +635,9 @@ struct SPIRType : IVariant
 		} tensor;
 	} ext;
 
-	spv::StorageClass storage = spv::StorageClass::StorageClassGeneric;
+	// spv::StorageClass storage = spv::StorageClass::StorageClassGeneric;
+    spv::StorageClass storage = 8;
+
 
 	SmallVector<TypeID> member_types;
 
@@ -735,7 +737,8 @@ struct SPIREntryPoint
 	uint32_t invocations = 0;
 	uint32_t output_vertices = 0;
 	uint32_t output_primitives = 0;
-	spv::ExecutionModel model = spv::ExecutionModelMax;
+	// spv::ExecutionModel model = spv::ExecutionModelMax;
+    spv::ExecutionModel model = 0x7fffffff;
 	bool geometry_passthrough = false;
 };
 
@@ -1131,7 +1134,8 @@ struct SPIRVariable : IVariant
 	}
 
 	TypeID basetype = 0;
-	spv::StorageClass storage = spv::StorageClass::StorageClassGeneric;
+	// spv::StorageClass storage = spv::StorageClass::StorageClassGeneric;
+    spv::StorageClass storage = 8;
 	uint32_t decoration = 0;
 	ID initializer = 0;
 	VariableID basevariable = 0;
@@ -1793,9 +1797,12 @@ struct Meta
 		uint32_t input_attachment = 0;
 		uint32_t spec_id = 0;
 		uint32_t index = 0;
-		spv::FPRoundingMode fp_rounding_mode = spv::FPRoundingModeMax;
-		spv::FPFastMathModeMask fp_fast_math_mode = spv::FPFastMathModeMaskNone;
-		bool builtin = false;
+		// spv::FPRoundingMode fp_rounding_mode = spv::FPRoundingModeMax;
+		// spv::FPFastMathModeMask fp_fast_math_mode = spv::FPFastMathModeMaskNone;
+		spv::FPRoundingMode fp_rounding_mode = 0x7fffffff;
+		spv::FPFastMathModeMask fp_fast_math_mode = 0;
+		
+        bool builtin = false;
 		bool qualified_alias_explicit_override = false;
 
 		struct Extended
