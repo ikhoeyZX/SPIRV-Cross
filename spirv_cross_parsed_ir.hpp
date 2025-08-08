@@ -25,7 +25,6 @@
 #define SPIRV_CROSS_PARSED_IR_HPP
 
 #include "spirv_common.hpp"
-#include "spirv.hpp"
 #include <stdint.h>
 #include <unordered_map>
 
