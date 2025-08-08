@@ -635,7 +635,7 @@ struct SPIRType : IVariant
 		} tensor;
 	} ext;
 
-	spv::StorageClass storage = SpvStorageClass::SpvStorageClassGeneric;
+	spv::StorageClass storage = spv::StorageClass::SpvStorageClassGeneric;
 
 	SmallVector<TypeID> member_types;
 
