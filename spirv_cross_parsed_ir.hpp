@@ -121,8 +121,8 @@ public:
 
 	Source source;
 
-	spv::AddressingModel addressing_model = spv::AddressingModelMax;
-	spv::MemoryModel memory_model = spv::MemoryModelMax;
+	spv::AddressingModel addressing_model = spv::AddressingModel::AddressingModelMax;
+	spv::MemoryModel memory_model = spv::MemoryModel::MemoryModelMax;
 
 	// Decoration handling methods.
 	// Can be useful for simple "raw" reflection.
