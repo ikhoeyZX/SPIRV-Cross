@@ -1307,9 +1307,9 @@ void Parser::parse(const Instruction &instruction)
 
 		if (length >= 2)
 		{
-			if (ops[1] & spv::SelectionControlMask::Flatten)
+			if (ops[1] & static_cast<uint32_t>(spv::SelectionControlMask::Flatten))
 				current_block->hint = SPIRBlock::HintFlatten;
-			else if (ops[1] & spv::SelectionControlMask::DontFlatten)
+			else if (ops[1] & static_cast<uint32_t>(spv::SelectionControlMask::DontFlatten))
 				current_block->hint = SPIRBlock::HintDontFlatten;
 		}
 		break;
@@ -1337,9 +1337,9 @@ void Parser::parse(const Instruction &instruction)
 
 		if (length >= 3)
 		{
-			if (ops[2] & spv::LoopControlMask::Unroll)
+			if (ops[2] & static_cast<uint32_t>(spv::LoopControlMask::Unroll))
 				current_block->hint = SPIRBlock::HintUnroll;
-			else if (ops[2] & spv::LoopControlMask::DontUnroll)
+			else if (ops[2] & static_cast<uint32_t>(spv::LoopControlMask::DontUnroll))
 				current_block->hint = SPIRBlock::HintDontUnroll;
 		}
 		break;
