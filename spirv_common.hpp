@@ -1925,22 +1925,22 @@ static inline bool opcode_can_promote_integer_implicitly(spv::Op opcode)
 {
 	switch (opcode)
 	{
-	case spv::Op::SNegate:
-	case spv::Op::Not:
-	case spv::Op::BitwiseAnd:
-	case spv::Op::BitwiseOr:
-	case spv::Op::BitwiseXor:
-	case spv::Op::ShiftLeftLogical:
-	case spv::Op::ShiftRightLogical:
-	case spv::Op::ShiftRightArithmetic:
-	case spv::Op::IAdd:
-	case spv::Op::ISub:
-	case spv::Op::IMul:
-	case spv::Op::SDiv:
-	case spv::Op::UDiv:
-	case spv::Op::SRem:
-	case spv::Op::UMod:
-	case spv::Op::SMod:
+	case spv::Op::OpSNegate:
+	case spv::Op::OpNot:
+	case spv::Op::OpBitwiseAnd:
+	case spv::Op::OpBitwiseOr:
+	case spv::Op::OpBitwiseXor:
+	case spv::Op::OpShiftLeftLogical:
+	case spv::Op::OpShiftRightLogical:
+	case spv::Op::OpShiftRightArithmetic:
+	case spv::Op::OpIAdd:
+	case spv::Op::OpISub:
+	case spv::Op::OpIMul:
+	case spv::Op::OpSDiv:
+	case spv::Op::OpUDiv:
+	case spv::Op::OpSRem:
+	case spv::Op::OpUMod:
+	case spv::Op::OpSMod:
 		return true;
 
 	default:
