@@ -1197,7 +1197,7 @@ void Parser::parse(const Instruction &instruction)
 		break;
 	}
 
-	case OpSwitch:
+	case Op::OpSwitch:
 	{
 		if (!current_block)
 			SPIRV_CROSS_THROW("Trying to end a non-existing block.");
@@ -1230,7 +1230,7 @@ void Parser::parse(const Instruction &instruction)
 		break;
 	}
 
-	case OpKill:
+	case Op::OpKill:
 	case OpTerminateInvocation:
 	{
 		if (!current_block)
@@ -1240,7 +1240,7 @@ void Parser::parse(const Instruction &instruction)
 		break;
 	}
 
-	case OpTerminateRayKHR:
+	case Op::OpTerminateRayKHR:
 		// NV variant is not a terminator.
 		if (!current_block)
 			SPIRV_CROSS_THROW("Trying to end a non-existing block.");
@@ -1248,7 +1248,7 @@ void Parser::parse(const Instruction &instruction)
 		current_block = nullptr;
 		break;
 
-	case OpIgnoreIntersectionKHR:
+	case Op::OpIgnoreIntersectionKHR:
 		// NV variant is not a terminator.
 		if (!current_block)
 			SPIRV_CROSS_THROW("Trying to end a non-existing block.");
@@ -1256,7 +1256,7 @@ void Parser::parse(const Instruction &instruction)
 		current_block = nullptr;
 		break;
 
-	case OpEmitMeshTasksEXT:
+	case Op::OpEmitMeshTasksEXT:
 		if (!current_block)
 			SPIRV_CROSS_THROW("Trying to end a non-existing block.");
 		current_block->terminator = SPIRBlock::EmitMeshTasks;
@@ -1268,7 +1268,7 @@ void Parser::parse(const Instruction &instruction)
 		ignore_trailing_block_opcodes = true;
 		break;
 
-	case OpReturn:
+	case Op::OpReturn:
 	{
 		if (!current_block)
 			SPIRV_CROSS_THROW("Trying to end a non-existing block.");
@@ -1277,7 +1277,7 @@ void Parser::parse(const Instruction &instruction)
 		break;
 	}
 
-	case OpReturnValue:
+	case Op::OpReturnValue:
 	{
 		if (!current_block)
 			SPIRV_CROSS_THROW("Trying to end a non-existing block.");
@@ -1287,7 +1287,7 @@ void Parser::parse(const Instruction &instruction)
 		break;
 	}
 
-	case OpUnreachable:
+	case Op::OpUnreachable:
 	{
 		if (!current_block)
 			SPIRV_CROSS_THROW("Trying to end a non-existing block.");
@@ -1296,7 +1296,7 @@ void Parser::parse(const Instruction &instruction)
 		break;
 	}
 
-	case OpSelectionMerge:
+	case Op::OpSelectionMerge:
 	{
 		if (!current_block)
 			SPIRV_CROSS_THROW("Trying to modify a non-existing block.");
@@ -1315,7 +1315,7 @@ void Parser::parse(const Instruction &instruction)
 		break;
 	}
 
-	case OpLoopMerge:
+	case Op::OpLoopMerge:
 	{
 		if (!current_block)
 			SPIRV_CROSS_THROW("Trying to modify a non-existing block.");
@@ -1345,7 +1345,7 @@ void Parser::parse(const Instruction &instruction)
 		break;
 	}
 
-	case OpSpecConstantOp:
+	case Op::OpSpecConstantOp:
 	{
 		if (length < 3)
 			SPIRV_CROSS_THROW("OpSpecConstantOp not enough arguments.");
@@ -1358,7 +1358,7 @@ void Parser::parse(const Instruction &instruction)
 		break;
 	}
 
-	case OpLine:
+	case Op::OpLine:
 	{
 		// OpLine might come at global scope, but we don't care about those since they will not be declared in any
 		// meaningful correct order.
@@ -1381,7 +1381,7 @@ void Parser::parse(const Instruction &instruction)
 		break;
 	}
 
-	case OpNoLine:
+	case Op::OpNoLine:
 	{
 		// OpNoLine might come at global scope.
 		if (current_block)

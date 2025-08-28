@@ -102,7 +102,7 @@ bool Compiler::block_is_control_dependent(const SPIRBlock &block)
 
 		switch (op)
 		{
-		case OpFunctionCall:
+		case Op::OpFunctionCall:
 		{
 			uint32_t func = ops[2];
 			if (function_is_control_dependent(get<SPIRFunction>(func)))
@@ -111,70 +111,70 @@ bool Compiler::block_is_control_dependent(const SPIRBlock &block)
 		}
 
 		// Derivatives
-		case OpDPdx:
-		case OpDPdxCoarse:
-		case OpDPdxFine:
-		case OpDPdy:
-		case OpDPdyCoarse:
-		case OpDPdyFine:
-		case OpFwidth:
-		case OpFwidthCoarse:
-		case OpFwidthFine:
+		case Op::OpDPdx:
+		case Op::OpDPdxCoarse:
+		case Op::OpDPdxFine:
+		case Op::OpDPdy:
+		case Op::OpDPdyCoarse:
+		case Op::OpDPdyFine:
+		case Op::OpFwidth:
+		case Op::OpFwidthCoarse:
+		case Op::OpFwidthFine:
 
 		// Anything implicit LOD
-		case OpImageSampleImplicitLod:
-		case OpImageSampleDrefImplicitLod:
-		case OpImageSampleProjImplicitLod:
-		case OpImageSampleProjDrefImplicitLod:
-		case OpImageSparseSampleImplicitLod:
-		case OpImageSparseSampleDrefImplicitLod:
-		case OpImageSparseSampleProjImplicitLod:
-		case OpImageSparseSampleProjDrefImplicitLod:
-		case OpImageQueryLod:
-		case OpImageDrefGather:
-		case OpImageGather:
-		case OpImageSparseDrefGather:
-		case OpImageSparseGather:
+		case Op::OpImageSampleImplicitLod:
+		case Op::OpImageSampleDrefImplicitLod:
+		case Op::OpImageSampleProjImplicitLod:
+		case Op::OpImageSampleProjDrefImplicitLod:
+		case Op::OpImageSparseSampleImplicitLod:
+		case Op::OpImageSparseSampleDrefImplicitLod:
+		case Op::OpImageSparseSampleProjImplicitLod:
+		case Op::OpImageSparseSampleProjDrefImplicitLod:
+		case Op::OpImageQueryLod:
+		case Op::OpImageDrefGather:
+		case Op::OpImageGather:
+		case Op::OpImageSparseDrefGather:
+		case Op::OpImageSparseGather:
 
 		// Anything subgroups
-		case OpGroupNonUniformElect:
-		case OpGroupNonUniformAll:
-		case OpGroupNonUniformAny:
-		case OpGroupNonUniformAllEqual:
-		case OpGroupNonUniformBroadcast:
-		case OpGroupNonUniformBroadcastFirst:
-		case OpGroupNonUniformBallot:
-		case OpGroupNonUniformInverseBallot:
-		case OpGroupNonUniformBallotBitExtract:
-		case OpGroupNonUniformBallotBitCount:
-		case OpGroupNonUniformBallotFindLSB:
-		case OpGroupNonUniformBallotFindMSB:
-		case OpGroupNonUniformShuffle:
-		case OpGroupNonUniformShuffleXor:
-		case OpGroupNonUniformShuffleUp:
-		case OpGroupNonUniformShuffleDown:
-		case OpGroupNonUniformIAdd:
-		case OpGroupNonUniformFAdd:
-		case OpGroupNonUniformIMul:
-		case OpGroupNonUniformFMul:
-		case OpGroupNonUniformSMin:
-		case OpGroupNonUniformUMin:
-		case OpGroupNonUniformFMin:
-		case OpGroupNonUniformSMax:
-		case OpGroupNonUniformUMax:
-		case OpGroupNonUniformFMax:
-		case OpGroupNonUniformBitwiseAnd:
-		case OpGroupNonUniformBitwiseOr:
-		case OpGroupNonUniformBitwiseXor:
-		case OpGroupNonUniformLogicalAnd:
-		case OpGroupNonUniformLogicalOr:
-		case OpGroupNonUniformLogicalXor:
-		case OpGroupNonUniformQuadBroadcast:
-		case OpGroupNonUniformQuadSwap:
-		case OpGroupNonUniformRotateKHR:
+		case Op::OpGroupNonUniformElect:
+		case Op::OpGroupNonUniformAll:
+		case Op::OpGroupNonUniformAny:
+		case Op::OpGroupNonUniformAllEqual:
+		case Op::OpGroupNonUniformBroadcast:
+		case Op::OpGroupNonUniformBroadcastFirst:
+		case Op::OpGroupNonUniformBallot:
+		case Op::OpGroupNonUniformInverseBallot:
+		case Op::OpGroupNonUniformBallotBitExtract:
+		case Op::OpGroupNonUniformBallotBitCount:
+		case Op::OpGroupNonUniformBallotFindLSB:
+		case Op::OpGroupNonUniformBallotFindMSB:
+		case Op::OpGroupNonUniformShuffle:
+		case Op::OpGroupNonUniformShuffleXor:
+		case Op::OpGroupNonUniformShuffleUp:
+		case Op::OpGroupNonUniformShuffleDown:
+		case Op::OpGroupNonUniformIAdd:
+		case Op::OpGroupNonUniformFAdd:
+		case Op::OpGroupNonUniformIMul:
+		case Op::OpGroupNonUniformFMul:
+		case Op::OpGroupNonUniformSMin:
+		case Op::OpGroupNonUniformUMin:
+		case Op::OpGroupNonUniformFMin:
+		case Op::OpGroupNonUniformSMax:
+		case Op::OpGroupNonUniformUMax:
+		case Op::OpGroupNonUniformFMax:
+		case Op::OpGroupNonUniformBitwiseAnd:
+		case Op::OpGroupNonUniformBitwiseOr:
+		case Op::OpGroupNonUniformBitwiseXor:
+		case Op::OpGroupNonUniformLogicalAnd:
+		case Op::OpGroupNonUniformLogicalOr:
+		case Op::OpGroupNonUniformLogicalXor:
+		case Op::OpGroupNonUniformQuadBroadcast:
+		case Op::OpGroupNonUniformQuadSwap:
+		case Op::OpGroupNonUniformRotateKHR:
 
 		// Control barriers
-		case OpControlBarrier:
+		case Op::OpControlBarrier:
 			return true;
 
 		default:
@@ -201,7 +201,7 @@ bool Compiler::block_is_pure(const SPIRBlock &block)
 
 		switch (op)
 		{
-		case OpFunctionCall:
+		case Op::OpFunctionCall:
 		{
 			uint32_t func = ops[2];
 			if (!function_is_pure(get<SPIRFunction>(func)))
@@ -209,9 +209,9 @@ bool Compiler::block_is_pure(const SPIRBlock &block)
 			break;
 		}
 
-		case OpCopyMemory:
-		case OpStore:
-		case OpCooperativeMatrixStoreKHR:
+		case Op::OpCopyMemory:
+		case Op::OpStore:
+		case Op::OpCooperativeMatrixStoreKHR:
 		{
 			auto &type = expression_type(ops[0]);
 			if (type.storage != StorageClassFunction)
@@ -219,71 +219,71 @@ bool Compiler::block_is_pure(const SPIRBlock &block)
 			break;
 		}
 
-		case OpImageWrite:
+		case Op::OpImageWrite:
 			return false;
 
 		// Atomics are impure.
-		case OpAtomicLoad:
-		case OpAtomicStore:
-		case OpAtomicExchange:
-		case OpAtomicCompareExchange:
-		case OpAtomicCompareExchangeWeak:
-		case OpAtomicIIncrement:
-		case OpAtomicIDecrement:
-		case OpAtomicIAdd:
-		case OpAtomicISub:
-		case OpAtomicSMin:
-		case OpAtomicUMin:
-		case OpAtomicSMax:
-		case OpAtomicUMax:
-		case OpAtomicAnd:
-		case OpAtomicOr:
-		case OpAtomicXor:
+		case Op::OpAtomicLoad:
+		case Op::OpAtomicStore:
+		case Op::OpAtomicExchange:
+		case Op::OpAtomicCompareExchange:
+		case Op::OpAtomicCompareExchangeWeak:
+		case Op::OpAtomicIIncrement:
+		case Op::OpAtomicIDecrement:
+		case Op::OpAtomicIAdd:
+		case Op::OpAtomicISub:
+		case Op::OpAtomicSMin:
+		case Op::OpAtomicUMin:
+		case Op::OpAtomicSMax:
+		case Op::OpAtomicUMax:
+		case Op::OpAtomicAnd:
+		case Op::OpAtomicOr:
+		case Op::OpAtomicXor:
 			return false;
 
 		// Geometry shader builtins modify global state.
-		case OpEndPrimitive:
-		case OpEmitStreamVertex:
-		case OpEndStreamPrimitive:
-		case OpEmitVertex:
+		case Op::OpEndPrimitive:
+		case Op::OpEmitStreamVertex:
+		case Op::OpEndStreamPrimitive:
+		case Op::OpEmitVertex:
 			return false;
 
 		// Mesh shader functions modify global state.
 		// (EmitMeshTasks is a terminator).
-		case OpSetMeshOutputsEXT:
+		case Op::OpSetMeshOutputsEXT:
 			return false;
 
 		// Barriers disallow any reordering, so we should treat blocks with barrier as writing.
-		case OpControlBarrier:
-		case OpMemoryBarrier:
+		case Op::OpControlBarrier:
+		case Op::OpMemoryBarrier:
 			return false;
 
 		// Ray tracing builtins are impure.
-		case OpReportIntersectionKHR:
-		case OpIgnoreIntersectionNV:
-		case OpTerminateRayNV:
-		case OpTraceNV:
-		case OpTraceRayKHR:
-		case OpExecuteCallableNV:
-		case OpExecuteCallableKHR:
-		case OpRayQueryInitializeKHR:
-		case OpRayQueryTerminateKHR:
-		case OpRayQueryGenerateIntersectionKHR:
-		case OpRayQueryConfirmIntersectionKHR:
-		case OpRayQueryProceedKHR:
+		case Op::OpReportIntersectionKHR:
+		case Op::OpIgnoreIntersectionNV:
+		case Op::OpTerminateRayNV:
+		case Op::OpTraceNV:
+		case Op::OpTraceRayKHR:
+		case Op::OpExecuteCallableNV:
+		case Op::OpExecuteCallableKHR:
+		case Op::OpRayQueryInitializeKHR:
+		case Op::OpRayQueryTerminateKHR:
+		case Op::OpRayQueryGenerateIntersectionKHR:
+		case Op::OpRayQueryConfirmIntersectionKHR:
+		case Op::OpRayQueryProceedKHR:
 			// There are various getters in ray query, but they are considered pure.
 			return false;
 
 			// OpExtInst is potentially impure depending on extension, but GLSL builtins are at least pure.
 
-		case OpDemoteToHelperInvocationEXT:
+		case Op::OpDemoteToHelperInvocationEXT:
 			// This is a global side effect of the function.
 			return false;
 
-		case OpTensorReadARM:
+		case Op::OpTensorReadARM:
 			return false;
 
-		case OpExtInst:
+		case Op::OpExtInst:
 		{
 			uint32_t extension_set = ops[2];
 			if (get<SPIRExtension>(extension_set).ext == SPIRExtension::GLSL)
@@ -367,17 +367,17 @@ void Compiler::register_global_read_dependencies(const SPIRBlock &block, uint32_
 
 		switch (op)
 		{
-		case OpFunctionCall:
+		case Op::OpFunctionCall:
 		{
 			uint32_t func = ops[2];
 			register_global_read_dependencies(get<SPIRFunction>(func), id);
 			break;
 		}
 
-		case OpLoad:
-		case OpCooperativeMatrixLoadKHR:
-		case OpCooperativeVectorLoadNV:
-		case OpImageRead:
+		case Op::OpLoad:
+		case Op::OpCooperativeMatrixLoadKHR:
+		case Op::OpCooperativeVectorLoadNV:
+		case Op::OpImageRead:
 		{
 			// If we're in a storage class which does not get invalidated, adding dependencies here is no big deal.
 			auto *var = maybe_get_backing_variable(ops[2]);
@@ -773,7 +773,7 @@ bool Compiler::InterfaceVariableAccessHandler::handle(Op opcode, const uint32_t 
 	default:
 		break;
 
-	case OpFunctionCall:
+	case Op::OpFunctionCall:
 	{
 		// Invalid SPIR-V.
 		if (length < 3)
@@ -790,7 +790,7 @@ bool Compiler::InterfaceVariableAccessHandler::handle(Op opcode, const uint32_t 
 		break;
 	}
 
-	case OpSelect:
+	case Op::OpSelect:
 	{
 		// Invalid SPIR-V.
 		if (length < 5)
@@ -807,7 +807,7 @@ bool Compiler::InterfaceVariableAccessHandler::handle(Op opcode, const uint32_t 
 		break;
 	}
 
-	case OpPhi:
+	case Op::OpPhi:
 	{
 		// Invalid SPIR-V.
 		if (length < 2)
@@ -824,16 +824,16 @@ bool Compiler::InterfaceVariableAccessHandler::handle(Op opcode, const uint32_t 
 		break;
 	}
 
-	case OpAtomicStore:
-	case OpStore:
-	case OpCooperativeMatrixStoreKHR:
+	case Op::OpAtomicStore:
+	case Op::OpStore:
+	case Op::OpCooperativeMatrixStoreKHR:
 		// Invalid SPIR-V.
 		if (length < 1)
 			return false;
 		variable = args[0];
 		break;
 
-	case OpCopyMemory:
+	case Op::OpCopyMemory:
 	{
 		if (length < 2)
 			return false;
@@ -848,7 +848,7 @@ bool Compiler::InterfaceVariableAccessHandler::handle(Op opcode, const uint32_t 
 		break;
 	}
 
-	case OpExtInst:
+	case Op::OpExtInst:
 	{
 		if (length < 3)
 			return false;
@@ -915,29 +915,29 @@ bool Compiler::InterfaceVariableAccessHandler::handle(Op opcode, const uint32_t 
 		break;
 	}
 
-	case OpAccessChain:
-	case OpInBoundsAccessChain:
-	case OpPtrAccessChain:
-	case OpLoad:
-	case OpCooperativeMatrixLoadKHR:
-	case OpCopyObject:
-	case OpImageTexelPointer:
-	case OpAtomicLoad:
-	case OpAtomicExchange:
-	case OpAtomicCompareExchange:
-	case OpAtomicCompareExchangeWeak:
-	case OpAtomicIIncrement:
-	case OpAtomicIDecrement:
-	case OpAtomicIAdd:
-	case OpAtomicISub:
-	case OpAtomicSMin:
-	case OpAtomicUMin:
-	case OpAtomicSMax:
-	case OpAtomicUMax:
-	case OpAtomicAnd:
-	case OpAtomicOr:
-	case OpAtomicXor:
-	case OpArrayLength:
+	case Op::OpAccessChain:
+	case Op::OpInBoundsAccessChain:
+	case Op::OpPtrAccessChain:
+	case Op::OpLoad:
+	case Op::OpCooperativeMatrixLoadKHR:
+	case Op::OpCopyObject:
+	case Op::OpImageTexelPointer:
+	case Op::OpAtomicLoad:
+	case Op::OpAtomicExchange:
+	case Op::OpAtomicCompareExchange:
+	case Op::OpAtomicCompareExchangeWeak:
+	case Op::OpAtomicIIncrement:
+	case Op::OpAtomicIDecrement:
+	case Op::OpAtomicIAdd:
+	case Op::OpAtomicISub:
+	case Op::OpAtomicSMin:
+	case Op::OpAtomicUMin:
+	case Op::OpAtomicSMax:
+	case Op::OpAtomicUMax:
+	case Op::OpAtomicAnd:
+	case Op::OpAtomicOr:
+	case Op::OpAtomicXor:
+	case Op::OpArrayLength:
 		// Invalid SPIR-V.
 		if (length < 3)
 			return false;
@@ -1636,11 +1636,11 @@ bool Compiler::block_is_noop(const SPIRBlock &block) const
 		switch (op)
 		{
 		// Non-Semantic instructions.
-		case OpLine:
-		case OpNoLine:
+		case Op::OpLine:
+		case Op::OpNoLine:
 			break;
 
-		case OpExtInst:
+		case Op::OpExtInst:
 		{
 			auto *ops = stream(i);
 			auto ext = get<SPIRExtension>(ops[2]).ext;
@@ -2063,11 +2063,11 @@ uint32_t Compiler::evaluate_spec_constant_u32(const SPIRConstantOp &spec) const
 	};
 
 #define binary_spec_op(op, binary_op)                                              \
-	case Op##op:                                                                   \
+	case Op::Op##op:                                                                   \
 		value = eval_u32(spec.arguments[0]) binary_op eval_u32(spec.arguments[1]); \
 		break
 #define binary_spec_op_cast(op, binary_op, type)                                                         \
-	case Op##op:                                                                                         \
+	case Op::Op##op:                                                                                         \
 		value = uint32_t(type(eval_u32(spec.arguments[0])) binary_op type(eval_u32(spec.arguments[1]))); \
 		break
 
@@ -2100,23 +2100,23 @@ uint32_t Compiler::evaluate_spec_constant_u32(const SPIRConstantOp &spec) const
 #undef binary_spec_op
 #undef binary_spec_op_cast
 
-	case OpLogicalNot:
+	case Op::OpLogicalNot:
 		value = uint32_t(!eval_u32(spec.arguments[0]));
 		break;
 
-	case OpNot:
+	case Op::OpNot:
 		value = ~eval_u32(spec.arguments[0]);
 		break;
 
-	case OpSNegate:
+	case Op::OpSNegate:
 		value = uint32_t(-int32_t(eval_u32(spec.arguments[0])));
 		break;
 
-	case OpSelect:
+	case Op::OpSelect:
 		value = eval_u32(spec.arguments[0]) ? eval_u32(spec.arguments[1]) : eval_u32(spec.arguments[2]);
 		break;
 
-	case OpUMod:
+	case Op::OpUMod:
 	{
 		uint32_t a = eval_u32(spec.arguments[0]);
 		uint32_t b = eval_u32(spec.arguments[1]);
@@ -2126,7 +2126,7 @@ uint32_t Compiler::evaluate_spec_constant_u32(const SPIRConstantOp &spec) const
 		break;
 	}
 
-	case OpSRem:
+	case Op::OpSRem:
 	{
 		auto a = int32_t(eval_u32(spec.arguments[0]));
 		auto b = int32_t(eval_u32(spec.arguments[1]));
@@ -2136,7 +2136,7 @@ uint32_t Compiler::evaluate_spec_constant_u32(const SPIRConstantOp &spec) const
 		break;
 	}
 
-	case OpSMod:
+	case Op::OpSMod:
 	{
 		auto a = int32_t(eval_u32(spec.arguments[0]));
 		auto b = int32_t(eval_u32(spec.arguments[1]));
@@ -2151,7 +2151,7 @@ uint32_t Compiler::evaluate_spec_constant_u32(const SPIRConstantOp &spec) const
 		break;
 	}
 
-	case OpUDiv:
+	case Op::OpUDiv:
 	{
 		uint32_t a = eval_u32(spec.arguments[0]);
 		uint32_t b = eval_u32(spec.arguments[1]);
@@ -2161,7 +2161,7 @@ uint32_t Compiler::evaluate_spec_constant_u32(const SPIRConstantOp &spec) const
 		break;
 	}
 
-	case OpSDiv:
+	case Op::OpSDiv:
 	{
 		auto a = int32_t(eval_u32(spec.arguments[0]));
 		auto b = int32_t(eval_u32(spec.arguments[1]));
@@ -2927,7 +2927,7 @@ bool Compiler::DummySamplerForCombinedImageHandler::handle(Op opcode, const uint
 
 	switch (opcode)
 	{
-	case OpLoad:
+	case Op::OpLoad:
 	{
 		if (length < 3)
 			return false;
@@ -2949,11 +2949,11 @@ bool Compiler::DummySamplerForCombinedImageHandler::handle(Op opcode, const uint
 		break;
 	}
 
-	case OpImageFetch:
-	case OpImageQuerySizeLod:
-	case OpImageQuerySize:
-	case OpImageQueryLevels:
-	case OpImageQuerySamples:
+	case Op::OpImageFetch:
+	case Op::OpImageQuerySizeLod:
+	case Op::OpImageQuerySize:
+	case Op::OpImageQueryLevels:
+	case Op::OpImageQuerySamples:
 	{
 		// If we are fetching or querying LOD from a plain OpTypeImage, we must pre-combine with our dummy sampler.
 		auto *var = compiler.maybe_get_backing_variable(args[2]);
@@ -2967,9 +2967,9 @@ bool Compiler::DummySamplerForCombinedImageHandler::handle(Op opcode, const uint
 		break;
 	}
 
-	case OpInBoundsAccessChain:
-	case OpAccessChain:
-	case OpPtrAccessChain:
+	case Op::OpInBoundsAccessChain:
+	case Op::OpAccessChain:
+	case Op::OpPtrAccessChain:
 	{
 		if (length < 3)
 			return false;
@@ -3005,7 +3005,7 @@ bool Compiler::CombinedImageSamplerHandler::handle(Op opcode, const uint32_t *ar
 
 	switch (opcode)
 	{
-	case OpLoad:
+	case Op::OpLoad:
 	{
 		if (length < 3)
 			return false;
@@ -3027,9 +3027,9 @@ bool Compiler::CombinedImageSamplerHandler::handle(Op opcode, const uint32_t *ar
 		return true;
 	}
 
-	case OpInBoundsAccessChain:
-	case OpAccessChain:
-	case OpPtrAccessChain:
+	case Op::OpInBoundsAccessChain:
+	case Op::OpAccessChain:
+	case Op::OpPtrAccessChain:
 	{
 		if (length < 3)
 			return false;
@@ -3060,11 +3060,11 @@ bool Compiler::CombinedImageSamplerHandler::handle(Op opcode, const uint32_t *ar
 		return true;
 	}
 
-	case OpImageFetch:
-	case OpImageQuerySizeLod:
-	case OpImageQuerySize:
-	case OpImageQueryLevels:
-	case OpImageQuerySamples:
+	case Op::OpImageFetch:
+	case Op::OpImageQuerySizeLod:
+	case Op::OpImageQuerySize:
+	case Op::OpImageQueryLevels:
+	case Op::OpImageQuerySamples:
 	{
 		// If we are fetching from a plain OpTypeImage or querying LOD, we must pre-combine with our dummy sampler.
 		auto *var = compiler.maybe_get_backing_variable(args[2]);
@@ -3086,7 +3086,7 @@ bool Compiler::CombinedImageSamplerHandler::handle(Op opcode, const uint32_t *ar
 		return true;
 	}
 
-	case OpSampledImage:
+	case Op::OpSampledImage:
 		// Do it outside.
 		break;
 
@@ -3479,8 +3479,8 @@ bool Compiler::AnalyzeVariableScopeAccessHandler::handle(spv::Op op, const uint3
 
 	switch (op)
 	{
-	case OpStore:
-	case OpCooperativeMatrixStoreKHR:
+	case Op::OpStore:
+	case Op::OpCooperativeMatrixStoreKHR:
 	{
 		if (length < 2)
 			return false;
@@ -3505,9 +3505,9 @@ bool Compiler::AnalyzeVariableScopeAccessHandler::handle(spv::Op op, const uint3
 		break;
 	}
 
-	case OpAccessChain:
-	case OpInBoundsAccessChain:
-	case OpPtrAccessChain:
+	case Op::OpAccessChain:
+	case Op::OpInBoundsAccessChain:
+	case Op::OpPtrAccessChain:
 	{
 		if (length < 3)
 			return false;
@@ -3545,7 +3545,7 @@ bool Compiler::AnalyzeVariableScopeAccessHandler::handle(spv::Op op, const uint3
 		break;
 	}
 
-	case OpCopyMemory:
+	case Op::OpCopyMemory:
 	{
 		if (length < 2)
 			return false;
@@ -3574,7 +3574,7 @@ bool Compiler::AnalyzeVariableScopeAccessHandler::handle(spv::Op op, const uint3
 		break;
 	}
 
-	case OpCopyObject:
+	case Op::OpCopyObject:
 	{
 		// OpCopyObject copies the underlying non-pointer type, 
 		// so any temp variable should be declared using the underlying type.
@@ -3600,8 +3600,8 @@ bool Compiler::AnalyzeVariableScopeAccessHandler::handle(spv::Op op, const uint3
 		break;
 	}
 
-	case OpLoad:
-	case OpCooperativeMatrixLoadKHR:
+	case Op::OpLoad:
+	case Op::OpCooperativeMatrixLoadKHR:
 	{
 		if (length < 3)
 			return false;
@@ -3624,7 +3624,7 @@ bool Compiler::AnalyzeVariableScopeAccessHandler::handle(spv::Op op, const uint3
 		break;
 	}
 
-	case OpFunctionCall:
+	case Op::OpFunctionCall:
 	{
 		if (length < 3)
 			return false;
@@ -3656,7 +3656,7 @@ bool Compiler::AnalyzeVariableScopeAccessHandler::handle(spv::Op op, const uint3
 		break;
 	}
 
-	case OpSelect:
+	case Op::OpSelect:
 	{
 		// In case of variable pointers, we might access a variable here.
 		// We cannot prove anything about these accesses however.
@@ -3679,7 +3679,7 @@ bool Compiler::AnalyzeVariableScopeAccessHandler::handle(spv::Op op, const uint3
 		break;
 	}
 
-	case OpExtInst:
+	case Op::OpExtInst:
 	{
 		for (uint32_t i = 4; i < length; i++)
 			notify_variable_access(args[i], current_block->self);
@@ -3714,33 +3714,33 @@ bool Compiler::AnalyzeVariableScopeAccessHandler::handle(spv::Op op, const uint3
 		break;
 	}
 
-	case OpArrayLength:
+	case Op::OpArrayLength:
 		// Only result is a temporary.
 		notify_variable_access(args[1], current_block->self);
 		break;
 
-	case OpLine:
-	case OpNoLine:
+	case Op::OpLine:
+	case Op::OpNoLine:
 		// Uses literals, but cannot be a phi variable or temporary, so ignore.
 		break;
 
 		// Atomics shouldn't be able to access function-local variables.
 		// Some GLSL builtins access a pointer.
 
-	case OpCompositeInsert:
-	case OpVectorShuffle:
+	case Op::OpCompositeInsert:
+	case Op::OpVectorShuffle:
 		// Specialize for opcode which contains literals.
 		for (uint32_t i = 1; i < 4; i++)
 			notify_variable_access(args[i], current_block->self);
 		break;
 
-	case OpCompositeExtract:
+	case Op::OpCompositeExtract:
 		// Specialize for opcode which contains literals.
 		for (uint32_t i = 1; i < 3; i++)
 			notify_variable_access(args[i], current_block->self);
 		break;
 
-	case OpImageWrite:
+	case Op::OpImageWrite:
 		for (uint32_t i = 0; i < length; i++)
 		{
 			// Argument 3 is a literal.
@@ -3749,18 +3749,18 @@ bool Compiler::AnalyzeVariableScopeAccessHandler::handle(spv::Op op, const uint3
 		}
 		break;
 
-	case OpImageSampleImplicitLod:
-	case OpImageSampleExplicitLod:
-	case OpImageSparseSampleImplicitLod:
-	case OpImageSparseSampleExplicitLod:
-	case OpImageSampleProjImplicitLod:
-	case OpImageSampleProjExplicitLod:
-	case OpImageSparseSampleProjImplicitLod:
-	case OpImageSparseSampleProjExplicitLod:
-	case OpImageFetch:
-	case OpImageSparseFetch:
-	case OpImageRead:
-	case OpImageSparseRead:
+	case Op::OpImageSampleImplicitLod:
+	case Op::OpImageSampleExplicitLod:
+	case Op::OpImageSparseSampleImplicitLod:
+	case Op::OpImageSparseSampleExplicitLod:
+	case Op::OpImageSampleProjImplicitLod:
+	case Op::OpImageSampleProjExplicitLod:
+	case Op::OpImageSparseSampleProjImplicitLod:
+	case Op::OpImageSparseSampleProjExplicitLod:
+	case Op::OpImageFetch:
+	case Op::OpImageSparseFetch:
+	case Op::OpImageRead:
+	case Op::OpImageSparseRead:
 		for (uint32_t i = 1; i < length; i++)
 		{
 			// Argument 4 is a literal.
@@ -3769,18 +3769,18 @@ bool Compiler::AnalyzeVariableScopeAccessHandler::handle(spv::Op op, const uint3
 		}
 		break;
 
-	case OpImageSampleDrefImplicitLod:
-	case OpImageSampleDrefExplicitLod:
-	case OpImageSparseSampleDrefImplicitLod:
-	case OpImageSparseSampleDrefExplicitLod:
-	case OpImageSampleProjDrefImplicitLod:
-	case OpImageSampleProjDrefExplicitLod:
-	case OpImageSparseSampleProjDrefImplicitLod:
-	case OpImageSparseSampleProjDrefExplicitLod:
-	case OpImageGather:
-	case OpImageSparseGather:
-	case OpImageDrefGather:
-	case OpImageSparseDrefGather:
+	case Op::OpImageSampleDrefImplicitLod:
+	case Op::OpImageSampleDrefExplicitLod:
+	case Op::OpImageSparseSampleDrefImplicitLod:
+	case Op::OpImageSparseSampleDrefExplicitLod:
+	case Op::OpImageSampleProjDrefImplicitLod:
+	case Op::OpImageSampleProjDrefExplicitLod:
+	case Op::OpImageSparseSampleProjDrefImplicitLod:
+	case Op::OpImageSparseSampleProjDrefExplicitLod:
+	case Op::OpImageGather:
+	case Op::OpImageSparseGather:
+	case Op::OpImageDrefGather:
+	case Op::OpImageSparseDrefGather:
 		for (uint32_t i = 1; i < length; i++)
 		{
 			// Argument 5 is a literal.
@@ -3820,8 +3820,8 @@ bool Compiler::StaticExpressionAccessHandler::handle(spv::Op op, const uint32_t 
 {
 	switch (op)
 	{
-	case OpStore:
-	case OpCooperativeMatrixStoreKHR:
+	case Op::OpStore:
+	case Op::OpCooperativeMatrixStoreKHR:
 		if (length < 2)
 			return false;
 		if (args[0] == variable_id)
@@ -3831,17 +3831,17 @@ bool Compiler::StaticExpressionAccessHandler::handle(spv::Op op, const uint32_t 
 		}
 		break;
 
-	case OpLoad:
-	case OpCooperativeMatrixLoadKHR:
+	case Op::OpLoad:
+	case Op::OpCooperativeMatrixLoadKHR:
 		if (length < 3)
 			return false;
 		if (args[2] == variable_id && static_expression == 0) // Tried to read from variable before it was initialized.
 			return false;
 		break;
 
-	case OpAccessChain:
-	case OpInBoundsAccessChain:
-	case OpPtrAccessChain:
+	case Op::OpAccessChain:
+	case Op::OpInBoundsAccessChain:
+	case Op::OpPtrAccessChain:
 		if (length < 3)
 			return false;
 		if (args[2] == variable_id) // If we try to access chain our candidate variable before we store to it, bail.
@@ -4307,16 +4307,16 @@ bool Compiler::may_read_undefined_variable_in_block(const SPIRBlock &block, uint
 		auto *ops = stream(op);
 		switch (op.op)
 		{
-		case OpStore:
-		case OpCooperativeMatrixStoreKHR:
-		case OpCopyMemory:
+		case Op::OpStore:
+		case Op::OpCooperativeMatrixStoreKHR:
+		case Op::OpCopyMemory:
 			if (ops[0] == var)
 				return false;
 			break;
 
-		case OpAccessChain:
-		case OpInBoundsAccessChain:
-		case OpPtrAccessChain:
+		case Op::OpAccessChain:
+		case Op::OpInBoundsAccessChain:
+		case Op::OpPtrAccessChain:
 			// Access chains are generally used to partially read and write. It's too hard to analyze
 			// if all constituents are written fully before continuing, so just assume it's preserved.
 			// This is the same as the parameter preservation analysis.
@@ -4324,14 +4324,14 @@ bool Compiler::may_read_undefined_variable_in_block(const SPIRBlock &block, uint
 				return true;
 			break;
 
-		case OpSelect:
+		case Op::OpSelect:
 			// Variable pointers.
 			// We might read before writing.
 			if (ops[3] == var || ops[4] == var)
 				return true;
 			break;
 
-		case OpPhi:
+		case Op::OpPhi:
 		{
 			// Variable pointers.
 			// We might read before writing.
@@ -4345,15 +4345,15 @@ bool Compiler::may_read_undefined_variable_in_block(const SPIRBlock &block, uint
 			break;
 		}
 
-		case OpCopyObject:
-		case OpLoad:
-		case OpCooperativeVectorLoadNV:
-		case OpCooperativeMatrixLoadKHR:
+		case Op::OpCopyObject:
+		case Op::OpLoad:
+		case Op::OpCooperativeVectorLoadNV:
+		case Op::OpCooperativeMatrixLoadKHR:
 			if (ops[2] == var)
 				return true;
 			break;
 
-		case OpFunctionCall:
+		case Op::OpFunctionCall:
 		{
 			if (op.length < 3)
 				break;
@@ -4520,15 +4520,15 @@ bool Compiler::ActiveBuiltinHandler::handle(spv::Op opcode, const uint32_t *args
 {
 	switch (opcode)
 	{
-	case OpStore:
-	case OpCooperativeMatrixStoreKHR:
+	case Op::OpStore:
+	case Op::OpCooperativeMatrixStoreKHR:
 		if (length < 1)
 			return false;
 
 		add_if_builtin(args[0]);
 		break;
 
-	case OpCopyMemory:
+	case Op::OpCopyMemory:
 		if (length < 2)
 			return false;
 
@@ -4536,16 +4536,16 @@ bool Compiler::ActiveBuiltinHandler::handle(spv::Op opcode, const uint32_t *args
 		add_if_builtin(args[1]);
 		break;
 
-	case OpCopyObject:
-	case OpLoad:
-	case OpCooperativeMatrixLoadKHR:
+	case Op::OpCopyObject:
+	case Op::OpLoad:
+	case Op::OpCooperativeMatrixLoadKHR:
 		if (length < 3)
 			return false;
 
 		add_if_builtin(args[2]);
 		break;
 
-	case OpSelect:
+	case Op::OpSelect:
 		if (length < 5)
 			return false;
 
@@ -4553,7 +4553,7 @@ bool Compiler::ActiveBuiltinHandler::handle(spv::Op opcode, const uint32_t *args
 		add_if_builtin(args[4]);
 		break;
 
-	case OpPhi:
+	case Op::OpPhi:
 	{
 		if (length < 2)
 			return false;
@@ -4565,7 +4565,7 @@ bool Compiler::ActiveBuiltinHandler::handle(spv::Op opcode, const uint32_t *args
 		break;
 	}
 
-	case OpFunctionCall:
+	case Op::OpFunctionCall:
 	{
 		if (length < 3)
 			return false;
@@ -4577,9 +4577,9 @@ bool Compiler::ActiveBuiltinHandler::handle(spv::Op opcode, const uint32_t *args
 		break;
 	}
 
-	case OpAccessChain:
-	case OpInBoundsAccessChain:
-	case OpPtrAccessChain:
+	case Op::OpAccessChain:
+	case Op::OpInBoundsAccessChain:
+	case Op::OpPtrAccessChain:
 	{
 		if (length < 4)
 			return false;
@@ -4716,16 +4716,16 @@ bool Compiler::CombinedImageSamplerDrefHandler::handle(spv::Op opcode, const uin
 	// Mark all sampled images which are used with Dref.
 	switch (opcode)
 	{
-	case OpImageSampleDrefExplicitLod:
-	case OpImageSampleDrefImplicitLod:
-	case OpImageSampleProjDrefExplicitLod:
-	case OpImageSampleProjDrefImplicitLod:
-	case OpImageSparseSampleProjDrefImplicitLod:
-	case OpImageSparseSampleDrefImplicitLod:
-	case OpImageSparseSampleProjDrefExplicitLod:
-	case OpImageSparseSampleDrefExplicitLod:
-	case OpImageDrefGather:
-	case OpImageSparseDrefGather:
+	case Op::OpImageSampleDrefExplicitLod:
+	case Op::OpImageSampleDrefImplicitLod:
+	case Op::OpImageSampleProjDrefExplicitLod:
+	case Op::OpImageSampleProjDrefImplicitLod:
+	case Op::OpImageSparseSampleProjDrefImplicitLod:
+	case Op::OpImageSparseSampleDrefImplicitLod:
+	case Op::OpImageSparseSampleProjDrefExplicitLod:
+	case Op::OpImageSparseSampleDrefExplicitLod:
+	case Op::OpImageDrefGather:
+	case Op::OpImageSparseDrefGather:
 		dref_combined_samplers.insert(args[2]);
 		return true;
 
@@ -4879,10 +4879,10 @@ bool Compiler::CombinedImageSamplerUsageHandler::handle(Op opcode, const uint32_
 {
 	switch (opcode)
 	{
-	case OpAccessChain:
-	case OpInBoundsAccessChain:
-	case OpPtrAccessChain:
-	case OpLoad:
+	case Op::OpAccessChain:
+	case Op::OpInBoundsAccessChain:
+	case Op::OpPtrAccessChain:
+	case Op::OpLoad:
 	{
 		if (length < 3)
 			return false;
@@ -4905,7 +4905,7 @@ bool Compiler::CombinedImageSamplerUsageHandler::handle(Op opcode, const uint32_
 		break;
 	}
 
-	case OpSampledImage:
+	case Op::OpSampledImage:
 	{
 		if (length < 4)
 			return false;
@@ -5282,18 +5282,18 @@ bool Compiler::PhysicalStorageBufferPointerHandler::handle(Op op, const uint32_t
 	// requirements.
 	switch (op)
 	{
-	case OpConvertUToPtr:
-	case OpBitcast:
-	case OpCompositeExtract:
+	case Op::OpConvertUToPtr:
+	case Op::OpBitcast:
+	case Op::OpCompositeExtract:
 		// Extract can begin a new chain if we had a struct or array of pointers as input.
 		// We don't begin chains before we have a pure scalar pointer.
 		setup_meta_chain(args[0], args[1]);
 		break;
 
-	case OpAccessChain:
-	case OpInBoundsAccessChain:
-	case OpPtrAccessChain:
-	case OpCopyObject:
+	case Op::OpAccessChain:
+	case Op::OpInBoundsAccessChain:
+	case Op::OpPtrAccessChain:
+	case Op::OpCopyObject:
 	{
 		auto itr = access_chain_to_physical_block.find(args[2]);
 		if (itr != access_chain_to_physical_block.end())
@@ -5301,7 +5301,7 @@ bool Compiler::PhysicalStorageBufferPointerHandler::handle(Op op, const uint32_t
 		break;
 	}
 
-	case OpLoad:
+	case Op::OpLoad:
 	{
 		setup_meta_chain(args[0], args[1]);
 		if (length >= 4)
@@ -5309,15 +5309,15 @@ bool Compiler::PhysicalStorageBufferPointerHandler::handle(Op op, const uint32_t
 		break;
 	}
 
-	case OpStore:
+	case Op::OpStore:
 	{
 		if (length >= 3)
 			mark_aligned_access(args[0], args + 2, length - 2);
 		break;
 	}
 
-	case OpCooperativeMatrixLoadKHR:
-	case OpCooperativeMatrixStoreKHR:
+	case Op::OpCooperativeMatrixLoadKHR:
+	case Op::OpCooperativeMatrixStoreKHR:
 	{
 		// TODO: Can we meaningfully deal with this?
 		break;
@@ -5481,9 +5481,9 @@ bool Compiler::InterlockedResourceAccessHandler::handle(Op opcode, const uint32_
 	// We need to figure out where images and buffers are loaded from, so do only the bare bones compilation we need.
 	switch (opcode)
 	{
-	case OpLoad:
-	case OpCooperativeMatrixLoadKHR:
-	case OpCooperativeVectorLoadNV:
+	case Op::OpLoad:
+	case Op::OpCooperativeMatrixLoadKHR:
+	case Op::OpCooperativeVectorLoadNV:
 	{
 		if (length < 3)
 			return false;
@@ -5521,9 +5521,9 @@ bool Compiler::InterlockedResourceAccessHandler::handle(Op opcode, const uint32_
 		break;
 	}
 
-	case OpInBoundsAccessChain:
-	case OpAccessChain:
-	case OpPtrAccessChain:
+	case Op::OpInBoundsAccessChain:
+	case Op::OpAccessChain:
+	case Op::OpPtrAccessChain:
 	{
 		if (length < 3)
 			return false;
@@ -5543,7 +5543,7 @@ bool Compiler::InterlockedResourceAccessHandler::handle(Op opcode, const uint32_
 		break;
 	}
 
-	case OpImageTexelPointer:
+	case Op::OpImageTexelPointer:
 	{
 		if (length < 3)
 			return false;
@@ -5558,11 +5558,11 @@ bool Compiler::InterlockedResourceAccessHandler::handle(Op opcode, const uint32_
 		break;
 	}
 
-	case OpStore:
-	case OpImageWrite:
-	case OpAtomicStore:
-	case OpCooperativeMatrixStoreKHR:
-	case OpCooperativeVectorStoreNV:
+	case Op::OpStore:
+	case Op::OpImageWrite:
+	case Op::OpAtomicStore:
+	case Op::OpCooperativeMatrixStoreKHR:
+	case Op::OpCooperativeVectorStoreNV:
 	{
 		if (length < 1)
 			return false;
@@ -5578,7 +5578,7 @@ bool Compiler::InterlockedResourceAccessHandler::handle(Op opcode, const uint32_
 		break;
 	}
 
-	case OpCopyMemory:
+	case Op::OpCopyMemory:
 	{
 		if (length < 2)
 			return false;
@@ -5608,8 +5608,8 @@ bool Compiler::InterlockedResourceAccessHandler::handle(Op opcode, const uint32_
 		break;
 	}
 
-	case OpImageRead:
-	case OpAtomicLoad:
+	case Op::OpImageRead:
+	case Op::OpAtomicLoad:
 	{
 		if (length < 3)
 			return false;
@@ -5639,19 +5639,19 @@ bool Compiler::InterlockedResourceAccessHandler::handle(Op opcode, const uint32_
 		break;
 	}
 
-	case OpAtomicExchange:
-	case OpAtomicCompareExchange:
-	case OpAtomicIIncrement:
-	case OpAtomicIDecrement:
-	case OpAtomicIAdd:
-	case OpAtomicISub:
-	case OpAtomicSMin:
-	case OpAtomicUMin:
-	case OpAtomicSMax:
-	case OpAtomicUMax:
-	case OpAtomicAnd:
-	case OpAtomicOr:
-	case OpAtomicXor:
+	case Op::OpAtomicExchange:
+	case Op::OpAtomicCompareExchange:
+	case Op::OpAtomicIIncrement:
+	case Op::OpAtomicIDecrement:
+	case Op::OpAtomicIAdd:
+	case Op::OpAtomicISub:
+	case Op::OpAtomicSMin:
+	case Op::OpAtomicUMin:
+	case Op::OpAtomicSMax:
+	case Op::OpAtomicUMax:
+	case Op::OpAtomicAnd:
+	case Op::OpAtomicOr:
+	case Op::OpAtomicXor:
 	{
 		if (length < 3)
 			return false;
