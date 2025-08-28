@@ -1307,9 +1307,9 @@ void Parser::parse(const Instruction &instruction)
 
 		if (length >= 2)
 		{
-			if (ops[1] & SelectionControl::FlattenMask)
+			if (ops[1] & spv::SelectionControl::FlattenMask)
 				current_block->hint = SPIRBlock::HintFlatten;
-			else if (ops[1] & SelectionControl::DontFlattenMask)
+			else if (ops[1] & spv::SelectionControl::DontFlattenMask)
 				current_block->hint = SPIRBlock::HintDontFlatten;
 		}
 		break;
@@ -1337,9 +1337,9 @@ void Parser::parse(const Instruction &instruction)
 
 		if (length >= 3)
 		{
-			if (ops[2] & LoopControl::UnrollMask)
+			if (ops[2] & spv::LoopControl::UnrollMask)
 				current_block->hint = SPIRBlock::HintUnroll;
-			else if (ops[2] & LoopControl::DontUnrollMask)
+			else if (ops[2] & spv::LoopControl::DontUnrollMask)
 				current_block->hint = SPIRBlock::HintDontUnroll;
 		}
 		break;
@@ -1451,15 +1451,15 @@ bool Parser::variable_storage_is_aliased(const SPIRVariable &v) const
 	auto *type_meta = ir.find_meta(type.self);
 
 	bool ssbo = v.storage == StorageClass::StorageBuffer ||
-	            (type_meta && type_meta->decoration.decoration_flags.get(Decoration::BufferBlock));
+	            (type_meta && type_meta->decoration.decoration_flags.get(spv::Decoration::BufferBlock));
 	bool image = type.basetype == SPIRType::Image;
 	bool counter = type.basetype == SPIRType::AtomicCounter;
 
 	bool is_restrict;
 	if (ssbo)
-		is_restrict = ir.get_buffer_block_flags(v).get(Decoration::Restrict);
+		is_restrict = ir.get_buffer_block_flags(v).get(spv::Decoration::Restrict);
 	else
-		is_restrict = ir.has_decoration(v.self, Decoration::Restrict);
+		is_restrict = ir.has_decoration(v.self, spv::Decoration::Restrict);
 
 	return !is_restrict && (ssbo || image || counter);
 }
