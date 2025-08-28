@@ -206,7 +206,7 @@ set(spirv-cross-core-sources
 		${CMAKE_CURRENT_SOURCE_DIR}/spirv_common.hpp
 		${CMAKE_CURRENT_SOURCE_DIR}/spirv_cross_containers.hpp
 		${CMAKE_CURRENT_SOURCE_DIR}/spirv_cross_error_handling.hpp
-		${CMAKE_CURRENT_SOURCE_DIR}/spirv_cross/spirv.hpp
+		${CMAKE_CURRENT_SOURCE_DIR}/spirv_cross/spirv.hpp11
 		${CMAKE_CURRENT_SOURCE_DIR}/spirv_cross.hpp
 		${CMAKE_CURRENT_SOURCE_DIR}/spirv_cross.cpp
 		${CMAKE_CURRENT_SOURCE_DIR}/spirv_parser.hpp
