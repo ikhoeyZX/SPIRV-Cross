@@ -78,11 +78,11 @@ string Compiler::compile()
 bool Compiler::variable_storage_is_aliased(const SPIRVariable &v)
 {
 	auto &type = get<SPIRType>(v.basetype);
-	bool ssbo = v.storage == StorageClassStorageBuffer ||
+	bool ssbo = v.storage == StorageClass::StorageBuffer ||
 	            ir.meta[type.self].decoration.decoration_flags.get(DecorationBufferBlock);
 	bool image = type.basetype == SPIRType::Image;
 	bool counter = type.basetype == SPIRType::AtomicCounter;
-	bool buffer_reference = type.storage == StorageClassPhysicalStorageBuffer;
+	bool buffer_reference = type.storage == StorageClass::PhysicalStorageBuffer;
 
 	bool is_restrict;
 	if (ssbo)
@@ -488,7 +488,7 @@ void Compiler::register_write(uint32_t chain)
 			}
 		}
 
-		if (type.storage == StorageClassPhysicalStorageBuffer || variable_storage_is_aliased(*var))
+		if (type.storage == StorageClass::PhysicalStorageBuffer || variable_storage_is_aliased(*var))
 			flush_all_aliased_variables();
 		else if (var)
 			flush_dependees(*var);
@@ -614,7 +614,7 @@ bool Compiler::is_immutable(uint32_t id) const
 		auto &var = get<SPIRVariable>(id);
 
 		// Anything we load from the UniformConstant address space is guaranteed to be immutable.
-		bool pointer_to_const = var.storage == StorageClassUniformConstant;
+		bool pointer_to_const = var.storage == StorageClass::UniformConstant;
 		return pointer_to_const || var.phi_variable || !expression_is_lvalue(id);
 	}
 	else if (ir.ids[id].get_type() == TypeAccessChain)
@@ -739,7 +739,7 @@ bool Compiler::is_pointer(const SPIRType &type) const
 
 bool Compiler::is_physical_pointer(const SPIRType &type) const
 {
-	return type.op == OpTypePointer && type.storage == StorageClassPhysicalStorageBuffer;
+	return type.op == OpTypePointer && type.storage == StorageClass::PhysicalStorageBuffer;
 }
 
 bool Compiler::is_physical_pointer_to_buffer_block(const SPIRType &type) const
@@ -999,7 +999,7 @@ ShaderResources Compiler::get_shader_resources(const unordered_set<VariableID> *
 
 		// It is possible for uniform storage classes to be passed as function parameters, so detect
 		// that. To detect function parameters, check of StorageClass of variable is function scope.
-		if (var.storage == StorageClassFunction || !type.pointer)
+		if (var.storage == StorageClass::Function || !type.pointer)
 			return;
 
 		if (active_variables && active_variables->find(var.self) == end(*active_variables))
@@ -1010,7 +1010,7 @@ ShaderResources Compiler::get_shader_resources(const unordered_set<VariableID> *
 		bool active_in_entry_point = true;
 		if (ir.get_spirv_version() < 0x10400)
 		{
-			if (var.storage == StorageClassInput || var.storage == StorageClassOutput)
+			if (var.storage == StorageClass::Input || var.storage == StorageClass::Output)
 				active_in_entry_point = interface_variable_exists_in_entry_point(var.self);
 		}
 		else
@@ -1026,7 +1026,7 @@ ShaderResources Compiler::get_shader_resources(const unordered_set<VariableID> *
 			if (var.storage != StorageClassInput && var.storage != StorageClassOutput)
 				return;
 
-			auto &list = var.storage == StorageClassInput ? res.builtin_inputs : res.builtin_outputs;
+			auto &list = var.storage == StorageClass::Input ? res.builtin_inputs : res.builtin_outputs;
 			BuiltInResource resource;
 
 			if (has_decoration(type.self, DecorationBlock))
@@ -1047,7 +1047,7 @@ ShaderResources Compiler::get_shader_resources(const unordered_set<VariableID> *
 						!has_decoration(var.self, DecorationPatch) && (
 								get_execution_model() == ExecutionModelTessellationControl ||
 								(get_execution_model() == ExecutionModelTessellationEvaluation &&
-								 var.storage == StorageClassInput));
+								 var.storage == StorageClass::Input));
 
 				resource.resource = { var.self, var.basetype, type.self, get_name(var.self) };
 
@@ -1065,7 +1065,7 @@ ShaderResources Compiler::get_shader_resources(const unordered_set<VariableID> *
 		}
 
 		// Input
-		if (var.storage == StorageClassInput)
+		if (var.storage == StorageClass::Input)
 		{
 			if (has_decoration(type.self, DecorationBlock))
 			{
@@ -1077,12 +1077,12 @@ ShaderResources Compiler::get_shader_resources(const unordered_set<VariableID> *
 				res.stage_inputs.push_back({ var.self, var.basetype, type.self, get_name(var.self) });
 		}
 		// Subpass inputs
-		else if (var.storage == StorageClassUniformConstant && type.image.dim == DimSubpassData)
+		else if (var.storage == StorageClass::UniformConstant && type.image.dim == DimSubpassData)
 		{
 			res.subpass_inputs.push_back({ var.self, var.basetype, type.self, get_name(var.self) });
 		}
 		// Outputs
-		else if (var.storage == StorageClassOutput)
+		else if (var.storage == StorageClass::Output)
 		{
 			if (has_decoration(type.self, DecorationBlock))
 			{
@@ -1093,40 +1093,40 @@ ShaderResources Compiler::get_shader_resources(const unordered_set<VariableID> *
 				res.stage_outputs.push_back({ var.self, var.basetype, type.self, get_name(var.self) });
 		}
 		// UBOs
-		else if (type.storage == StorageClassUniform && has_decoration(type.self, DecorationBlock))
+		else if (type.storage == StorageClass::Uniform && has_decoration(type.self, DecorationBlock))
 		{
 			res.uniform_buffers.push_back(
 			    { var.self, var.basetype, type.self, get_remapped_declared_block_name(var.self, false) });
 		}
 		// Old way to declare SSBOs.
-		else if (type.storage == StorageClassUniform && has_decoration(type.self, DecorationBufferBlock))
+		else if (type.storage == StorageClass::Uniform && has_decoration(type.self, DecorationBufferBlock))
 		{
 			res.storage_buffers.push_back(
 			    { var.self, var.basetype, type.self, get_remapped_declared_block_name(var.self, ssbo_instance_name) });
 		}
 		// Modern way to declare SSBOs.
-		else if (type.storage == StorageClassStorageBuffer)
+		else if (type.storage == StorageClass::StorageBuffer)
 		{
 			res.storage_buffers.push_back(
 			    { var.self, var.basetype, type.self, get_remapped_declared_block_name(var.self, ssbo_instance_name) });
 		}
 		// Push constant blocks
-		else if (type.storage == StorageClassPushConstant)
+		else if (type.storage == StorageClass::PushConstant)
 		{
 			// There can only be one push constant block, but keep the vector in case this restriction is lifted
 			// in the future.
 			res.push_constant_buffers.push_back({ var.self, var.basetype, type.self, get_name(var.self) });
 		}
-		else if (type.storage == StorageClassShaderRecordBufferKHR)
+		else if (type.storage == StorageClass::ShaderRecordBufferKHR)
 		{
 			res.shader_record_buffers.push_back({ var.self, var.basetype, type.self, get_remapped_declared_block_name(var.self, ssbo_instance_name) });
 		}
 		// Atomic counters
-		else if (type.storage == StorageClassAtomicCounter)
+		else if (type.storage == StorageClass::AtomicCounter)
 		{
 			res.atomic_counters.push_back({ var.self, var.basetype, type.self, get_name(var.self) });
 		}
-		else if (type.storage == StorageClassUniformConstant)
+		else if (type.storage == StorageClass::UniformConstant)
 		{
 			if (type.basetype == SPIRType::Image)
 			{
@@ -1222,9 +1222,9 @@ void Compiler::parse_fixup()
 		else if (id.get_type() == TypeVariable)
 		{
 			auto &var = id.get<SPIRVariable>();
-			if (var.storage == StorageClassPrivate || var.storage == StorageClassWorkgroup ||
-			    var.storage == StorageClassTaskPayloadWorkgroupEXT ||
-			    var.storage == StorageClassOutput)
+			if (var.storage == StorageClass::Private || var.storage == StorageClass::Workgroup ||
+			    var.storage == StorageClass::TaskPayloadWorkgroupEXT ||
+			    var.storage == StorageClass::Output)
 			{
 				global_variables.push_back(var.self);
 			}
@@ -2209,7 +2209,7 @@ size_t Compiler::get_declared_struct_member_size(const SPIRType &struct_type, ui
 		break;
 	}
 
-	if (type.pointer && type.storage == StorageClassPhysicalStorageBuffer)
+	if (type.pointer && type.storage == StorageClass::PhysicalStorageBuffer)
 	{
 		// Check if this is a top-level pointer type, and not an array of pointers.
 		if (type.pointer_depth > get<SPIRType>(type.parent_type).pointer_depth)
@@ -3878,7 +3878,7 @@ void Compiler::find_function_local_luts(SPIRFunction &entry, const AnalyzeVariab
 		// Only consider function local variables here.
 		// If we only have a single function in our CFG, private storage is also fine,
 		// since it behaves like a function local variable.
-		bool allow_lut = var.storage == StorageClassFunction || (single_function && var.storage == StorageClassPrivate);
+		bool allow_lut = var.storage == StorageClass::Function || (single_function && var.storage == StorageClass::Private);
 		if (!allow_lut)
 			continue;
 
@@ -4482,7 +4482,7 @@ void Compiler::ActiveBuiltinHandler::add_if_builtin(uint32_t id, bool allow_bloc
 	{
 		auto &type = compiler.get<SPIRType>(var->basetype);
 		auto &decorations = m->decoration;
-		auto &flags = type.storage == StorageClassInput ?
+		auto &flags = type.storage == StorageClass::Input ?
 		              compiler.active_input_builtins : compiler.active_output_builtins;
 		if (decorations.builtin)
 		{
@@ -4597,7 +4597,7 @@ bool Compiler::ActiveBuiltinHandler::handle(spv::Op opcode, const uint32_t *args
 		auto *type = &compiler.get_variable_data_type(*var);
 
 		auto &flags =
-		    var->storage == StorageClassInput ? compiler.active_input_builtins : compiler.active_output_builtins;
+		    var->storage == StorageClass::Input ? compiler.active_input_builtins : compiler.active_output_builtins;
 
 		uint32_t count = length - 3;
 		args += 3;
@@ -4806,7 +4806,7 @@ void Compiler::build_function_control_flow_graphs_and_analyze()
 			auto &var = get<SPIRVariable>(id);
 			auto &type = get_variable_data_type(var);
 
-			if (is_array(type) && var.storage == StorageClassPrivate &&
+			if (is_array(type) && var.storage == StorageClass::Private &&
 			    var.initializer && !var.is_written_to &&
 			    ir.ids[var.initializer].get_type() == TypeConstant)
 			{
@@ -5056,11 +5056,11 @@ bool Compiler::reflection_ssbo_instance_name_is_significant() const
 	// If we don't have any OpSource information, we need to perform some shaky heuristics.
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t, const SPIRVariable &var) {
 		auto &type = this->get<SPIRType>(var.basetype);
-		if (!type.pointer || var.storage == StorageClassFunction)
+		if (!type.pointer || var.storage == StorageClass::Function)
 			return;
 
-		bool ssbo = var.storage == StorageClassStorageBuffer ||
-		            (var.storage == StorageClassUniform && has_decoration(type.self, DecorationBufferBlock));
+		bool ssbo = var.storage == StorageClass::StorageBuffer ||
+		            (var.storage == StorageClass::Uniform && has_decoration(type.self, DecorationBufferBlock));
 
 		if (ssbo)
 		{
@@ -5531,8 +5531,8 @@ bool Compiler::InterlockedResourceAccessHandler::handle(Op opcode, const uint32_
 		uint32_t result_type = args[0];
 
 		auto &type = compiler.get<SPIRType>(result_type);
-		if (type.storage == StorageClassUniform || type.storage == StorageClassUniformConstant ||
-		    type.storage == StorageClassStorageBuffer)
+		if (type.storage == StorageClass::Uniform || type.storage == StorageClass::UniformConstant ||
+		    type.storage == StorageClass::StorageBuffer)
 		{
 			uint32_t id = args[1];
 			uint32_t ptr = args[2];
@@ -5569,8 +5569,8 @@ bool Compiler::InterlockedResourceAccessHandler::handle(Op opcode, const uint32_
 
 		uint32_t ptr = args[0];
 		auto *var = compiler.maybe_get_backing_variable(ptr);
-		if (var && (var->storage == StorageClassUniform || var->storage == StorageClassUniformConstant ||
-		            var->storage == StorageClassStorageBuffer))
+		if (var && (var->storage == StorageClass::Uniform || var->storage == StorageClass::UniformConstant ||
+		            var->storage == StorageClass::StorageBuffer))
 		{
 			access_potential_resource(var->self);
 		}
@@ -5588,7 +5588,7 @@ bool Compiler::InterlockedResourceAccessHandler::handle(Op opcode, const uint32_
 		auto *dst_var = compiler.maybe_get_backing_variable(dst);
 		auto *src_var = compiler.maybe_get_backing_variable(src);
 
-		if (dst_var && (dst_var->storage == StorageClassUniform || dst_var->storage == StorageClassStorageBuffer))
+		if (dst_var && (dst_var->storage == StorageClass::Uniform || dst_var->storage == StorageClass::StorageBuffer))
 			access_potential_resource(dst_var->self);
 
 		if (src_var)
@@ -5596,7 +5596,7 @@ bool Compiler::InterlockedResourceAccessHandler::handle(Op opcode, const uint32_
 			if (src_var->storage != StorageClassUniform && src_var->storage != StorageClassStorageBuffer)
 				break;
 
-			if (src_var->storage == StorageClassUniform &&
+			if (src_var->storage == StorageClass::Uniform &&
 			    !compiler.has_decoration(compiler.get<SPIRType>(src_var->basetype).self, DecorationBufferBlock))
 			{
 				break;
@@ -5658,8 +5658,8 @@ bool Compiler::InterlockedResourceAccessHandler::handle(Op opcode, const uint32_
 
 		uint32_t ptr = args[2];
 		auto *var = compiler.maybe_get_backing_variable(ptr);
-		if (var && (var->storage == StorageClassUniform || var->storage == StorageClassUniformConstant ||
-		            var->storage == StorageClassStorageBuffer))
+		if (var && (var->storage == StorageClass::Uniform || var->storage == StorageClass::UniformConstant ||
+		            var->storage == StorageClass::StorageBuffer))
 		{
 			access_potential_resource(var->self);
 		}
