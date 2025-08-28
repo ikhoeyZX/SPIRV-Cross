@@ -1457,7 +1457,7 @@ bool Parser::variable_storage_is_aliased(const SPIRVariable &v) const
 
 	bool is_restrict;
 	if (ssbo)
-		is_restrict = ir.get_buffer_block_flags(v).get(spv::Decoration::Restrict);
+		is_restrict = ir.get_buffer_block_flags(v).get(static_cast<uint32_t>(spv::Decoration::Restrict));
 	else
 		is_restrict = ir.has_decoration(v.self, spv::Decoration::Restrict);
 
