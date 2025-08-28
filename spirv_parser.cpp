@@ -258,7 +258,7 @@ void Parser::parse(const Instruction &instruction)
 	case Op::OpCapability:
 	{
 		uint32_t cap = ops[0];
-		if (cap == Capability::Kernel)
+		if (cap == static_cast<uint32_t>(Capability::Kernel)
 			SPIRV_CROSS_THROW("Kernel capability not supported.");
 
 		ir.declared_capabilities.push_back(static_cast<Capability>(ops[0]));
@@ -360,11 +360,11 @@ void Parser::parse(const Instruction &instruction)
 	{
 		auto &execution = ir.entry_points[ops[0]];
 		auto mode = static_cast<ExecutionMode>(ops[1]);
-		execution.flags.set(mode);
+		execution.flags.set(static_cast<uint32_t>(mode);
 
 		switch (mode)
 		{
-		case ExecutionModeI::nvocations:
+			case ExecutionMode::Invocations:
 			execution.invocations = ops[2];
 			break;
 
@@ -416,7 +416,7 @@ void Parser::parse(const Instruction &instruction)
 	{
 		auto &execution = ir.entry_points[ops[0]];
 		auto mode = static_cast<ExecutionMode>(ops[1]);
-		execution.flags.set(mode);
+		execution.flags.set(static_cast<uint32_t>(mode);
 
 		switch (mode)
 		{
