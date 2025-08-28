@@ -2013,8 +2013,8 @@ struct InternalHasher
 	inline size_t operator()(const StageSetBinding &value) const
 	{
 		// Quality of hash doesn't really matter here.
-		auto hash_model = std::hash<uint32_t>()(static_cast<uint32_t>(value.model);
-		auto hash_set = std::hash<uint32_t>()(static_cast<uint32_t>(value.desc_set);
+		auto hash_model = std::hash<uint32_t>()(static_cast<uint32_t>(value.model));
+		auto hash_set = std::hash<uint32_t>()(static_cast<uint32_t>(value.desc_set));
 		auto tmp_hash = (hash_model * 0x10001b31) ^ hash_set;
 		return (tmp_hash * 0x10001b31) ^ value.binding;
 	}
