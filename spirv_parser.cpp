@@ -1307,9 +1307,9 @@ void Parser::parse(const Instruction &instruction)
 
 		if (length >= 2)
 		{
-			if (ops[1] & spv::SelectionControl::FlattenMask)
+			if (ops[1] & spv::SelectionControlMask::Flatten)
 				current_block->hint = SPIRBlock::HintFlatten;
-			else if (ops[1] & spv::SelectionControl::DontFlattenMask)
+			else if (ops[1] & spv::SelectionControlMask::DontFlatten)
 				current_block->hint = SPIRBlock::HintDontFlatten;
 		}
 		break;
@@ -1337,9 +1337,9 @@ void Parser::parse(const Instruction &instruction)
 
 		if (length >= 3)
 		{
-			if (ops[2] & spv::LoopControl::UnrollMask)
+			if (ops[2] & spv::LoopControlMask::Unroll)
 				current_block->hint = SPIRBlock::HintUnroll;
-			else if (ops[2] & spv::LoopControl::DontUnrollMask)
+			else if (ops[2] & spv::LoopControlMask::DontUnroll)
 				current_block->hint = SPIRBlock::HintDontUnroll;
 		}
 		break;
@@ -1451,7 +1451,7 @@ bool Parser::variable_storage_is_aliased(const SPIRVariable &v) const
 	auto *type_meta = ir.find_meta(type.self);
 
 	bool ssbo = v.storage == StorageClass::StorageBuffer ||
-	            (type_meta && type_meta->decoration.decoration_flags.get(spv::Decoration::BufferBlock));
+	            (type_meta && type_meta->decoration.decoration_flags.get(static_cast<uint32_t>(spv::Decoration::BufferBlock)));
 	bool image = type.basetype == SPIRType::Image;
 	bool counter = type.basetype == SPIRType::AtomicCounter;
 
