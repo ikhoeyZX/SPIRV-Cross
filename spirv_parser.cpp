@@ -759,7 +759,7 @@ void Parser::parse(const Instruction &instruction)
 		type.image.ms = ops[5] != 0;
 		type.image.sampled = ops[6];
 		type.image.format = static_cast<ImageFormat>(ops[7]);
-		type.image.access = (length >= 9) ? static_cast<AccessQualifier>(ops[8]) : AccessQualifierMax;
+		type.image.access = (length >= 9) ? static_cast<AccessQualifier>(ops[8]) : AccessQualifier::Max;
 		break;
 	}
 
@@ -1307,9 +1307,9 @@ void Parser::parse(const Instruction &instruction)
 
 		if (length >= 2)
 		{
-			if (ops[1] & SelectionControlFlattenMask)
+			if (ops[1] & SelectionControl::FlattenMask)
 				current_block->hint = SPIRBlock::HintFlatten;
-			else if (ops[1] & SelectionControlDontFlattenMask)
+			else if (ops[1] & SelectionControl::DontFlattenMask)
 				current_block->hint = SPIRBlock::HintDontFlatten;
 		}
 		break;
@@ -1337,9 +1337,9 @@ void Parser::parse(const Instruction &instruction)
 
 		if (length >= 3)
 		{
-			if (ops[2] & LoopControlUnrollMask)
+			if (ops[2] & LoopControl::UnrollMask)
 				current_block->hint = SPIRBlock::HintUnroll;
-			else if (ops[2] & LoopControlDontUnrollMask)
+			else if (ops[2] & LoopControl::DontUnrollMask)
 				current_block->hint = SPIRBlock::HintDontUnroll;
 		}
 		break;
@@ -1451,15 +1451,15 @@ bool Parser::variable_storage_is_aliased(const SPIRVariable &v) const
 	auto *type_meta = ir.find_meta(type.self);
 
 	bool ssbo = v.storage == StorageClass::StorageBuffer ||
-	            (type_meta && type_meta->decoration.decoration_flags.get(DecorationBufferBlock));
+	            (type_meta && type_meta->decoration.decoration_flags.get(Decoration::BufferBlock));
 	bool image = type.basetype == SPIRType::Image;
 	bool counter = type.basetype == SPIRType::AtomicCounter;
 
 	bool is_restrict;
 	if (ssbo)
-		is_restrict = ir.get_buffer_block_flags(v).get(DecorationRestrict);
+		is_restrict = ir.get_buffer_block_flags(v).get(Decoration::Restrict);
 	else
-		is_restrict = ir.has_decoration(v.self, DecorationRestrict);
+		is_restrict = ir.has_decoration(v.self, Decoration::Restrict);
 
 	return !is_restrict && (ssbo || image || counter);
 }
