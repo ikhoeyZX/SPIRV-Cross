@@ -188,7 +188,7 @@ void Parser::parse(const Instruction &instruction)
 	if (ignore_trailing_block_opcodes)
 	{
 		ignore_trailing_block_opcodes = false;
-		if (op == OP::OpReturn || op == Op::OpBranch || op == Op::OpUnreachable)
+		if (op == Op::OpReturn || op == Op::OpBranch || op == Op::OpUnreachable)
 			return;
 	}
 
@@ -216,21 +216,21 @@ void Parser::parse(const Instruction &instruction)
 		ir.source.lang = static_cast<SourceLanguage>(ops[0]);
 		switch (ir.source.lang)
 		{
-		case SourceLanguageESSL:
+		case SourceLanguage::ESSL:
 			ir.source.es = true;
 			ir.source.version = ops[1];
 			ir.source.known = true;
 			ir.source.hlsl = false;
 			break;
 
-		case SourceLanguageGLSL:
+		case SourceLanguage::GLSL:
 			ir.source.es = false;
 			ir.source.version = ops[1];
 			ir.source.known = true;
 			ir.source.hlsl = false;
 			break;
 
-		case SourceLanguageHLSL:
+		case SourceLanguage::HLSL:
 			// For purposes of cross-compiling, this is GLSL 450.
 			ir.source.es = false;
 			ir.source.version = 450;
@@ -258,7 +258,7 @@ void Parser::parse(const Instruction &instruction)
 	case Op::OpCapability:
 	{
 		uint32_t cap = ops[0];
-		if (cap == CapabilityKernel)
+		if (cap == Capability::Kernel)
 			SPIRV_CROSS_THROW("Kernel capability not supported.");
 
 		ir.declared_capabilities.push_back(static_cast<Capability>(ops[0]));
@@ -364,25 +364,25 @@ void Parser::parse(const Instruction &instruction)
 
 		switch (mode)
 		{
-		case ExecutionModeInvocations:
+		case ExecutionModeI::nvocations:
 			execution.invocations = ops[2];
 			break;
 
-		case ExecutionModeLocalSize:
+		case ExecutionMode::LocalSize:
 			execution.workgroup_size.x = ops[2];
 			execution.workgroup_size.y = ops[3];
 			execution.workgroup_size.z = ops[4];
 			break;
 
-		case ExecutionModeOutputVertices:
+		case ExecutionMode::OutputVertices:
 			execution.output_vertices = ops[2];
 			break;
 
-		case ExecutionModeOutputPrimitivesEXT:
+		case ExecutionMode::OutputPrimitivesEXT:
 			execution.output_primitives = ops[2];
 			break;
 
-		case ExecutionModeSignedZeroInfNanPreserve:
+		case ExecutionMode::SignedZeroInfNanPreserve:
 			switch (ops[2])
 			{
 			case 8:
@@ -420,13 +420,13 @@ void Parser::parse(const Instruction &instruction)
 
 		switch (mode)
 		{
-		case ExecutionModeLocalSizeId:
+		case ExecutionMode::LocalSizeId:
 			execution.workgroup_size.id_x = ops[2];
 			execution.workgroup_size.id_y = ops[3];
 			execution.workgroup_size.id_z = ops[4];
 			break;
 
-		case ExecutionModeFPFastMathDefault:
+		case ExecutionMode::FPFastMathDefault:
 			execution.fp_fast_math_defaults[ops[2]] = ops[3];
 			break;
 
@@ -594,7 +594,7 @@ void Parser::parse(const Instruction &instruction)
 		{
 			if (length > 2)
 			{
-				if (ops[2] == spv::FPEncodingBFloat16KHR)
+				if (ops[2] == spv::FPEncoding::BFloat16KHR)
 					type.basetype = SPIRType::BFloat16;
 				else
 					SPIRV_CROSS_THROW("Unrecognized encoding for Op::OpTypeFloat 16.");
@@ -606,9 +606,9 @@ void Parser::parse(const Instruction &instruction)
 		{
 			if (length < 2)
 				SPIRV_CROSS_THROW("Missing encoding for Op::OpTypeFloat 8.");
-			else if (ops[2] == spv::FPEncodingFloat8E4M3EXT)
+			else if (ops[2] == spv::FPEncoding::Float8E4M3EXT)
 				type.basetype = SPIRType::FloatE4M3;
-			else if (ops[2] == spv::FPEncodingFloat8E5M2EXT)
+			else if (ops[2] == spv::FPEncoding::Float8E5M2EXT)
 				type.basetype = SPIRType::FloatE5M2;
 			else
 				SPIRV_CROSS_THROW("Invalid encoding for Op::OpTypeFloat 8.");
@@ -802,7 +802,7 @@ void Parser::parse(const Instruction &instruction)
 		ptrbase.pointer_depth++;
 		ptrbase.storage = static_cast<StorageClass>(ops[1]);
 
-		if (ptrbase.storage == StorageClassAtomicCounter)
+		if (ptrbase.storage == StorageClass::AtomicCounter)
 			ptrbase.basetype = SPIRType::AtomicCounter;
 
 		if (base && base->forward_pointer)
@@ -823,7 +823,7 @@ void Parser::parse(const Instruction &instruction)
 		ptrbase.storage = static_cast<StorageClass>(ops[1]);
 		ptrbase.forward_pointer = true;
 
-		if (ptrbase.storage == StorageClassAtomicCounter)
+		if (ptrbase.storage == StorageClass::AtomicCounter)
 			ptrbase.basetype = SPIRType::AtomicCounter;
 
 		break;
@@ -917,7 +917,7 @@ void Parser::parse(const Instruction &instruction)
 		auto storage = static_cast<StorageClass>(ops[2]);
 		uint32_t initializer = length == 4 ? ops[3] : 0;
 
-		if (storage == StorageClassFunction)
+		if (storage == StorageClass::Function)
 		{
 			if (!current_function)
 				SPIRV_CROSS_THROW("No function currently in scope");
@@ -1034,7 +1034,7 @@ void Parser::parse(const Instruction &instruction)
 				auto *undef_op = maybe_get<SPIRUndef>(ops[2 + i]);
 				if (constant_op)
 				{
-					if (op == OpConstantComposite)
+					if (op == Op::OpConstantComposite)
 						SPIRV_CROSS_THROW("Specialization constant operation used in OpConstantComposite.");
 
 					remapped_constant_ops[i].make_null(get<SPIRType>(constant_op->basetype));
@@ -1053,7 +1053,7 @@ void Parser::parse(const Instruction &instruction)
 				else
 					c[i] = &get<SPIRConstant>(ops[2 + i]);
 			}
-			set<SPIRConstant>(id, type, c, elements, op == OpSpecConstantComposite);
+			set<SPIRConstant>(id, type, c, elements, op == Op::OpSpecConstantComposite);
 		}
 		break;
 	}
@@ -1450,7 +1450,7 @@ bool Parser::variable_storage_is_aliased(const SPIRVariable &v) const
 
 	auto *type_meta = ir.find_meta(type.self);
 
-	bool ssbo = v.storage == StorageClassStorageBuffer ||
+	bool ssbo = v.storage == StorageClass::StorageBuffer ||
 	            (type_meta && type_meta->decoration.decoration_flags.get(DecorationBufferBlock));
 	bool image = type.basetype == SPIRType::Image;
 	bool counter = type.basetype == SPIRType::AtomicCounter;
