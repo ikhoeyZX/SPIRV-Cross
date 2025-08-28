@@ -79,7 +79,7 @@ bool Compiler::variable_storage_is_aliased(const SPIRVariable &v)
 {
 	auto &type = get<SPIRType>(v.basetype);
 	bool ssbo = v.storage == StorageClass::StorageBuffer ||
-	            ir.meta[type.self].decoration.decoration_flags.get(DecorationBufferBlock);
+	            ir.meta[type.self].decoration.decoration_flags.get(Decoration::BufferBlock);
 	bool image = type.basetype == SPIRType::Image;
 	bool counter = type.basetype == SPIRType::AtomicCounter;
 	bool buffer_reference = type.storage == StorageClass::PhysicalStorageBuffer;
