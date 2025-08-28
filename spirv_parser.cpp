@@ -480,7 +480,7 @@ void Parser::parse(const Instruction &instruction)
 				{
 					ir.meta[target].decoration_word_offset[static_cast<uint32_t>(decoration)] =
 					    ir.meta[group_id].decoration_word_offset[static_cast<uint32_t>(decoration)];
-					ir.set_decoration(target, static_cast<uint32_t>(decoration), ir.get_decoration(group_id, static_cast<uint32_t>(decoration)));
+					ir.set_decoration(target, decoration, ir.get_decoration(group_id, decoration));
 				}
 			});
 		}
