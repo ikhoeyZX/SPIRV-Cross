@@ -1905,15 +1905,15 @@ static inline bool opcode_is_sign_invariant(spv::Op opcode)
 {
 	switch (opcode)
 	{
-	case spv::OpIEqual:
-	case spv::OpINotEqual:
-	case spv::OpISub:
-	case spv::OpIAdd:
-	case spv::OpIMul:
-	case spv::OpShiftLeftLogical:
-	case spv::OpBitwiseOr:
-	case spv::OpBitwiseXor:
-	case spv::OpBitwiseAnd:
+	case spv::Op::OpIEqual:
+	case spv::Op::OpINotEqual:
+	case spv::Op::OpISub:
+	case spv::Op::OpIAdd:
+	case spv::Op::OpIMul:
+	case spv::Op::OpShiftLeftLogical:
+	case spv::Op::OpBitwiseOr:
+	case spv::Op::OpBitwiseXor:
+	case spv::Op::OpBitwiseAnd:
 		return true;
 
 	default:
