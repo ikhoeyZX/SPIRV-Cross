@@ -635,7 +635,7 @@ struct SPIRType : IVariant
 		} tensor;
 	} ext;
 
-	spv::StorageClass storage = spv::StorageClassGeneric;
+	spv::StorageClass storage = spv::StorageClass::Generic;
 
 	SmallVector<TypeID> member_types;
 
@@ -739,7 +739,7 @@ struct SPIREntryPoint
 	uint32_t invocations = 0;
 	uint32_t output_vertices = 0;
 	uint32_t output_primitives = 0;
-	spv::ExecutionModel model = spv::ExecutionModelMax;
+	spv::ExecutionModel model = spv::ExecutionModel::Max;
 	bool geometry_passthrough = false;
 };
 
@@ -1136,7 +1136,7 @@ struct SPIRVariable : IVariant
 	}
 
 	TypeID basetype = 0;
-	spv::StorageClass storage = spv::StorageClassGeneric;
+	spv::StorageClass storage = spv::StorageClass::Generic;
 	uint32_t decoration = 0;
 	ID initializer = 0;
 	VariableID basevariable = 0;
@@ -1784,7 +1784,7 @@ struct Meta
 		std::string hlsl_semantic;
 		std::string user_type;
 		Bitset decoration_flags;
-		spv::BuiltIn builtin_type = spv::BuiltInMax;
+		spv::BuiltIn builtin_type = spv::BuiltIn::Max;
 		uint32_t location = 0;
 		uint32_t component = 0;
 		uint32_t set = 0;
@@ -1798,8 +1798,8 @@ struct Meta
 		uint32_t input_attachment = 0;
 		uint32_t spec_id = 0;
 		uint32_t index = 0;
-		spv::FPRoundingMode fp_rounding_mode = spv::FPRoundingModeMax;
-		spv::FPFastMathModeMask fp_fast_math_mode = spv::FPFastMathModeMaskNone;
+		spv::FPRoundingMode fp_rounding_mode = spv::FPRoundingMode::Max;
+		spv::FPFastMathModeMask fp_fast_math_mode = spv::FPFastMathModeMask::MaskNone;
 		bool builtin = false;
 		bool qualified_alias_explicit_override = false;
 
@@ -1925,22 +1925,22 @@ static inline bool opcode_can_promote_integer_implicitly(spv::Op opcode)
 {
 	switch (opcode)
 	{
-	case spv::OpSNegate:
-	case spv::OpNot:
-	case spv::OpBitwiseAnd:
-	case spv::OpBitwiseOr:
-	case spv::OpBitwiseXor:
-	case spv::OpShiftLeftLogical:
-	case spv::OpShiftRightLogical:
-	case spv::OpShiftRightArithmetic:
-	case spv::OpIAdd:
-	case spv::OpISub:
-	case spv::OpIMul:
-	case spv::OpSDiv:
-	case spv::OpUDiv:
-	case spv::OpSRem:
-	case spv::OpUMod:
-	case spv::OpSMod:
+	case spv::Op::SNegate:
+	case spv::Op::Not:
+	case spv::Op::BitwiseAnd:
+	case spv::Op::BitwiseOr:
+	case spv::Op::BitwiseXor:
+	case spv::Op::ShiftLeftLogical:
+	case spv::Op::ShiftRightLogical:
+	case spv::Op::ShiftRightArithmetic:
+	case spv::Op::IAdd:
+	case spv::Op::ISub:
+	case spv::Op::IMul:
+	case spv::Op::SDiv:
+	case spv::Op::UDiv:
+	case spv::Op::SRem:
+	case spv::Op::UMod:
+	case spv::Op::SMod:
 		return true;
 
 	default:
