@@ -521,7 +521,7 @@ void Parser::parse(const Instruction &instruction)
 		auto decoration = static_cast<Decoration>(ops[1]);
 		if (length >= 3)
 		{
-			ir.meta[id].decoration_word_offset[decoration] = uint32_t(&ops[2] - ir.spirv.data());
+			ir.meta[id].decoration_word_offset[static_cast<uint32_t>(decoration)] = uint32_t(&ops[2] - ir.spirv.data());
 			ir.set_decoration(id, decoration, ops[2]);
 		}
 		else
@@ -594,7 +594,7 @@ void Parser::parse(const Instruction &instruction)
 		{
 			if (length > 2)
 			{
-				if (ops[2] == spv::FPEncoding::BFloat16KHR)
+				if (ops[2] == static_cast<uint32_t>(spv::FPEncoding::BFloat16KHR))
 					type.basetype = SPIRType::BFloat16;
 				else
 					SPIRV_CROSS_THROW("Unrecognized encoding for Op::OpTypeFloat 16.");
@@ -606,9 +606,9 @@ void Parser::parse(const Instruction &instruction)
 		{
 			if (length < 2)
 				SPIRV_CROSS_THROW("Missing encoding for Op::OpTypeFloat 8.");
-			else if (ops[2] == spv::FPEncoding::Float8E4M3EXT)
+			else if (ops[2] == static_cast<uint32_t>(spv::FPEncoding::Float8E4M3EXT))
 				type.basetype = SPIRType::FloatE4M3;
-			else if (ops[2] == spv::FPEncoding::Float8E5M2EXT)
+			else if (ops[2] == static_cast<uint32_t>(spv::FPEncoding::Float8E5M2EXT))
 				type.basetype = SPIRType::FloatE5M2;
 			else
 				SPIRV_CROSS_THROW("Invalid encoding for Op::OpTypeFloat 8.");
@@ -1082,7 +1082,7 @@ void Parser::parse(const Instruction &instruction)
 			SPIRV_CROSS_THROW("Must be in a function!");
 
 		current_function->add_parameter(type, id);
-		set<SPIRVariable>(id, type, StorageClassFunction);
+		set<SPIRVariable>(id, type, StorageClass::Function);
 		break;
 	}
 
@@ -1160,7 +1160,7 @@ void Parser::parse(const Instruction &instruction)
 			{
 				uint32_t ids = ir.increase_bound_by(2);
 
-				auto &type = set<SPIRType>(ids, OpTypeInt);
+				auto &type = set<SPIRType>(ids, spv::Op::OpTypeInt);
 				type.basetype = SPIRType::Int;
 				type.width = 32;
 				auto &c = set<SPIRConstant>(ids + 1, ids);
@@ -1231,7 +1231,7 @@ void Parser::parse(const Instruction &instruction)
 	}
 
 	case Op::OpKill:
-	case OpTerminateInvocation:
+	case Op::OpTerminateInvocation:
 	{
 		if (!current_block)
 			SPIRV_CROSS_THROW("Trying to end a non-existing block.");
