@@ -5676,11 +5676,11 @@ bool Compiler::InterlockedResourceAccessHandler::handle(Op opcode, const uint32_
 
 void Compiler::analyze_interlocked_resource_usage()
 {
-	if (get_execution_model() == ExecutionModelFragment &&
-	    (get_entry_point().flags.get(ExecutionMode::PixelInterlockOrderedEXT) ||
-	     get_entry_point().flags.get(ExecutionMode::PixelInterlockUnorderedEXT) ||
-	     get_entry_point().flags.get(ExecutionMode::SampleInterlockOrderedEXT) ||
-	     get_entry_point().flags.get(ExecutionMode::SampleInterlockUnorderedEXT)))
+	if (get_execution_model() == ExecutionModel::Fragment &&
+	    (get_entry_point().flags.get(static_cast<uint32_t>(ExecutionMode::PixelInterlockOrderedEXT)) ||
+	     get_entry_point().flags.get(static_cast<uint32_t>(ExecutionMode::PixelInterlockUnorderedEXT)) ||
+	     get_entry_point().flags.get(static_cast<uint32_t>(ExecutionMode::SampleInterlockOrderedEXT)) ||
+	     get_entry_point().flags.get(static_cast<uint32_t>(ExecutionMode::SampleInterlockUnorderedEXT))))
 	{
 		InterlockedResourceAccessPrepassHandler prepass_handler(*this, ir.default_entry_point);
 		traverse_all_reachable_opcodes(get<SPIRFunction>(ir.default_entry_point), prepass_handler);
