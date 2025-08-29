@@ -2895,7 +2895,7 @@ void Compiler::CombinedImageSamplerHandler::register_combined_image_sampler(SPIR
 		ptr_type.parent_type = type_id;
 
 		// Build new variable.
-		compiler.set<SPIRVariable>(combined_id, ptr_type_id, StorageClassFunction, 0);
+		compiler.set<SPIRVariable>(combined_id, ptr_type_id, StorageClass::Function, 0);
 
 		// Inherit RelaxedPrecision.
 		// If any of OpSampledImage, underlying image or sampler are marked, inherit the decoration.
@@ -2936,7 +2936,7 @@ bool Compiler::DummySamplerForCombinedImageHandler::handle(Op opcode, const uint
 
 		auto &type = compiler.get<SPIRType>(result_type);
 		bool separate_image =
-		    type.basetype == SPIRType::Image && type.image.sampled == 1 && type.image.dim != DimBuffer;
+		    type.basetype == SPIRType::Image && type.image.sampled == 1 && type.image.dim != Dim::Buffer;
 
 		// If not separate image, don't bother.
 		if (!separate_image)
@@ -2977,7 +2977,7 @@ bool Compiler::DummySamplerForCombinedImageHandler::handle(Op opcode, const uint
 		uint32_t result_type = args[0];
 		auto &type = compiler.get<SPIRType>(result_type);
 		bool separate_image =
-		    type.basetype == SPIRType::Image && type.image.sampled == 1 && type.image.dim != DimBuffer;
+		    type.basetype == SPIRType::Image && type.image.sampled == 1 && type.image.dim != Dim::Buffer;
 		if (!separate_image)
 			return true;
 
@@ -3240,7 +3240,7 @@ SmallVector<SpecializationConstant> Compiler::get_specialization_constants() con
 {
 	SmallVector<SpecializationConstant> spec_consts;
 	ir.for_each_typed_id<SPIRConstant>([&](uint32_t, const SPIRConstant &c) {
-		if (c.specialization && has_decoration(c.self, DecorationSpecId))
+		if (c.specialization && has_decoration(c.self, Decoration::SpecId))
 			spec_consts.push_back({ c.self, get_decoration(c.self, Decoration::SpecId) });
 	});
 	return spec_consts;
@@ -3467,7 +3467,7 @@ bool Compiler::AnalyzeVariableScopeAccessHandler::handle(spv::Op op, const uint3
 	{
 		// For some opcodes, we will need to override the result id.
 		// If we need to hoist the temporary, the temporary type is the input, not the result.
-		if (op == OpConvertUToAccelerationStructureKHR)
+		if (op == Op::OpConvertUToAccelerationStructureKHR)
 		{
 			auto itr = result_id_to_type.find(args[2]);
 			if (itr != result_id_to_type.end())
@@ -4305,7 +4305,7 @@ bool Compiler::may_read_undefined_variable_in_block(const SPIRBlock &block, uint
 	for (auto &op : block.ops)
 	{
 		auto *ops = stream(op);
-		switch (op.op)
+		switch (static_cast<uint32_t>(op.op))
 		{
 		case Op::OpStore:
 		case Op::OpCooperativeMatrixStoreKHR:
@@ -4444,7 +4444,7 @@ void Compiler::ActiveBuiltinHandler::handle_builtin(const SPIRType &type, BuiltI
 {
 	// If used, we will need to explicitly declare a new array size for these builtins.
 
-	if (builtin == BuiltInClipDistance)
+	if (builtin == BuiltIn::ClipDistance)
 	{
 		if (!type.array_size_literal[0])
 			SPIRV_CROSS_THROW("Array size for ClipDistance must be a literal.");
@@ -4453,7 +4453,7 @@ void Compiler::ActiveBuiltinHandler::handle_builtin(const SPIRType &type, BuiltI
 			SPIRV_CROSS_THROW("Array size for ClipDistance must not be unsized.");
 		compiler.clip_distance_count = array_size;
 	}
-	else if (builtin == BuiltInCullDistance)
+	else if (builtin == BuiltIn::CullDistance)
 	{
 		if (!type.array_size_literal[0])
 			SPIRV_CROSS_THROW("Array size for CullDistance must be a literal.");
@@ -4462,9 +4462,9 @@ void Compiler::ActiveBuiltinHandler::handle_builtin(const SPIRType &type, BuiltI
 			SPIRV_CROSS_THROW("Array size for CullDistance must not be unsized.");
 		compiler.cull_distance_count = array_size;
 	}
-	else if (builtin == BuiltInPosition)
+	else if (builtin == BuiltIn::Position)
 	{
-		if (decoration_flags.get(DecorationInvariant))
+		if (decoration_flags.get(Decoration::Invariant))
 			compiler.position_invariant = true;
 	}
 }
