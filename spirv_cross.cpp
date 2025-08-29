@@ -4305,18 +4305,18 @@ bool Compiler::may_read_undefined_variable_in_block(const SPIRBlock &block, uint
 	for (auto &op : block.ops)
 	{
 		auto *ops = stream(op);
-		switch (static_cast<uint32_t>(op.op))
+		switch (op.op)
 		{
-		case Op::OpStore:
-		case Op::OpCooperativeMatrixStoreKHR:
-		case Op::OpCopyMemory:
+		case static_cast<uint32_t>((Op::OpStore):
+		case static_cast<uint32_t>(Op::OpCooperativeMatrixStoreKHR):
+		case static_cast<uint32_t>(Op::OpCopyMemory):
 			if (ops[0] == var)
 				return false;
 			break;
 
-		case Op::OpAccessChain:
-		case Op::OpInBoundsAccessChain:
-		case Op::OpPtrAccessChain:
+		case static_cast<uint32_t>(Op::OpAccessChain):
+		case static_cast<uint32_t>(Op::OpInBoundsAccessChain):
+		case static_cast<uint32_t>(Op::OpPtrAccessChain):
 			// Access chains are generally used to partially read and write. It's too hard to analyze
 			// if all constituents are written fully before continuing, so just assume it's preserved.
 			// This is the same as the parameter preservation analysis.
@@ -4324,14 +4324,14 @@ bool Compiler::may_read_undefined_variable_in_block(const SPIRBlock &block, uint
 				return true;
 			break;
 
-		case Op::OpSelect:
+		case static_cast<uint32_t>(Op::OpSelect):
 			// Variable pointers.
 			// We might read before writing.
 			if (ops[3] == var || ops[4] == var)
 				return true;
 			break;
 
-		case Op::OpPhi:
+		case static_cast<uint32_t>(Op::OpPhi):
 		{
 			// Variable pointers.
 			// We might read before writing.
@@ -4345,15 +4345,15 @@ bool Compiler::may_read_undefined_variable_in_block(const SPIRBlock &block, uint
 			break;
 		}
 
-		case Op::OpCopyObject:
-		case Op::OpLoad:
-		case Op::OpCooperativeVectorLoadNV:
-		case Op::OpCooperativeMatrixLoadKHR:
+		case static_cast<uint32_t>(Op::OpCopyObject):
+		case static_cast<uint32_t>(Op::OpLoad):
+		case static_cast<uint32_t>(Op::OpCooperativeVectorLoadNV):
+		case static_cast<uint32_t>(Op::OpCooperativeMatrixLoadKHR):
 			if (ops[2] == var)
 				return true;
 			break;
 
-		case Op::OpFunctionCall:
+		case static_cast<uint32_t>(Op::OpFunctionCall):
 		{
 			if (op.length < 3)
 				break;
@@ -4378,7 +4378,7 @@ bool Compiler::may_read_undefined_variable_in_block(const SPIRBlock &block, uint
 
 bool Compiler::GeometryEmitDisocveryHandler::handle(spv::Op opcode, const uint32_t *, uint32_t)
 {
-	if (opcode == OpEmitVertex || opcode == OpEndPrimitive)
+	if (opcode == Op::OpEmitVertex || opcode == Op::OpEndPrimitive)
 	{
 		for (auto *func : function_stack)
 			func->emits_geometry = true;
