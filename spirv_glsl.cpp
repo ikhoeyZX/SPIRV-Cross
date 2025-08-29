@@ -2462,7 +2462,7 @@ void CompilerGLSL::emit_buffer_reference_block(uint32_t type_id, bool forward_de
 				decorations += " restrict";
 			if (flags.get(DecorationCoherent))
 				decorations += " coherent";
-			if (flags.get(DecorationNonReadable))
+			if (flags.get(Decoration::NonReadable))
 				decorations += " writeonly";
 			if (flags.get(DecorationNonWritable))
 				decorations += " readonly";
@@ -2529,7 +2529,7 @@ void CompilerGLSL::emit_buffer_block_native(const SPIRVariable &var)
 	bool ssbo = var.storage == StorageClass::StorageBuffer || var.storage == StorageClass::ShaderRecordBufferKHR ||
 	            ir.meta[type.self].decoration.decoration_flags.get(Decoration::BufferBlock);
 	bool is_restrict = ssbo && flags.get(DecorationRestrict);
-	bool is_writeonly = ssbo && flags.get(DecorationNonReadable);
+	bool is_writeonly = ssbo && flags.get(Decoration::NonReadable);
 	bool is_readonly = ssbo && flags.get(DecorationNonWritable);
 	bool is_coherent = ssbo && flags.get(DecorationCoherent);
 
@@ -3229,10 +3229,10 @@ void CompilerGLSL::fixup_image_load_store_access()
 			// Solve this by making the image access as restricted as possible and loosen up if we need to.
 			// If any no-read/no-write flags are actually set, assume that the compiler knows what it's doing.
 
-			if (!has_decoration(var, DecorationNonWritable) && !has_decoration(var, DecorationNonReadable))
+			if (!has_decoration(var, DecorationNonWritable) && !has_decoration(var, Decoration::NonReadable))
 			{
 				set_decoration(var, DecorationNonWritable);
-				set_decoration(var, DecorationNonReadable);
+				set_decoration(var, Decoration::NonReadable);
 			}
 		}
 	});
@@ -3859,7 +3859,7 @@ void CompilerGLSL::emit_resources()
 		bool has_block_flags = ir.meta[type.self].decoration.decoration_flags.get(Decoration::Block) ||
 		                       ir.meta[type.self].decoration.decoration_flags.get(Decoration::BufferBlock);
 
-		if (var.storage != StorageClassFunction && type.pointer && is_block_storage && !is_hidden_variable(var) &&
+		if (var.storage != StorageClass::Function && type.pointer && is_block_storage && !is_hidden_variable(var) &&
 		    has_block_flags)
 		{
 			emit_buffer_block(var);
@@ -3869,7 +3869,7 @@ void CompilerGLSL::emit_resources()
 	// Output push constant blocks
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t, SPIRVariable &var) {
 		auto &type = this->get<SPIRType>(var.basetype);
-		if (var.storage != StorageClassFunction && type.pointer && type.storage == StorageClass::PushConstant &&
+		if (var.storage != StorageClass::Function && type.pointer && type.storage == StorageClass::PushConstant &&
 		    !is_hidden_variable(var))
 		{
 			emit_push_constant_block(var);
@@ -3886,14 +3886,14 @@ void CompilerGLSL::emit_resources()
 		if (skip_separate_image_sampler)
 		{
 			// Sampler buffers are always used without a sampler, and they will also work in regular GL.
-			bool sampler_buffer = type.basetype == SPIRType::Image && type.image.dim == DimBuffer;
+			bool sampler_buffer = type.basetype == SPIRType::Image && type.image.dim == Dim::Buffer;
 			bool separate_image = type.basetype == SPIRType::Image && type.image.sampled == 1;
 			bool separate_sampler = type.basetype == SPIRType::Sampler;
 			if (!sampler_buffer && (separate_image || separate_sampler))
 				return;
 		}
 
-		if (var.storage != StorageClassFunction && type.pointer &&
+		if (var.storage != StorageClass::Function && type.pointer &&
 		    (type.storage == StorageClass::UniformConstant || type.storage == StorageClassAtomicCounter ||
 		     type.storage == StorageClassRayPayloadKHR || type.storage == StorageClassIncomingRayPayloadKHR ||
 		     type.storage == StorageClassCallableDataKHR || type.storage == StorageClassIncomingCallableDataKHR ||
@@ -3924,7 +3924,7 @@ void CompilerGLSL::emit_resources()
 			is_hidden = false;
 		}
 
-		if (var.storage != StorageClassFunction && type.pointer &&
+		if (var.storage != StorageClass::Function && type.pointer &&
 		    (var.storage == StorageClass::Input || var.storage == StorageClass::Output) &&
 		    interface_variable_exists_in_entry_point(var.self) && !is_hidden)
 		{
@@ -3992,7 +3992,7 @@ void CompilerGLSL::emit_resources()
 				add_resource_name(var.self);
 
 				string initializer;
-				if (options.force_zero_initialized_variables && var.storage == StorageClassPrivate &&
+				if (options.force_zero_initialized_variables && var.storage == StorageClass::Private &&
 				    !var.initializer && !var.static_expression && type_can_zero_initialize(get_variable_data_type(var)))
 				{
 					initializer = join(" = ", to_zero_initialized_expression(get_variable_data_type_id(var)));
@@ -7489,7 +7489,7 @@ string CompilerGLSL::legacy_tex_op(const std::string &op, const SPIRType &imgtyp
 	case spv::DimRect:
 		type = "2DRect";
 		break;
-	case spv::DimBuffer:
+	case spv::Dim::Buffer:
 		type = "Buffer";
 		break;
 	case spv::DimSubpassData:
@@ -8076,7 +8076,7 @@ std::string CompilerGLSL::to_texture_op(const Instruction &i, bool sparse, bool 
 	case spv::DimCube:
 		coord_components = 3;
 		break;
-	case spv::DimBuffer:
+	case spv::Dim::Buffer:
 		coord_components = 1;
 		break;
 	default:
@@ -8215,7 +8215,7 @@ std::string CompilerGLSL::to_texture_op(const Instruction &i, bool sparse, bool 
 	}
 
 	// Deals with reads from MSL. We might need to downconvert to fewer components.
-	if (op == OpImageRead)
+	if (op == Op::OpImageRead)
 		expr = remap_swizzle(result_type, 4, expr);
 
 	return expr;
@@ -8320,7 +8320,7 @@ std::string CompilerGLSL::convert_separate_image_to_expression(uint32_t id)
 	if (var)
 	{
 		auto &type = get<SPIRType>(var->basetype);
-		if (type.basetype == SPIRType::Image && type.image.sampled == 1 && type.image.dim != DimBuffer)
+		if (type.basetype == SPIRType::Image && type.image.sampled == 1 && type.image.dim != Dim::Buffer)
 		{
 			if (options.vulkan_semantics)
 			{
@@ -8549,13 +8549,13 @@ string CompilerGLSL::to_function_args(const TextureFunctionArguments &args, bool
 			farg_str += ", ";
 
 			// Lod expression for TexelFetch in GLSL must be int, and only int.
-			if (args.base.is_fetch && imgtype.image.dim != DimBuffer && !imgtype.image.ms)
+			if (args.base.is_fetch && imgtype.image.dim != Dim::Buffer && !imgtype.image.ms)
 				farg_str += bitcast_expression(SPIRType::Int, args.lod);
 			else
 				farg_str += to_expression(args.lod);
 		}
 	}
-	else if (args.base.is_fetch && imgtype.image.dim != DimBuffer && !imgtype.image.ms)
+	else if (args.base.is_fetch && imgtype.image.dim != Dim::Buffer && !imgtype.image.ms)
 	{
 		// Lod argument is optional in OpImageFetch, but we require a LOD value, pick 0 as the default.
 		farg_str += ", 0";
@@ -10009,28 +10009,28 @@ string CompilerGLSL::builtin_to_glsl(BuiltIn builtin, StorageClass storage)
 {
 	switch (builtin)
 	{
-	case BuiltInPosition:
+	case BuiltIn::Position:
 		return "gl_Position";
-	case BuiltInPointSize:
+	case BuiltIn::PointSize:
 		return "gl_PointSize";
-	case BuiltInClipDistance:
+	case BuiltIn::ClipDistance:
 	{
 		if (options.es)
 			require_extension_internal("GL_EXT_clip_cull_distance");
 		return "gl_ClipDistance";
 	}
-	case BuiltInCullDistance:
+	case BuiltIn::CullDistance:
 	{
 		if (options.es)
 			require_extension_internal("GL_EXT_clip_cull_distance");
 		return "gl_CullDistance";
 	}
-	case BuiltInVertexId:
+	case BuiltIn::VertexId:
 		if (options.vulkan_semantics)
 			SPIRV_CROSS_THROW("Cannot implement gl_VertexID in Vulkan GLSL. This shader was created "
 			                  "with GL semantics.");
 		return "gl_VertexID";
-	case BuiltInInstanceId:
+	case BuiltIn::InstanceId:
 		if (options.vulkan_semantics)
 		{
 			auto model = get_entry_point().model;
@@ -10052,12 +10052,12 @@ string CompilerGLSL::builtin_to_glsl(BuiltIn builtin, StorageClass storage)
 			require_extension_internal("GL_ARB_draw_instanced");
 		}
 		return "gl_InstanceID";
-	case BuiltInVertexIndex:
+	case BuiltIn::VertexIndex:
 		if (options.vulkan_semantics)
 			return "gl_VertexIndex";
 		else
 			return "gl_VertexID"; // gl_VertexID already has the base offset applied.
-	case BuiltInInstanceIndex:
+	case BuiltIn::InstanceIndex:
 		if (options.vulkan_semantics)
 			return "gl_InstanceIndex";
 
@@ -10077,14 +10077,14 @@ string CompilerGLSL::builtin_to_glsl(BuiltIn builtin, StorageClass storage)
 		}
 		else
 			return "gl_InstanceID";
-	case BuiltInPrimitiveId:
+	case BuiltIn::PrimitiveId:
 		if (storage == StorageClass::Input && get_entry_point().model == ExecutionModelGeometry)
 			return "gl_PrimitiveIDIn";
 		else
 			return "gl_PrimitiveID";
-	case BuiltInInvocationId:
+	case BuiltIn::InvocationId:
 		return "gl_InvocationID";
-	case BuiltInLayer:
+	case BuiltIn::Layer:
 	{
 		auto model = get_execution_model();
 		if (model == ExecutionModel::Vertex || model == ExecutionModelTessellationEvaluation)
@@ -10096,40 +10096,40 @@ string CompilerGLSL::builtin_to_glsl(BuiltIn builtin, StorageClass storage)
 		}
 		return "gl_Layer";
 	}
-	case BuiltInViewportIndex:
+	case BuiltIn::ViewportIndex:
 		return "gl_ViewportIndex";
-	case BuiltInTessLevelOuter:
+	case BuiltIn::TessLevelOuter:
 		return "gl_TessLevelOuter";
-	case BuiltInTessLevelInner:
+	case BuiltIn::TessLevelInner:
 		return "gl_TessLevelInner";
-	case BuiltInTessCoord:
+	case BuiltIn::TessCoord:
 		return "gl_TessCoord";
-	case BuiltInPatchVertices:
+	case BuiltIn::PatchVertices:
 		return "gl_PatchVerticesIn";
-	case BuiltInFragCoord:
+	case BuiltIn::FragCoord:
 		return "gl_FragCoord";
-	case BuiltInPointCoord:
+	case BuiltIn::PointCoord:
 		return "gl_PointCoord";
-	case BuiltInFrontFacing:
+	case BuiltIn::FrontFacing:
 		return "gl_FrontFacing";
-	case BuiltInFragDepth:
+	case BuiltIn::FragDepth:
 		return "gl_FragDepth";
-	case BuiltInNumWorkgroups:
+	case BuiltIn::NumWorkgroups:
 		return "gl_NumWorkGroups";
-	case BuiltInWorkgroupSize:
+	case BuiltIn::WorkgroupSize:
 		return "gl_WorkGroupSize";
-	case BuiltInWorkgroupId:
+	case BuiltIn::WorkgroupId:
 		return "gl_WorkGroupID";
-	case BuiltInLocalInvocationId:
+	case BuiltIn::LocalInvocationId:
 		return "gl_LocalInvocationID";
-	case BuiltInGlobalInvocationId:
+	case BuiltIn::GlobalInvocationId:
 		return "gl_GlobalInvocationID";
-	case BuiltInLocalInvocationIndex:
+	case BuiltIn::LocalInvocationIndex:
 		return "gl_LocalInvocationIndex";
-	case BuiltInHelperInvocation:
+	case BuiltIn::HelperInvocation:
 		return "gl_HelperInvocation";
 
-	case BuiltInBaseVertex:
+	case BuiltIn::BaseVertex:
 		if (options.es)
 			SPIRV_CROSS_THROW("BaseVertex not supported in ES profile.");
 
@@ -10146,7 +10146,7 @@ string CompilerGLSL::builtin_to_glsl(BuiltIn builtin, StorageClass storage)
 		require_extension_internal("GL_ARB_shader_draw_parameters");
 		return "SPIRV_Cross_BaseVertex";
 
-	case BuiltInBaseInstance:
+	case BuiltIn::BaseInstance:
 		if (options.es)
 			SPIRV_CROSS_THROW("BaseInstance not supported in ES profile.");
 
@@ -10163,7 +10163,7 @@ string CompilerGLSL::builtin_to_glsl(BuiltIn builtin, StorageClass storage)
 		require_extension_internal("GL_ARB_shader_draw_parameters");
 		return "SPIRV_Cross_BaseInstance";
 
-	case BuiltInDrawIndex:
+	case BuiltIn::DrawIndex:
 		if (options.es)
 			SPIRV_CROSS_THROW("DrawIndex not supported in ES profile.");
 
@@ -10180,7 +10180,7 @@ string CompilerGLSL::builtin_to_glsl(BuiltIn builtin, StorageClass storage)
 		require_extension_internal("GL_ARB_shader_draw_parameters");
 		return "gl_DrawIDARB";
 
-	case BuiltInSampleId:
+	case BuiltIn::SampleId:
 		if (is_legacy())
 			SPIRV_CROSS_THROW("Sample variables not supported in legacy GLSL.");
 		else if (options.es && options.version < 320)
@@ -10189,7 +10189,7 @@ string CompilerGLSL::builtin_to_glsl(BuiltIn builtin, StorageClass storage)
 			require_extension_internal("GL_ARB_sample_shading");
 		return "gl_SampleID";
 
-	case BuiltInSampleMask:
+	case BuiltIn::SampleMask:
 		if (is_legacy())
 			SPIRV_CROSS_THROW("Sample variables not supported in legacy GLSL.");
 		else if (options.es && options.version < 320)
@@ -10202,7 +10202,7 @@ string CompilerGLSL::builtin_to_glsl(BuiltIn builtin, StorageClass storage)
 		else
 			return "gl_SampleMask";
 
-	case BuiltInSamplePosition:
+	case BuiltIn::SamplePosition:
 		if (is_legacy())
 			SPIRV_CROSS_THROW("Sample variables not supported in legacy GLSL.");
 		else if (options.es && options.version < 320)
@@ -10211,79 +10211,79 @@ string CompilerGLSL::builtin_to_glsl(BuiltIn builtin, StorageClass storage)
 			require_extension_internal("GL_ARB_sample_shading");
 		return "gl_SamplePosition";
 
-	case BuiltInViewIndex:
+	case BuiltIn::ViewIndex:
 		if (options.vulkan_semantics)
 			return "gl_ViewIndex";
 		else
 			return "gl_ViewID_OVR";
 
-	case BuiltInNumSubgroups:
+	case BuiltIn::NumSubgroups:
 		request_subgroup_feature(ShaderSubgroupSupportHelper::NumSubgroups);
 		return "gl_NumSubgroups";
 
-	case BuiltInSubgroupId:
+	case BuiltIn::SubgroupId:
 		request_subgroup_feature(ShaderSubgroupSupportHelper::SubgroupID);
 		return "gl_SubgroupID";
 
-	case BuiltInSubgroupSize:
+	case BuiltIn::SubgroupSize:
 		request_subgroup_feature(ShaderSubgroupSupportHelper::SubgroupSize);
 		return "gl_SubgroupSize";
 
-	case BuiltInSubgroupLocalInvocationId:
+	case BuiltIn::SubgroupLocalInvocationId:
 		request_subgroup_feature(ShaderSubgroupSupportHelper::SubgroupInvocationID);
 		return "gl_SubgroupInvocationID";
 
-	case BuiltInSubgroupEqMask:
+	case BuiltIn::SubgroupEqMask:
 		request_subgroup_feature(ShaderSubgroupSupportHelper::SubgroupMask);
 		return "gl_SubgroupEqMask";
 
-	case BuiltInSubgroupGeMask:
+	case BuiltIn::SubgroupGeMask:
 		request_subgroup_feature(ShaderSubgroupSupportHelper::SubgroupMask);
 		return "gl_SubgroupGeMask";
 
-	case BuiltInSubgroupGtMask:
+	case BuiltIn::SubgroupGtMask:
 		request_subgroup_feature(ShaderSubgroupSupportHelper::SubgroupMask);
 		return "gl_SubgroupGtMask";
 
-	case BuiltInSubgroupLeMask:
+	case BuiltIn::SubgroupLeMask:
 		request_subgroup_feature(ShaderSubgroupSupportHelper::SubgroupMask);
 		return "gl_SubgroupLeMask";
 
-	case BuiltInSubgroupLtMask:
+	case BuiltIn::SubgroupLtMask:
 		request_subgroup_feature(ShaderSubgroupSupportHelper::SubgroupMask);
 		return "gl_SubgroupLtMask";
 
-	case BuiltInLaunchIdKHR:
+	case BuiltIn::LaunchIdKHR:
 		return ray_tracing_is_khr ? "gl_LaunchIDEXT" : "gl_LaunchIDNV";
-	case BuiltInLaunchSizeKHR:
+	case BuiltIn::LaunchSizeKHR:
 		return ray_tracing_is_khr ? "gl_LaunchSizeEXT" : "gl_LaunchSizeNV";
-	case BuiltInWorldRayOriginKHR:
+	case BuiltIn::WorldRayOriginKHR:
 		return ray_tracing_is_khr ? "gl_WorldRayOriginEXT" : "gl_WorldRayOriginNV";
-	case BuiltInWorldRayDirectionKHR:
+	case BuiltIn::WorldRayDirectionKHR:
 		return ray_tracing_is_khr ? "gl_WorldRayDirectionEXT" : "gl_WorldRayDirectionNV";
-	case BuiltInObjectRayOriginKHR:
+	case BuiltIn::ObjectRayOriginKHR:
 		return ray_tracing_is_khr ? "gl_ObjectRayOriginEXT" : "gl_ObjectRayOriginNV";
-	case BuiltInObjectRayDirectionKHR:
+	case BuiltIn::ObjectRayDirectionKHR:
 		return ray_tracing_is_khr ? "gl_ObjectRayDirectionEXT" : "gl_ObjectRayDirectionNV";
-	case BuiltInRayTminKHR:
+	case BuiltIn::RayTminKHR:
 		return ray_tracing_is_khr ? "gl_RayTminEXT" : "gl_RayTminNV";
-	case BuiltInRayTmaxKHR:
+	case BuiltIn::RayTmaxKHR:
 		return ray_tracing_is_khr ? "gl_RayTmaxEXT" : "gl_RayTmaxNV";
-	case BuiltInInstanceCustomIndexKHR:
+	case BuiltIn::InstanceCustomIndexKHR:
 		return ray_tracing_is_khr ? "gl_InstanceCustomIndexEXT" : "gl_InstanceCustomIndexNV";
-	case BuiltInObjectToWorldKHR:
+	case BuiltIn::ObjectToWorldKHR:
 		return ray_tracing_is_khr ? "gl_ObjectToWorldEXT" : "gl_ObjectToWorldNV";
-	case BuiltInWorldToObjectKHR:
+	case BuiltIn::WorldToObjectKHR:
 		return ray_tracing_is_khr ? "gl_WorldToObjectEXT" : "gl_WorldToObjectNV";
-	case BuiltInHitTNV:
+	case BuiltIn::HitTNV:
 		// gl_HitTEXT is an alias of RayTMax in KHR.
 		return "gl_HitTNV";
-	case BuiltInHitKindKHR:
+	case BuiltIn::HitKindKHR:
 		return ray_tracing_is_khr ? "gl_HitKindEXT" : "gl_HitKindNV";
-	case BuiltInIncomingRayFlagsKHR:
+	case BuiltIn::IncomingRayFlagsKHR:
 		return ray_tracing_is_khr ? "gl_IncomingRayFlagsEXT" : "gl_IncomingRayFlagsNV";
 
-	case BuiltInBaryCoordKHR:
+	case BuiltIn::BaryCoordKHR:
 	{
 		if (options.es && options.version < 320)
 			SPIRV_CROSS_THROW("gl_BaryCoordEXT requires ESSL 320.");
@@ -10302,7 +10302,7 @@ string CompilerGLSL::builtin_to_glsl(BuiltIn builtin, StorageClass storage)
 		}
 	}
 
-	case BuiltInBaryCoordNoPerspNV:
+	case BuiltIn::BaryCoordNoPerspNV:
 	{
 		if (options.es && options.version < 320)
 			SPIRV_CROSS_THROW("gl_BaryCoordNoPerspEXT requires ESSL 320.");
@@ -10321,7 +10321,7 @@ string CompilerGLSL::builtin_to_glsl(BuiltIn builtin, StorageClass storage)
 		}
 	}
 
-	case BuiltInFragStencilRefEXT:
+	case BuiltIn::FragStencilRefEXT:
 	{
 		if (!options.es)
 		{
@@ -10332,7 +10332,7 @@ string CompilerGLSL::builtin_to_glsl(BuiltIn builtin, StorageClass storage)
 			SPIRV_CROSS_THROW("Stencil export not supported in GLES.");
 	}
 
-	case BuiltInPrimitiveShadingRateKHR:
+	case BuiltIn::PrimitiveShadingRateKHR:
 	{
 		if (!options.vulkan_semantics)
 			SPIRV_CROSS_THROW("Can only use PrimitiveShadingRateKHR in Vulkan GLSL.");
@@ -10340,7 +10340,7 @@ string CompilerGLSL::builtin_to_glsl(BuiltIn builtin, StorageClass storage)
 		return "gl_PrimitiveShadingRateEXT";
 	}
 
-	case BuiltInShadingRateKHR:
+	case BuiltIn::ShadingRateKHR:
 	{
 		if (!options.vulkan_semantics)
 			SPIRV_CROSS_THROW("Can only use ShadingRateKHR in Vulkan GLSL.");
@@ -10348,29 +10348,29 @@ string CompilerGLSL::builtin_to_glsl(BuiltIn builtin, StorageClass storage)
 		return "gl_ShadingRateEXT";
 	}
 
-	case BuiltInDeviceIndex:
+	case BuiltIn::DeviceIndex:
 		if (!options.vulkan_semantics)
 			SPIRV_CROSS_THROW("Need Vulkan semantics for device group support.");
 		require_extension_internal("GL_EXT_device_group");
 		return "gl_DeviceIndex";
 
-	case BuiltInFullyCoveredEXT:
+	case BuiltIn::FullyCoveredEXT:
 		if (!options.es)
 			require_extension_internal("GL_NV_conservative_raster_underestimation");
 		else
 			SPIRV_CROSS_THROW("Need desktop GL to use GL_NV_conservative_raster_underestimation.");
 		return "gl_FragFullyCoveredNV";
 
-	case BuiltInPrimitiveTriangleIndicesEXT:
+	case BuiltIn::PrimitiveTriangleIndicesEXT:
 		return "gl_PrimitiveTriangleIndicesEXT";
-	case BuiltInPrimitiveLineIndicesEXT:
+	case BuiltIn::PrimitiveLineIndicesEXT:
 		return "gl_PrimitiveLineIndicesEXT";
-	case BuiltInPrimitivePointIndicesEXT:
+	case BuiltIn::PrimitivePointIndicesEXT:
 		return "gl_PrimitivePointIndicesEXT";
-	case BuiltInCullPrimitiveEXT:
+	case BuiltIn::CullPrimitiveEXT:
 		return "gl_CullPrimitiveEXT";
 
-	case BuiltInClusterIDNV:
+	case BuiltIn::ClusterIDNV:
 	{
 		if (!options.vulkan_semantics)
 			SPIRV_CROSS_THROW("Can only use ClusterIDNV in Vulkan GLSL.");
@@ -10654,16 +10654,16 @@ string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indice
 
 				switch (builtin)
 				{
-				case BuiltInCullDistance:
-				case BuiltInClipDistance:
+				case BuiltIn::CullDistance:
+				case BuiltIn::ClipDistance:
 					if (type->array.size() == 1) // Red herring. Only consider block IO for two-dimensional arrays here.
 					{
 						append_index(index, is_literal);
 						break;
 					}
 					// fallthrough
-				case BuiltInPosition:
-				case BuiltInPointSize:
+				case BuiltIn::Position:
+				case BuiltIn::PointSize:
 					if (mesh_shader)
 						expr = join("gl_MeshVerticesEXT[", to_expression(index, register_expression_read), "].", expr);
 					else if (var->storage == StorageClass::Input)
@@ -10674,11 +10674,11 @@ string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indice
 						append_index(index, is_literal);
 					break;
 
-				case BuiltInPrimitiveId:
-				case BuiltInLayer:
-				case BuiltInViewportIndex:
-				case BuiltInCullPrimitiveEXT:
-				case BuiltInPrimitiveShadingRateKHR:
+				case BuiltIn::PrimitiveId:
+				case BuiltIn::Layer:
+				case BuiltIn::ViewportIndex:
+				case BuiltIn::CullPrimitiveEXT:
+				case BuiltIn::PrimitiveShadingRateKHR:
 					if (mesh_shader)
 						expr = join("gl_MeshPrimitivesEXT[", to_expression(index, register_expression_read), "].", expr);
 					else
@@ -11714,7 +11714,7 @@ string CompilerGLSL::variable_decl_function_local(SPIRVariable &var)
 	// Some backends will inject custom variables locally in a function
 	// with a storage qualifier which is not function-local.
 	auto old_storage = var.storage;
-	var.storage = StorageClassFunction;
+	var.storage = StorageClass::Function;
 	auto expr = variable_decl(var);
 	var.storage = old_storage;
 	return expr;
@@ -11740,8 +11740,8 @@ void CompilerGLSL::flush_variable_declaration(uint32_t id)
 	{
 		string initializer;
 		if (options.force_zero_initialized_variables &&
-		    (var->storage == StorageClassFunction || var->storage == StorageClassGeneric ||
-		     var->storage == StorageClassPrivate) &&
+		    (var->storage == StorageClass::Function || var->storage == StorageClassGeneric ||
+		     var->storage == StorageClass::Private) &&
 		    !var->initializer && type_can_zero_initialize(get_variable_data_type(*var)))
 		{
 			initializer = join(" = ", to_zero_initialized_expression(get_variable_data_type_id(*var)));
@@ -12591,7 +12591,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			// it is an array, and our backend does not support arrays as value types.
 			// Emit the temporary, and copy it explicitly.
 			e = &emit_uninitialized_temporary_expression(result_type, id);
-			emit_array_copy(nullptr, id, ptr, StorageClassFunction, get_expression_effective_storage_class(ptr));
+			emit_array_copy(nullptr, id, ptr, StorageClass::Function, get_expression_effective_storage_class(ptr));
 		}
 		else
 			e = &emit_op(result_type, id, expr, forward, !usage_tracking);
@@ -14537,9 +14537,9 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		if (var)
 		{
 			auto &flags = get_decoration_bitset(var->self);
-			if (flags.get(DecorationNonReadable))
+			if (flags.get(Decoration::NonReadable))
 			{
-				unset_decoration(var->self, DecorationNonReadable);
+				unset_decoration(var->self, Decoration::NonReadable);
 				force_recompile();
 			}
 		}
@@ -16355,7 +16355,7 @@ string CompilerGLSL::to_qualifiers_glsl(uint32_t id)
 			res += "readonly ";
 
 		bool formatted_load = type.image.format == ImageFormatUnknown;
-		if (flags.get(DecorationNonReadable))
+		if (flags.get(Decoration::NonReadable))
 		{
 			res += "writeonly ";
 			formatted_load = false;
@@ -16373,7 +16373,7 @@ string CompilerGLSL::to_qualifiers_glsl(uint32_t id)
 	{
 		if (flags.get(DecorationNonWritable))
 			res += "readonly ";
-		if (flags.get(DecorationNonReadable))
+		if (flags.get(Decoration::NonReadable))
 			res += "writeonly ";
 	}
 
@@ -16389,8 +16389,8 @@ string CompilerGLSL::argument_decl(const SPIRFunction::Parameter &arg)
 	const char *direction = "";
 
 	if (is_pointer(type) &&
-	    (type.storage == StorageClassFunction ||
-	     type.storage == StorageClassPrivate ||
+	    (type.storage == StorageClass::Function ||
+	     type.storage == StorageClass::Private ||
 	     type.storage == StorageClass::Output))
 	{
 		// If we're passing around block types to function, we really mean reference in a pointer sense,
@@ -16420,7 +16420,7 @@ string CompilerGLSL::to_zero_initialized_expression(uint32_t type_id)
 {
 #ifndef NDEBUG
 	auto &type = get<SPIRType>(type_id);
-	assert(type.storage == StorageClassPrivate || type.storage == StorageClassFunction ||
+	assert(type.storage == StorageClass::Private || type.storage == StorageClass::Function ||
 	       type.storage == StorageClassGeneric);
 #endif
 	uint32_t id = ir.increase_bound_by(1);
@@ -16654,7 +16654,7 @@ string CompilerGLSL::image_type_glsl(const SPIRType &type, uint32_t id, bool /*m
 	if (type.basetype == SPIRType::Image && type.image.dim != DimSubpassData)
 	{
 		// Sampler buffers are always declared as samplerBuffer even though they might be separate images in the SPIR-V.
-		if (type.image.dim == DimBuffer && type.image.sampled == 1)
+		if (type.image.dim == Dim::Buffer && type.image.sampled == 1)
 			res += "sampler";
 		else
 			res += type.image.sampled == 2 ? "image" : "texture";
@@ -16664,20 +16664,20 @@ string CompilerGLSL::image_type_glsl(const SPIRType &type, uint32_t id, bool /*m
 
 	switch (type.image.dim)
 	{
-	case Dim1D:
+	case Dim::Dim1D:
 		// ES doesn't support 1D. Fake it with 2D.
 		res += options.es ? "2D" : "1D";
 		break;
-	case Dim2D:
+	case Dim::Dim2D:
 		res += "2D";
 		break;
-	case Dim3D:
+	case Dim::Dim3D:
 		res += "3D";
 		break;
-	case DimCube:
+	case Dim::Cube:
 		res += "Cube";
 		break;
-	case DimRect:
+	case Dim::Rect:
 		if (options.es)
 			SPIRV_CROSS_THROW("Rectangle textures are not supported on OpenGL ES.");
 
@@ -16687,7 +16687,7 @@ string CompilerGLSL::image_type_glsl(const SPIRType &type, uint32_t id, bool /*m
 		res += "2DRect";
 		break;
 
-	case DimBuffer:
+	case Dim::Buffer:
 		if (options.es && options.version < 320)
 			require_extension_internal("GL_EXT_texture_buffer");
 		else if (!options.es && options.version < 140)
@@ -16695,7 +16695,7 @@ string CompilerGLSL::image_type_glsl(const SPIRType &type, uint32_t id, bool /*m
 		res += "Buffer";
 		break;
 
-	case DimSubpassData:
+	case Dim::SubpassData:
 		res += "2D";
 		break;
 	default:
@@ -17148,10 +17148,10 @@ bool CompilerGLSL::check_atomic_image(uint32_t id)
 		auto *var = maybe_get_backing_variable(id);
 		if (var)
 		{
-			if (has_decoration(var->self, DecorationNonWritable) || has_decoration(var->self, DecorationNonReadable))
+			if (has_decoration(var->self, DecorationNonWritable) || has_decoration(var->self, Decoration::NonReadable))
 			{
 				unset_decoration(var->self, DecorationNonWritable);
-				unset_decoration(var->self, DecorationNonReadable);
+				unset_decoration(var->self, Decoration::NonReadable);
 				force_recompile();
 			}
 		}
@@ -17310,7 +17310,7 @@ void CompilerGLSL::emit_function(SPIRFunction &func, const Bitset &return_flags)
 			auto ops = stream(i);
 			auto op = static_cast<Op>(i.op);
 
-			if (op == OpFunctionCall)
+			if (op == Op::OpFunctionCall)
 			{
 				// Recursively emit functions which are called.
 				uint32_t id = ops[2];
@@ -17361,7 +17361,7 @@ void CompilerGLSL::emit_function(SPIRFunction &func, const Bitset &return_flags)
 
 			var.deferred_declaration = false;
 		}
-		else if (var.storage == StorageClassPrivate)
+		else if (var.storage == StorageClass::Private)
 		{
 			// These variables will not have had their CFG usage analyzed, so move it to the entry block.
 			// Comes from MSL which can push global variables as local variables in main function.
@@ -17384,7 +17384,7 @@ void CompilerGLSL::emit_function(SPIRFunction &func, const Bitset &return_flags)
 				var.deferred_declaration = true;
 			}
 		}
-		else if (var.storage == StorageClassFunction && var.remapped_variable && var.static_expression)
+		else if (var.storage == StorageClass::Function && var.remapped_variable && var.static_expression)
 		{
 			// No need to declare this variable, it has a static expression.
 			var.deferred_declaration = false;
@@ -18685,7 +18685,7 @@ BlockID CompilerGLSL::emit_block_chain_inner(SPIRBlock &block)
 				// The backend is responsible for setting this up, and redirection the return values as appropriate.
 				if (ir.ids[block.return_value].get_type() != TypeUndef)
 				{
-					emit_array_copy("spvReturnValue", 0, block.return_value, StorageClassFunction,
+					emit_array_copy("spvReturnValue", 0, block.return_value, StorageClass::Function,
 					                get_expression_effective_storage_class(block.return_value));
 				}
 
@@ -19112,37 +19112,37 @@ void CompilerGLSL::cast_from_variable_load(uint32_t source_id, std::string &expr
 	// TODO: Fill in for more builtins.
 	switch (builtin)
 	{
-	case BuiltInLayer:
-	case BuiltInPrimitiveId:
-	case BuiltInViewportIndex:
-	case BuiltInInstanceId:
-	case BuiltInInstanceIndex:
-	case BuiltInVertexId:
-	case BuiltInVertexIndex:
-	case BuiltInSampleId:
-	case BuiltInBaseVertex:
-	case BuiltInBaseInstance:
-	case BuiltInDrawIndex:
-	case BuiltInFragStencilRefEXT:
-	case BuiltInInstanceCustomIndexNV:
-	case BuiltInSampleMask:
-	case BuiltInPrimitiveShadingRateKHR:
-	case BuiltInShadingRateKHR:
+	case BuiltIn::Layer:
+	case BuiltIn::PrimitiveId:
+	case BuiltIn::ViewportIndex:
+	case BuiltIn::InstanceId:
+	case BuiltIn::InstanceIndex:
+	case BuiltIn::VertexId:
+	case BuiltIn::VertexIndex:
+	case BuiltIn::SampleId:
+	case BuiltIn::BaseVertex:
+	case BuiltIn::BaseInstance:
+	case BuiltIn::DrawIndex:
+	case BuiltIn::FragStencilRefEXT:
+	case BuiltIn::InstanceCustomIndexNV:
+	case BuiltIn::SampleMask:
+	case BuiltIn::PrimitiveShadingRateKHR:
+	case BuiltIn::ShadingRateKHR:
 		expected_type = SPIRType::Int;
 		break;
 
-	case BuiltInGlobalInvocationId:
-	case BuiltInLocalInvocationId:
-	case BuiltInWorkgroupId:
-	case BuiltInLocalInvocationIndex:
-	case BuiltInWorkgroupSize:
-	case BuiltInNumWorkgroups:
-	case BuiltInIncomingRayFlagsNV:
-	case BuiltInLaunchIdNV:
-	case BuiltInLaunchSizeNV:
-	case BuiltInPrimitiveTriangleIndicesEXT:
-	case BuiltInPrimitiveLineIndicesEXT:
-	case BuiltInPrimitivePointIndicesEXT:
+	case BuiltIn::GlobalInvocationId:
+	case BuiltIn::LocalInvocationId:
+	case BuiltIn::WorkgroupId:
+	case BuiltIn::LocalInvocationIndex:
+	case BuiltIn::WorkgroupSize:
+	case BuiltIn::NumWorkgroups:
+	case BuiltIn::IncomingRayFlagsNV:
+	case BuiltIn::LaunchIdNV:
+	case BuiltIn::LaunchSizeNV:
+	case BuiltIn::PrimitiveTriangleIndicesEXT:
+	case BuiltIn::PrimitiveLineIndicesEXT:
+	case BuiltIn::PrimitivePointIndicesEXT:
 		expected_type = SPIRType::UInt;
 		break;
 
@@ -19159,13 +19159,13 @@ SPIRType::BaseType CompilerGLSL::get_builtin_basetype(BuiltIn builtin, SPIRType:
 	// TODO: Fill in for more builtins.
 	switch (builtin)
 	{
-	case BuiltInLayer:
-	case BuiltInPrimitiveId:
-	case BuiltInViewportIndex:
-	case BuiltInFragStencilRefEXT:
-	case BuiltInSampleMask:
-	case BuiltInPrimitiveShadingRateKHR:
-	case BuiltInShadingRateKHR:
+	case BuiltIn::Layer:
+	case BuiltIn::PrimitiveId:
+	case BuiltIn::ViewportIndex:
+	case BuiltIn::FragStencilRefEXT:
+	case BuiltIn::SampleMask:
+	case BuiltIn::PrimitiveShadingRateKHR:
+	case BuiltIn::ShadingRateKHR:
 		return SPIRType::Int;
 
 	default:
