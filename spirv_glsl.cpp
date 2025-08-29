@@ -1293,7 +1293,7 @@ void CompilerGLSL::emit_struct(SPIRType &type)
 	// when we are storing struct and array types in an SSBO for example.
 	// If the type master is packed however, we can no longer assume that the struct declaration will be redundant.
 	if (type.type_alias != TypeID(0) &&
-	    !has_extended_decoration(type.type_alias, SPIRVCrossDecoration::BufferBlockRepacked))
+	    !has_extended_decoration(type.type_alias, SPIRVCrossDecorationBufferBlockRepacked))
 		return;
 
 	add_resource_name(type.self);
@@ -1438,7 +1438,7 @@ string CompilerGLSL::layout_for_member(const SPIRType &type, uint32_t index)
 	if (flags.get(static_cast<uint32_t>(Decoration::RowMajor)))
 		attr.push_back("row_major");
 	// We don't emit any global layouts, so column_major is default.
-	//if (flags & (1ull << DecorationColMajor))
+	//if (flags & (1ull << Decoration::ColMajor))
 	//    attr.push_back("column_major");
 
 	if (dec.decoration_flags.get(static_cast<uint32_t>(Decoration::Location)) && can_use_io_location(type.storage, true))
@@ -1680,7 +1680,7 @@ uint32_t CompilerGLSL::type_to_packed_alignment(const SPIRType &type, const Bits
 
 		// Rule 5. Column-major matrices are stored as arrays of
 		// vectors.
-		if (flags.get(static_cast<uint32_t>(DecorationColMajor)) && type.columns > 1)
+		if (flags.get(static_cast<uint32_t>(Decoration::ColMajor)) && type.columns > 1)
 		{
 			if (packing_is_vec4_padded(packing))
 				return 4 * base_alignment;
@@ -2012,7 +2012,7 @@ string CompilerGLSL::layout_for_variable(const SPIRVariable &var)
 	auto &flags = get_decoration_bitset(var.self);
 	auto &typeflags = get_decoration_bitset(type.self);
 
-	if (flags.get(Decoration::PassthroughNV))
+	if (flags.get(static_cast<uint32_t>(Decoration::PassthroughNV)))
 		attr.push_back("passthrough");
 
 	if (options.vulkan_semantics && var.storage == StorageClass::PushConstant)
@@ -2022,17 +2022,17 @@ string CompilerGLSL::layout_for_variable(const SPIRVariable &var)
 
 	if (flags.get(static_cast<uint32_t>(Decoration::RowMajor)))
 		attr.push_back("row_major");
-	if (flags.get(static_cast<uint32_t>(DecorationColMajor)))
+	if (flags.get(static_cast<uint32_t>(Decoration::ColMajor)))
 		attr.push_back("column_major");
 
 	if (options.vulkan_semantics)
 	{
-		if (flags.get(DecorationInputAttachmentIndex))
+		if (flags.get(static_cast<uint32_t>(Decoration::InputAttachmentIndex)))
 			attr.push_back(join("input_attachment_index = ", get_decoration(var.self, DecorationInputAttachmentIndex)));
 	}
 
 	bool is_block = has_decoration(type.self, Decoration::Block);
-	if (flags.get(Decoration::Location) && can_use_io_location(var.storage, is_block))
+	if (flags.get(static_cast<uint32_t>(Decoration::Location)) && can_use_io_location(var.storage, is_block))
 	{
 		Bitset combined_decoration;
 		for (uint32_t i = 0; i < ir.meta[type.self].members.size(); i++)
@@ -2040,7 +2040,7 @@ string CompilerGLSL::layout_for_variable(const SPIRVariable &var)
 
 		// If our members have location decorations, we don't need to
 		// emit location decorations at the top as well (looks weird).
-		if (!combined_decoration.get(Decoration::Location))
+		if (!combined_decoration.get(static_cast<uint32_t>(Decoration::Location)))
 			attr.push_back(join("location = ", get_decoration(var.self, Decoration::Location)));
 	}
 
@@ -2063,14 +2063,14 @@ string CompilerGLSL::layout_for_variable(const SPIRVariable &var)
 		bool have_geom_stream = false;
 		uint32_t xfb_stride = 0, xfb_buffer = 0, geom_stream = 0;
 
-		if (flags.get(DecorationXfbBuffer) && flags.get(DecorationXfbStride))
+		if (flags.get(static_cast<uint32_t>(Decoration::XfbBuffer)) && flags.get(DecorationXfbStride))
 		{
 			have_xfb_buffer_stride = true;
 			xfb_buffer = get_decoration(var.self, DecorationXfbBuffer);
 			xfb_stride = get_decoration(var.self, DecorationXfbStride);
 		}
 
-		if (flags.get(DecorationStream))
+		if (flags.get(static_cast<uint32_t>(Decoration::Stream)))
 		{
 			have_geom_stream = true;
 			geom_stream = get_decoration(var.self, DecorationStream);
@@ -2132,7 +2132,7 @@ string CompilerGLSL::layout_for_variable(const SPIRVariable &var)
 	}
 	else if (var.storage == StorageClass::Output)
 	{
-		if (flags.get(DecorationXfbBuffer) && flags.get(DecorationXfbStride) && flags.get(DecorationOffset))
+		if (flags.get(static_cast<uint32_t>(Decoration::XfbBuffer)) && flags.get(DecorationXfbStride) && flags.get(DecorationOffset))
 		{
 			// XFB for standalone variables, we can emit all decorations.
 			attr.push_back(join("xfb_buffer = ", get_decoration(var.self, DecorationXfbBuffer)));
@@ -2141,7 +2141,7 @@ string CompilerGLSL::layout_for_variable(const SPIRVariable &var)
 			uses_enhanced_layouts = true;
 		}
 
-		if (flags.get(DecorationStream))
+		if (flags.get(static_cast<uint32_t>(Decoration::Stream)))
 		{
 			if (get_execution_model() != ExecutionModelGeometry)
 				SPIRV_CROSS_THROW("Geometry streams can only be used in geometry shaders.");
@@ -3118,7 +3118,7 @@ void CompilerGLSL::replace_fragment_output(SPIRVariable &var)
 {
 	auto &m = ir.meta[var.self].decoration;
 	uint32_t location = 0;
-	if (m.decoration_flags.get(Decoration::Location))
+	if (m.decoration_flags.get(static_cast<uint32_t>(Decoration::Location)))
 		location = m.location;
 
 	// If our variable is arrayed, we must not emit the array part of this as the SPIR-V will
@@ -3392,7 +3392,7 @@ void CompilerGLSL::emit_declared_builtin_block(StorageClass storage, ExecutionMo
 						builtin_xfb_offsets[m.builtin_type] = m.offset;
 					}
 
-					if (is_block_builtin(m.builtin_type) && m.decoration_flags.get(DecorationStream))
+					if (is_block_builtin(m.builtin_type) && m.decoration_flags.get(static_cast<uint32_t>(Decoration::Stream)))
 					{
 						uint32_t stream = m.stream;
 						if (have_geom_stream && geom_stream != stream)
@@ -3442,7 +3442,7 @@ void CompilerGLSL::emit_declared_builtin_block(StorageClass storage, ExecutionMo
 					clip_distance_size = to_array_size_literal(type, 0);
 
 				if (is_block_builtin(m.builtin_type) && m.decoration_flags.get(DecorationXfbStride) &&
-				    m.decoration_flags.get(DecorationXfbBuffer) && m.decoration_flags.get(DecorationOffset))
+				    m.decoration_flags.get(static_cast<uint32_t>(Decoration::XfbBuffer)) && m.decoration_flags.get(DecorationOffset))
 				{
 					have_any_xfb_offset = true;
 					builtin_xfb_offsets[m.builtin_type] = m.offset;
@@ -3457,7 +3457,7 @@ void CompilerGLSL::emit_declared_builtin_block(StorageClass storage, ExecutionMo
 					xfb_stride = stride;
 				}
 
-				if (is_block_builtin(m.builtin_type) && m.decoration_flags.get(DecorationStream))
+				if (is_block_builtin(m.builtin_type) && m.decoration_flags.get(static_cast<uint32_t>(Decoration::Stream)))
 				{
 					uint32_t stream = get_decoration(var.self, DecorationStream);
 					if (have_geom_stream && geom_stream != stream)
