@@ -86,7 +86,7 @@ bool Compiler::variable_storage_is_aliased(const SPIRVariable &v)
 
 	bool is_restrict;
 	if (ssbo)
-		is_restrict = ir.get_buffer_block_flags(v).get(static_cast<uint32_t>(DecorationRestrict));
+		is_restrict = ir.get_buffer_block_flags(v).get(static_cast<uint32_t>(Decoration::Restrict));
 	else
 		is_restrict = has_decoration(v.self, Decoration::Restrict);
 
@@ -214,7 +214,7 @@ bool Compiler::block_is_pure(const SPIRBlock &block)
 		case Op::OpCooperativeMatrixStoreKHR:
 		{
 			auto &type = expression_type(ops[0]);
-			if (type.storage != StorageClassFunction)
+			if (type.storage != StorageClass::Function)
 				return false;
 			break;
 		}
@@ -295,7 +295,7 @@ bool Compiler::block_is_pure(const SPIRBlock &block)
 				case GLSLstd450Frexp:
 				{
 					auto &type = expression_type(ops[5]);
-					if (type.storage != StorageClassFunction)
+					if (type.storage != StorageClass::Function)
 						return false;
 					break;
 				}
@@ -962,7 +962,7 @@ unordered_set<VariableID> Compiler::get_active_interface_variables() const
 	traverse_all_reachable_opcodes(get<SPIRFunction>(ir.default_entry_point), handler);
 
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t, const SPIRVariable &var) {
-		if (var.storage != StorageClassOutput)
+		if (var.storage != StorageClass::Output)
 			return;
 		if (!interface_variable_exists_in_entry_point(var.self))
 			return;
@@ -971,7 +971,7 @@ unordered_set<VariableID> Compiler::get_active_interface_variables() const
 		// so we should force-enable these outputs,
 		// since compilation will fail if a subsequent stage attempts to read from the variable in question.
 		// Also, make sure we preserve output variables which are only initialized, but never accessed by any code.
-		if (var.initializer != ID(0) || get_execution_model() != ExecutionModelFragment)
+		if (var.initializer != ID(0) || get_execution_model() != ExecutionModel::Fragment)
 			variables.insert(var.self);
 	});
 
@@ -1023,13 +1023,13 @@ ShaderResources Compiler::get_shader_resources(const unordered_set<VariableID> *
 
 		if (is_builtin)
 		{
-			if (var.storage != StorageClassInput && var.storage != StorageClassOutput)
+			if (var.storage != StorageClass::Input && var.storage != StorageClass::Output)
 				return;
 
 			auto &list = var.storage == StorageClass::Input ? res.builtin_inputs : res.builtin_outputs;
 			BuiltInResource resource;
 
-			if (has_decoration(type.self, DecorationBlock))
+			if (has_decoration(type.self, Decoration::Block))
 			{
 				resource.resource = { var.self, var.basetype, type.self,
 				                      get_remapped_declared_block_name(var.self, false) };
@@ -1037,7 +1037,7 @@ ShaderResources Compiler::get_shader_resources(const unordered_set<VariableID> *
 				for (uint32_t i = 0; i < uint32_t(type.member_types.size()); i++)
 				{
 					resource.value_type_id = type.member_types[i];
-					resource.builtin = BuiltIn(get_member_decoration(type.self, i, DecorationBuiltIn));
+					resource.builtin = BuiltIn(get_member_decoration(type.self, i, Decoration::BuiltIn));
 					list.push_back(resource);
 				}
 			}
@@ -1045,8 +1045,8 @@ ShaderResources Compiler::get_shader_resources(const unordered_set<VariableID> *
 			{
 				bool strip_array =
 						!has_decoration(var.self, DecorationPatch) && (
-								get_execution_model() == ExecutionModelTessellationControl ||
-								(get_execution_model() == ExecutionModelTessellationEvaluation &&
+								get_execution_model() == ExecutionModel::TessellationControl ||
+								(get_execution_model() == ExecutionModel::TessellationEvaluation &&
 								 var.storage == StorageClass::Input));
 
 				resource.resource = { var.self, var.basetype, type.self, get_name(var.self) };
@@ -1067,7 +1067,7 @@ ShaderResources Compiler::get_shader_resources(const unordered_set<VariableID> *
 		// Input
 		if (var.storage == StorageClass::Input)
 		{
-			if (has_decoration(type.self, DecorationBlock))
+			if (has_decoration(type.self, Decoration::Block))
 			{
 				res.stage_inputs.push_back(
 						{ var.self, var.basetype, type.self,
@@ -1077,14 +1077,14 @@ ShaderResources Compiler::get_shader_resources(const unordered_set<VariableID> *
 				res.stage_inputs.push_back({ var.self, var.basetype, type.self, get_name(var.self) });
 		}
 		// Subpass inputs
-		else if (var.storage == StorageClass::UniformConstant && type.image.dim == DimSubpassData)
+		else if (var.storage == StorageClass::UniformConstant && type.image.dim == Dim::SubpassData)
 		{
 			res.subpass_inputs.push_back({ var.self, var.basetype, type.self, get_name(var.self) });
 		}
 		// Outputs
 		else if (var.storage == StorageClass::Output)
 		{
-			if (has_decoration(type.self, DecorationBlock))
+			if (has_decoration(type.self, Decoration::Block))
 			{
 				res.stage_outputs.push_back(
 						{ var.self, var.basetype, type.self, get_remapped_declared_block_name(var.self, false) });
@@ -1093,13 +1093,13 @@ ShaderResources Compiler::get_shader_resources(const unordered_set<VariableID> *
 				res.stage_outputs.push_back({ var.self, var.basetype, type.self, get_name(var.self) });
 		}
 		// UBOs
-		else if (type.storage == StorageClass::Uniform && has_decoration(type.self, DecorationBlock))
+		else if (type.storage == StorageClass::Uniform && has_decoration(type.self, Decoration::Block))
 		{
 			res.uniform_buffers.push_back(
 			    { var.self, var.basetype, type.self, get_remapped_declared_block_name(var.self, false) });
 		}
 		// Old way to declare SSBOs.
-		else if (type.storage == StorageClass::Uniform && has_decoration(type.self, DecorationBufferBlock))
+		else if (type.storage == StorageClass::Uniform && has_decoration(type.self, Decoration::BufferBlock))
 		{
 			res.storage_buffers.push_back(
 			    { var.self, var.basetype, type.self, get_remapped_declared_block_name(var.self, ssbo_instance_name) });
