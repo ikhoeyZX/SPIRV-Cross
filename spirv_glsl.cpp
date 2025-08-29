@@ -278,17 +278,17 @@ static std::pair<spv::Op, SPIRType::BaseType> pls_format_to_basetype(PlsFormat f
 	case PlsRGB10A2:
 	case PlsRGBA8:
 	case PlsRG16:
-		return std::make_pair(spv::OpTypeFloat, SPIRType::Float);
+		return std::make_pair(spv::Op::OpTypeFloat, SPIRType::Float);
 
 	case PlsRGBA8I:
 	case PlsRG16I:
-		return std::make_pair(spv::OpTypeInt, SPIRType::Int);
+		return std::make_pair(spv::Op::OpTypeInt, SPIRType::Int);
 
 	case PlsRGB10A2UI:
 	case PlsRGBA8UI:
 	case PlsRG16UI:
 	case PlsR32UI:
-		return std::make_pair(spv::OpTypeInt, SPIRType::UInt);
+		return std::make_pair(spv::Op::OpTypeInt, SPIRType::UInt);
 	}
 }
 
@@ -398,13 +398,13 @@ void CompilerGLSL::remap_pls_variables()
 		auto &var = get<SPIRVariable>(input.id);
 
 		bool input_is_target = false;
-		if (var.storage == StorageClassUniformConstant)
+		if (var.storage == StorageClass::UniformConstant)
 		{
 			auto &type = get<SPIRType>(var.basetype);
-			input_is_target = type.image.dim == DimSubpassData;
+			input_is_target = type.image.dim == Dim::SubpassData;
 		}
 
-		if (var.storage != StorageClassInput && !input_is_target)
+		if (var.storage != StorageClass::Input && !input_is_target)
 			SPIRV_CROSS_THROW("Can only use in and target variables for PLS inputs.");
 		var.remapped_variable = true;
 	}
@@ -412,7 +412,7 @@ void CompilerGLSL::remap_pls_variables()
 	for (auto &output : pls_outputs)
 	{
 		auto &var = get<SPIRVariable>(output.id);
-		if (var.storage != StorageClassOutput)
+		if (var.storage != StorageClass::Output)
 			SPIRV_CROSS_THROW("Can only use out variables for PLS outputs.");
 		var.remapped_variable = true;
 	}
@@ -479,20 +479,20 @@ void CompilerGLSL::find_static_extensions()
 	auto &execution = get_entry_point();
 	switch (execution.model)
 	{
-	case ExecutionModelGLCompute:
+	case ExecutionModel::GLCompute:
 		if (!options.es && options.version < 430)
 			require_extension_internal("GL_ARB_compute_shader");
 		if (options.es && options.version < 310)
 			SPIRV_CROSS_THROW("At least ESSL 3.10 required for compute shaders.");
 		break;
 
-	case ExecutionModelGeometry:
+	case ExecutionModel::Geometry:
 		if (options.es && options.version < 320)
 			require_extension_internal("GL_EXT_geometry_shader");
 		if (!options.es && options.version < 150)
 			require_extension_internal("GL_ARB_geometry_shader4");
 
-		if (execution.flags.get(ExecutionModeInvocations) && execution.invocations != 1)
+		if (execution.flags.get(ExecutionMode::Invocations) && execution.invocations != 1)
 		{
 			// Instanced GS is part of 400 core or this extension.
 			if (!options.es && options.version < 400)
@@ -500,20 +500,20 @@ void CompilerGLSL::find_static_extensions()
 		}
 		break;
 
-	case ExecutionModelTessellationEvaluation:
-	case ExecutionModelTessellationControl:
+	case ExecutionModel::TessellationEvaluation:
+	case ExecutionModel::TessellationControl:
 		if (options.es && options.version < 320)
 			require_extension_internal("GL_EXT_tessellation_shader");
 		if (!options.es && options.version < 400)
 			require_extension_internal("GL_ARB_tessellation_shader");
 		break;
 
-	case ExecutionModelRayGenerationKHR:
-	case ExecutionModelIntersectionKHR:
-	case ExecutionModelAnyHitKHR:
-	case ExecutionModelClosestHitKHR:
-	case ExecutionModelMissKHR:
-	case ExecutionModelCallableKHR:
+	case ExecutionModel::RayGenerationKHR:
+	case ExecutionModel::IntersectionKHR:
+	case ExecutionModel::AnyHitKHR:
+	case ExecutionModel::ClosestHitKHR:
+	case ExecutionModel::MissKHR:
+	case ExecutionModel::CallableKHR:
 		// NV enums are aliases.
 		if (options.es || options.version < 460)
 			SPIRV_CROSS_THROW("Ray tracing shaders require non-es profile with version 460 or above.");
@@ -523,8 +523,8 @@ void CompilerGLSL::find_static_extensions()
 		// Need to figure out if we should target KHR or NV extension based on capabilities.
 		for (auto &cap : ir.declared_capabilities)
 		{
-			if (cap == CapabilityRayTracingKHR || cap == CapabilityRayQueryKHR ||
-			    cap == CapabilityRayTraversalPrimitiveCullingKHR)
+			if (cap == Capability::RayTracingKHR || cap == Capability::RayQueryKHR ||
+			    cap == Capability::RayTraversalPrimitiveCullingKHR)
 			{
 				ray_tracing_is_khr = true;
 				break;
@@ -542,8 +542,8 @@ void CompilerGLSL::find_static_extensions()
 			require_extension_internal("GL_NV_ray_tracing");
 		break;
 
-	case ExecutionModelMeshEXT:
-	case ExecutionModelTaskEXT:
+	case ExecutionModel::MeshEXT:
+	case ExecutionModel::TaskEXT:
 		if (options.es || options.version < 450)
 			SPIRV_CROSS_THROW("Mesh shaders require GLSL 450 or above.");
 		if (!options.vulkan_semantics)
@@ -557,14 +557,14 @@ void CompilerGLSL::find_static_extensions()
 
 	if (!pls_inputs.empty() || !pls_outputs.empty())
 	{
-		if (execution.model != ExecutionModelFragment)
+		if (execution.model != ExecutionModel::Fragment)
 			SPIRV_CROSS_THROW("Can only use GL_EXT_shader_pixel_local_storage in fragment shaders.");
 		require_extension_internal("GL_EXT_shader_pixel_local_storage");
 	}
 
 	if (!inout_color_attachments.empty())
 	{
-		if (execution.model != ExecutionModelFragment)
+		if (execution.model != ExecutionModel::Fragment)
 			SPIRV_CROSS_THROW("Can only use GL_EXT_shader_framebuffer_fetch in fragment shaders.");
 		if (options.vulkan_semantics)
 			SPIRV_CROSS_THROW("Cannot use EXT_shader_framebuffer_fetch in Vulkan GLSL.");
@@ -589,7 +589,7 @@ void CompilerGLSL::find_static_extensions()
 	if (options.separate_shader_objects && !options.es && options.version < 410)
 		require_extension_internal("GL_ARB_separate_shader_objects");
 
-	if (ir.addressing_model == AddressingModelPhysicalStorageBuffer64)
+	if (ir.addressing_model == AddressingModel::PhysicalStorageBuffer64)
 	{
 		if (!options.vulkan_semantics)
 			SPIRV_CROSS_THROW("GL_EXT_buffer_reference is only supported in Vulkan GLSL.");
@@ -599,7 +599,7 @@ void CompilerGLSL::find_static_extensions()
 			SPIRV_CROSS_THROW("GL_EXT_buffer_reference requires GLSL 450.");
 		require_extension_internal("GL_EXT_buffer_reference2");
 	}
-	else if (ir.addressing_model != AddressingModelLogical)
+	else if (ir.addressing_model != AddressingModel::Logical)
 	{
 		SPIRV_CROSS_THROW("Only Logical and PhysicalStorageBuffer64 addressing models are supported.");
 	}
@@ -610,31 +610,31 @@ void CompilerGLSL::find_static_extensions()
 	{
 		switch (cap)
 		{
-		case CapabilityShaderNonUniformEXT:
+		case Capability::ShaderNonUniformEXT:
 			if (!options.vulkan_semantics)
 				require_extension_internal("GL_NV_gpu_shader5");
 			else
 				require_extension_internal("GL_EXT_nonuniform_qualifier");
 			break;
-		case CapabilityRuntimeDescriptorArrayEXT:
+		case Capability::RuntimeDescriptorArrayEXT:
 			if (!options.vulkan_semantics)
 				SPIRV_CROSS_THROW("GL_EXT_nonuniform_qualifier is only supported in Vulkan GLSL.");
 			require_extension_internal("GL_EXT_nonuniform_qualifier");
 			break;
 
-		case CapabilityGeometryShaderPassthroughNV:
-			if (execution.model == ExecutionModelGeometry)
+		case Capability::GeometryShaderPassthroughNV:
+			if (execution.model == ExecutionModel::Geometry)
 			{
 				require_extension_internal("GL_NV_geometry_shader_passthrough");
 				execution.geometry_passthrough = true;
 			}
 			break;
 
-		case CapabilityVariablePointers:
+		case Capability::VariablePointers:
 		case CapabilityVariablePointersStorageBuffer:
 			SPIRV_CROSS_THROW("VariablePointers capability is not supported in GLSL.");
 
-		case CapabilityMultiView:
+		case Capability::MultiView:
 			if (options.vulkan_semantics)
 				require_extension_internal("GL_EXT_multiview");
 			else
@@ -642,33 +642,33 @@ void CompilerGLSL::find_static_extensions()
 				require_extension_internal("GL_OVR_multiview2");
 				if (options.ovr_multiview_view_count == 0)
 					SPIRV_CROSS_THROW("ovr_multiview_view_count must be non-zero when using GL_OVR_multiview2.");
-				if (get_execution_model() != ExecutionModelVertex)
+				if (get_execution_model() != ExecutionModel::Vertex)
 					SPIRV_CROSS_THROW("OVR_multiview2 can only be used with Vertex shaders.");
 			}
 			break;
 
-		case CapabilityRayQueryKHR:
+		case Capability::RayQueryKHR:
 			if (options.es || options.version < 460 || !options.vulkan_semantics)
 				SPIRV_CROSS_THROW("RayQuery requires Vulkan GLSL 460.");
 			require_extension_internal("GL_EXT_ray_query");
 			ray_tracing_is_khr = true;
 			break;
 
-		case CapabilityRayTraversalPrimitiveCullingKHR:
+		case Capability::RayTraversalPrimitiveCullingKHR:
 			if (options.es || options.version < 460 || !options.vulkan_semantics)
 				SPIRV_CROSS_THROW("RayQuery requires Vulkan GLSL 460.");
 			require_extension_internal("GL_EXT_ray_flags_primitive_culling");
 			ray_tracing_is_khr = true;
 			break;
 
-		case CapabilityRayTracingClusterAccelerationStructureNV:
+		case Capability::RayTracingClusterAccelerationStructureNV:
 			if (options.es || options.version < 460 || !options.vulkan_semantics)
 				SPIRV_CROSS_THROW("Cluster AS requires Vulkan GLSL 460.");
 			require_extension_internal("GL_NV_cluster_acceleration_structure");
 			ray_tracing_is_khr = true;
 			break;
 
-		case CapabilityTensorsARM:
+		case Capability::TensorsARM:
 			if (options.es || options.version < 460 || !options.vulkan_semantics)
 				SPIRV_CROSS_THROW("Tensor requires Vulkan GLSL 460.");
 			require_extension_internal("GL_ARM_tensors");
@@ -683,13 +683,13 @@ void CompilerGLSL::find_static_extensions()
 	{
 		if (options.vulkan_semantics)
 			SPIRV_CROSS_THROW("OVR_multiview2 cannot be used with Vulkan semantics.");
-		if (get_execution_model() != ExecutionModelVertex)
+		if (get_execution_model() != ExecutionModel::Vertex)
 			SPIRV_CROSS_THROW("OVR_multiview2 can only be used with Vertex shaders.");
 		require_extension_internal("GL_OVR_multiview2");
 	}
 
-	if (execution.flags.get(ExecutionModeQuadDerivativesKHR) ||
-	    (execution.flags.get(ExecutionModeRequireFullQuadsKHR) && get_execution_model() == ExecutionModelFragment))
+	if (execution.flags.get(ExecutionMode::QuadDerivativesKHR) ||
+	    (execution.flags.get(ExecutionMode::RequireFullQuadsKHR) && get_execution_model() == ExecutionModelFragment))
 	{
 		require_extension_internal("GL_EXT_shader_quad_control");
 	}
@@ -717,12 +717,12 @@ void CompilerGLSL::ray_tracing_khr_fixup_locations()
 	uint32_t location = 0;
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t, SPIRVariable &var) {
 		// Incoming payload storage can also be used for tracing.
-		if (var.storage != StorageClassRayPayloadKHR && var.storage != StorageClassCallableDataKHR &&
-		    var.storage != StorageClassIncomingRayPayloadKHR && var.storage != StorageClassIncomingCallableDataKHR)
+		if (var.storage != StorageClass::RayPayloadKHR && var.storage != StorageClass::CallableDataKHR &&
+		    var.storage != StorageClass::IncomingRayPayloadKHR && var.storage != StorageClass::IncomingCallableDataKHR)
 			return;
 		if (is_hidden_variable(var))
 			return;
-		set_decoration(var.self, DecorationLocation, location++);
+		set_decoration(var.self, Decoration::Location, location++);
 	});
 }
 
