@@ -4605,7 +4605,7 @@ bool Compiler::ActiveBuiltinHandler::handle(spv::Op opcode, const uint32_t *args
 		{
 			// Pointers
 			// PtrAccessChain functions more like a pointer offset. Type remains the same.
-			if (opcode == static_cast<uint32_t>(Op::OpPtrAccessChain) && i == 0)
+			if (opcode == Op::OpPtrAccessChain && i == 0)
 				continue;
 
 			// Arrays
@@ -5511,7 +5511,7 @@ bool Compiler::InterlockedResourceAccessHandler::handle(Op opcode, const uint32_
 
 		case StorageClass::Uniform:
 			// Must have BufferBlock; we only care about SSBOs.
-			if (!compiler.has_decoration(compiler.get<SPIRType>(var->basetype).self, DecorationBufferBlock))
+			if (!compiler.has_decoration(compiler.get<SPIRType>(var->basetype).self, Decoration::BufferBlock))
 				break;
 			// fallthrough
 		case StorageClass::StorageBuffer:
