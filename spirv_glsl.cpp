@@ -96,17 +96,17 @@ static bool is_unsigned_opcode(Op op)
 	// Don't have to be exhaustive, only relevant for legacy target checking ...
 	switch (op)
 	{
-	case Op::Op::OpShiftRightLogical:
-	case Op::Op::OpUGreaterThan:
-	case Op::Op::OpUGreaterThanEqual:
-	case Op::Op::OpULessThan:
-	case Op::Op::OpULessThanEqual:
-	case Op::Op::OpUConvert:
-	case Op::Op::OpUDiv:
-	case Op::Op::OpUMod:
-	case Op::Op::OpUMulExtended:
-	case Op::Op::OpConvertUToF:
-	case Op::Op::OpConvertFToU:
+	case Op::OpShiftRightLogical:
+	case Op::OpUGreaterThan:
+	case Op::OpUGreaterThanEqual:
+	case Op::OpULessThan:
+	case Op::OpULessThanEqual:
+	case Op::OpUConvert:
+	case Op::OpUDiv:
+	case Op::OpUMod:
+	case Op::OpUMulExtended:
+	case Op::OpConvertUToF:
+	case Op::OpConvertFToU:
 		return true;
 
 	default:
@@ -1192,15 +1192,15 @@ void CompilerGLSL::emit_header()
 		{
 			switch (options.fragment.default_float_precision)
 			{
-			case Op::Options::Lowp:
+			case Options::Lowp:
 				statement("precision lowp float;");
 				break;
 
-			case Op::Options::Mediump:
+			case Options::Mediump:
 				statement("precision mediump float;");
 				break;
 
-			case Op::Options::Highp:
+			case Options::Highp:
 				statement("precision highp float;");
 				break;
 
@@ -1210,15 +1210,15 @@ void CompilerGLSL::emit_header()
 
 			switch (options.fragment.default_int_precision)
 			{
-			case Op::Options::Lowp:
+			case Options::Lowp:
 				statement("precision lowp int;");
 				break;
 
-			case Op::Options::Mediump:
+			case Options::Mediump:
 				statement("precision mediump int;");
 				break;
 
-			case Op::Options::Highp:
+			case Options::Highp:
 				statement("precision highp int;");
 				break;
 
@@ -2063,11 +2063,11 @@ string CompilerGLSL::layout_for_variable(const SPIRVariable &var)
 		bool have_geom_stream = false;
 		uint32_t xfb_stride = 0, xfb_buffer = 0, geom_stream = 0;
 
-		if (flags.get(static_cast<uint32_t>(Decoration::XfbBuffer)) && flags.get(DecorationXfbStride))
+		if (flags.get(static_cast<uint32_t>(Decoration::XfbBuffer)) && flags.get(Decoration::XfbStride))
 		{
 			have_xfb_buffer_stride = true;
 			xfb_buffer = get_decoration(var.self, Decoration::XfbBuffer);
-			xfb_stride = get_decoration(var.self, DecorationXfbStride);
+			xfb_stride = get_decoration(var.self, Decoration::XfbStride);
 		}
 
 		if (flags.get(static_cast<uint32_t>(Decoration::Stream)))
@@ -2102,9 +2102,9 @@ string CompilerGLSL::layout_for_variable(const SPIRVariable &var)
 				xfb_buffer = buffer_index;
 			}
 
-			if (has_member_decoration(type.self, i, DecorationXfbStride))
+			if (has_member_decoration(type.self, i, Decoration::XfbStride))
 			{
-				uint32_t stride = get_member_decoration(type.self, i, DecorationXfbStride);
+				uint32_t stride = get_member_decoration(type.self, i, Decoration::XfbStride);
 				if (have_xfb_buffer_stride && stride != xfb_stride)
 					SPIRV_CROSS_THROW("IO block member XfbStride mismatch.");
 				have_xfb_buffer_stride = true;
@@ -2132,11 +2132,11 @@ string CompilerGLSL::layout_for_variable(const SPIRVariable &var)
 	}
 	else if (var.storage == StorageClass::Output)
 	{
-		if (flags.get(static_cast<uint32_t>(Decoration::XfbBuffer)) && flags.get(DecorationXfbStride) && flags.get(Decoration::Offset))
+		if (flags.get(static_cast<uint32_t>(Decoration::XfbBuffer)) && flags.get(Decoration::XfbStride) && flags.get(Decoration::Offset))
 		{
 			// XFB for standalone variables, we can emit all decorations.
 			attr.push_back(join("xfb_buffer = ", get_decoration(var.self, Decoration::XfbBuffer)));
-			attr.push_back(join("xfb_stride = ", get_decoration(var.self, DecorationXfbStride)));
+			attr.push_back(join("xfb_stride = ", get_decoration(var.self, Decoration::XfbStride)));
 			attr.push_back(join("xfb_offset = ", get_decoration(var.self, Decoration::Offset)));
 			uses_enhanced_layouts = true;
 		}
@@ -2175,15 +2175,15 @@ string CompilerGLSL::layout_for_variable(const SPIRVariable &var)
 			SPIRV_CROSS_THROW("GL_ARB_enhanced_layouts is not supported in ESSL.");
 	}
 
-	if (flags.get(DecorationIndex))
-		attr.push_back(join("index = ", get_decoration(var.self, DecorationIndex)));
+	if (flags.get(Decoration::Index))
+		attr.push_back(join("index = ", get_decoration(var.self, Decoration::Index)));
 
 	// Do not emit set = decoration in regular GLSL output, but
 	// we need to preserve it in Vulkan GLSL mode.
 	if (var.storage != StorageClass::PushConstant && var.storage != StorageClass::ShaderRecordBufferKHR)
 	{
 		if (flags.get(static_cast<uint32_t>(Decoration::DescriptorSet)) && options.vulkan_semantics)
-			attr.push_back(join("set = ", get_decoration(var.self, DecorationDescriptorSet)));
+			attr.push_back(join("set = ", get_decoration(var.self, Decoration::DescriptorSet)));
 	}
 
 	bool push_constant_block = options.vulkan_semantics && var.storage == StorageClass::PushConstant;
@@ -2342,10 +2342,10 @@ void CompilerGLSL::emit_push_constant_block_glsl(const SPIRVariable &var)
 	auto &type = get<SPIRType>(var.basetype);
 
 	unset_decoration(var.self, Decoration::Binding);
-	unset_decoration(var.self, DecorationDescriptorSet);
+	unset_decoration(var.self, Decoration::DescriptorSet);
 
 #if 0
-    if (flags & ((1ull << Decoration::Binding) | (1ull << DecorationDescriptorSet)))
+    if (flags & ((1ull << Decoration::Binding) | (1ull << Decoration::DescriptorSet)))
         SPIRV_CROSS_THROW("Push constant blocks cannot be compiled to GLSL with Binding or Set syntax. "
                             "Remap to location with reflection API first or disable these decorations.");
 #endif
@@ -2458,7 +2458,7 @@ void CompilerGLSL::emit_buffer_reference_block(uint32_t type_id, bool forward_de
 
 			auto flags = ir.get_buffer_block_type_flags(type);
 			string decorations;
-			if (flags.get(Decoration::Restrict))
+			if (flags.get(static_cast<uint32_t>(Decoration::Restrict)))
 				decorations += " restrict";
 			if (flags.get(Decoration::Coherent))
 				decorations += " coherent";
@@ -2528,7 +2528,7 @@ void CompilerGLSL::emit_buffer_block_native(const SPIRVariable &var)
 	Bitset flags = ir.get_buffer_block_flags(var);
 	bool ssbo = var.storage == StorageClass::StorageBuffer || var.storage == StorageClass::ShaderRecordBufferKHR ||
 	            ir.meta[type.self].decoration.decoration_flags.get(Decoration::BufferBlock);
-	bool is_restrict = ssbo && flags.get(Decoration::Restrict);
+	bool is_restrict = ssbo && flags.get(static_cast<uint32_t>(Decoration::Restrict));
 	bool is_writeonly = ssbo && flags.get(Decoration::NonReadable);
 	bool is_readonly = ssbo && flags.get(Decoration::NonWritable);
 	bool is_coherent = ssbo && flags.get(Decoration::Coherent);
@@ -3405,10 +3405,10 @@ void CompilerGLSL::emit_declared_builtin_block(StorageClass storage, ExecutionMo
 			}
 
 			if (storage == StorageClass::Output && has_decoration(var.self, Decoration::XfbBuffer) &&
-			    has_decoration(var.self, DecorationXfbStride))
+			    has_decoration(var.self, Decoration::XfbStride))
 			{
 				uint32_t buffer_index = get_decoration(var.self, Decoration::XfbBuffer);
-				uint32_t stride = get_decoration(var.self, DecorationXfbStride);
+				uint32_t stride = get_decoration(var.self, Decoration::XfbStride);
 				if (have_xfb_buffer_stride && buffer_index != xfb_buffer)
 					SPIRV_CROSS_THROW("IO block member XfbBuffer mismatch.");
 				if (have_xfb_buffer_stride && stride != xfb_stride)
@@ -3441,7 +3441,7 @@ void CompilerGLSL::emit_declared_builtin_block(StorageClass storage, ExecutionMo
 				else if (m.builtin_type == BuiltIn::ClipDistance)
 					clip_distance_size = to_array_size_literal(type, 0);
 
-				if (is_block_builtin(m.builtin_type) && m.decoration_flags.get(DecorationXfbStride) &&
+				if (is_block_builtin(m.builtin_type) && m.decoration_flags.get(Decoration::XfbStride) &&
 				    m.decoration_flags.get(static_cast<uint32_t>(Decoration::XfbBuffer)) && m.decoration_flags.get(Decoration::Offset))
 				{
 					have_any_xfb_offset = true;
@@ -16348,7 +16348,7 @@ string CompilerGLSL::to_qualifiers_glsl(uint32_t id)
 	{
 		if (flags.get(Decoration::Coherent))
 			res += "coherent ";
-		if (flags.get(Decoration::Restrict))
+		if (flags.get(static_cast<uint32_t>(Decoration::Restrict)))
 			res += "restrict ";
 
 		if (flags.get(Decoration::NonWritable))
