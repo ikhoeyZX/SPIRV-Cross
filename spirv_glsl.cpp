@@ -2157,7 +2157,7 @@ string CompilerGLSL::layout_for_variable(const SPIRVariable &var)
 	if (flags.get(static_cast<uint32_t>(Decoration::Component)) && can_use_io_location(var.storage, is_block))
 	{
 		uses_enhanced_layouts = true;
-		attr.push_back(join("component = ", get_decoration(var.self, DecorationComponent)));
+		attr.push_back(join("component = ", get_decoration(var.self, Decoration::Component)));
 	}
 
 	if (uses_enhanced_layouts)
@@ -2390,10 +2390,10 @@ void CompilerGLSL::emit_buffer_block_legacy(const SPIRVariable &var)
 	// Otherwise, we will end up emitting layout() qualifiers on naked structs which is not allowed.
 	auto &block_flags = ir.meta[type.self].decoration.decoration_flags;
 	bool block_flag = block_flags.get(static_cast<uint32_t>(Decoration::Block));
-	block_flags.clear(Decoration::Block);
+	block_flags.clear(static_cast<uint32_t>(Decoration::Block));
 	emit_struct(type);
 	if (block_flag)
-		block_flags.set(Decoration::Block);
+		block_flags.set(static_cast<uint32_t>(Decoration::Block));
 	emit_uniform(var);
 	statement("");
 }
@@ -2746,7 +2746,7 @@ void CompilerGLSL::emit_flattened_io_block(const SPIRVariable &var, const char *
 
 	auto old_flags = ir.meta[type.self].decoration.decoration_flags;
 	// Emit the members as if they are part of a block to get all qualifiers.
-	ir.meta[type.self].decoration.decoration_flags.set(Decoration::Block);
+	ir.meta[type.self].decoration.decoration_flags.set(static_cast<uint32_t>(Decoration::Block));
 
 	type.member_name_cache.clear();
 
@@ -19948,7 +19948,7 @@ bool CompilerGLSL::is_stage_output_variable_masked(const SPIRVariable &var) cons
 
 		return is_stage_output_location_masked(
 				get_decoration(var.self, Decoration::Location),
-				get_decoration(var.self, DecorationComponent));
+				get_decoration(var.self, Decoration::Component));
 	}
 }
 
@@ -19967,7 +19967,7 @@ bool CompilerGLSL::is_stage_output_block_member_masked(const SPIRVariable &var, 
 	else
 	{
 		uint32_t location = get_declared_member_location(var, index, strip_array);
-		uint32_t component = get_member_decoration(type.self, index, DecorationComponent);
+		uint32_t component = get_member_decoration(type.self, index, Decoration::Component);
 		return is_stage_output_location_masked(location, component);
 	}
 }
