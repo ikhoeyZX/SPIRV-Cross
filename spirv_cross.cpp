@@ -2352,34 +2352,34 @@ void Compiler::set_execution_mode(ExecutionMode mode, uint32_t arg0, uint32_t ar
 {
 	auto &execution = get_entry_point();
 
-	execution.flags.set(mode);
+	execution.flags.set(static_cast<uint32_t>(mode));
 	switch (mode)
 	{
-	case ExecutionModeLocalSize:
+	case ExecutionMode::LocalSize:
 		execution.workgroup_size.x = arg0;
 		execution.workgroup_size.y = arg1;
 		execution.workgroup_size.z = arg2;
 		break;
 
-	case ExecutionModeLocalSizeId:
+	case ExecutionMode::LocalSizeId:
 		execution.workgroup_size.id_x = arg0;
 		execution.workgroup_size.id_y = arg1;
 		execution.workgroup_size.id_z = arg2;
 		break;
 
-	case ExecutionModeInvocations:
+	case ExecutionMode::Invocations:
 		execution.invocations = arg0;
 		break;
 
-	case ExecutionModeOutputVertices:
+	case ExecutionMode::OutputVertices:
 		execution.output_vertices = arg0;
 		break;
 
-	case ExecutionModeOutputPrimitivesEXT:
+	case ExecutionMode::OutputPrimitivesEXT:
 		execution.output_primitives = arg0;
 		break;
 
-	case ExecutionModeFPFastMathDefault:
+	case ExecutionMode::FPFastMathDefault:
 		execution.fp_fast_math_defaults[arg0] = arg1;
 		break;
 
@@ -2391,7 +2391,7 @@ void Compiler::set_execution_mode(ExecutionMode mode, uint32_t arg0, uint32_t ar
 void Compiler::unset_execution_mode(ExecutionMode mode)
 {
 	auto &execution = get_entry_point();
-	execution.flags.clear(mode);
+	execution.flags.clear(static_cast<uint32_t>(mode));
 }
 
 uint32_t Compiler::get_work_group_size_specialization_constants(SpecializationConstant &x, SpecializationConstant &y,
@@ -2410,42 +2410,42 @@ uint32_t Compiler::get_work_group_size_specialization_constants(SpecializationCo
 		if (c.m.c[0].id[0] != ID(0))
 		{
 			x.id = c.m.c[0].id[0];
-			x.constant_id = get_decoration(c.m.c[0].id[0], DecorationSpecId);
+			x.constant_id = get_decoration(c.m.c[0].id[0], Decoration::SpecId);
 		}
 
 		if (c.m.c[0].id[1] != ID(0))
 		{
 			y.id = c.m.c[0].id[1];
-			y.constant_id = get_decoration(c.m.c[0].id[1], DecorationSpecId);
+			y.constant_id = get_decoration(c.m.c[0].id[1], Decoration::SpecId);
 		}
 
 		if (c.m.c[0].id[2] != ID(0))
 		{
 			z.id = c.m.c[0].id[2];
-			z.constant_id = get_decoration(c.m.c[0].id[2], DecorationSpecId);
+			z.constant_id = get_decoration(c.m.c[0].id[2], Decoration::SpecId);
 		}
 	}
-	else if (execution.flags.get(ExecutionModeLocalSizeId))
+	else if (execution.flags.get(ExecutionMode::LocalSizeId))
 	{
 		auto &cx = get<SPIRConstant>(execution.workgroup_size.id_x);
 		if (cx.specialization)
 		{
 			x.id = execution.workgroup_size.id_x;
-			x.constant_id = get_decoration(execution.workgroup_size.id_x, DecorationSpecId);
+			x.constant_id = get_decoration(execution.workgroup_size.id_x, Decoration::SpecId);
 		}
 
 		auto &cy = get<SPIRConstant>(execution.workgroup_size.id_y);
 		if (cy.specialization)
 		{
 			y.id = execution.workgroup_size.id_y;
-			y.constant_id = get_decoration(execution.workgroup_size.id_y, DecorationSpecId);
+			y.constant_id = get_decoration(execution.workgroup_size.id_y, Decoration::SpecId);
 		}
 
 		auto &cz = get<SPIRConstant>(execution.workgroup_size.id_z);
 		if (cz.specialization)
 		{
 			z.id = execution.workgroup_size.id_z;
-			z.constant_id = get_decoration(execution.workgroup_size.id_z, DecorationSpecId);
+			z.constant_id = get_decoration(execution.workgroup_size.id_z, Decoration::SpecId);
 		}
 	}
 
@@ -2458,7 +2458,7 @@ uint32_t Compiler::get_execution_mode_argument(spv::ExecutionMode mode, uint32_t
 	switch (mode)
 	{
 	case ExecutionModeLocalSizeId:
-		if (execution.flags.get(ExecutionModeLocalSizeId))
+		if (execution.flags.get(ExecutionMode::LocalSizeId))
 		{
 			switch (index)
 			{
@@ -2479,17 +2479,17 @@ uint32_t Compiler::get_execution_mode_argument(spv::ExecutionMode mode, uint32_t
 		switch (index)
 		{
 		case 0:
-			if (execution.flags.get(ExecutionModeLocalSizeId) && execution.workgroup_size.id_x != 0)
+			if (execution.flags.get(ExecutionMode::LocalSizeId) && execution.workgroup_size.id_x != 0)
 				return get<SPIRConstant>(execution.workgroup_size.id_x).scalar();
 			else
 				return execution.workgroup_size.x;
 		case 1:
-			if (execution.flags.get(ExecutionModeLocalSizeId) && execution.workgroup_size.id_y != 0)
+			if (execution.flags.get(ExecutionMode::LocalSizeId) && execution.workgroup_size.id_y != 0)
 				return get<SPIRConstant>(execution.workgroup_size.id_y).scalar();
 			else
 				return execution.workgroup_size.y;
 		case 2:
-			if (execution.flags.get(ExecutionModeLocalSizeId) && execution.workgroup_size.id_z != 0)
+			if (execution.flags.get(ExecutionMode::LocalSizeId) && execution.workgroup_size.id_z != 0)
 				return get<SPIRConstant>(execution.workgroup_size.id_z).scalar();
 			else
 				return execution.workgroup_size.z;
@@ -2497,13 +2497,13 @@ uint32_t Compiler::get_execution_mode_argument(spv::ExecutionMode mode, uint32_t
 			return 0;
 		}
 
-	case ExecutionModeInvocations:
+	case ExecutionMode::Invocations:
 		return execution.invocations;
 
-	case ExecutionModeOutputVertices:
+	case ExecutionMode::OutputVertices:
 		return execution.output_vertices;
 
-	case ExecutionModeOutputPrimitivesEXT:
+	case ExecutionMode::OutputPrimitivesEXT:
 		return execution.output_primitives;
 
 	default:
@@ -2519,14 +2519,14 @@ ExecutionModel Compiler::get_execution_model() const
 
 bool Compiler::is_tessellation_shader(ExecutionModel model)
 {
-	return model == ExecutionModelTessellationControl || model == ExecutionModelTessellationEvaluation;
+	return model == ExecutionModel::TessellationControl || model == ExecutionModel::TessellationEvaluation;
 }
 
 bool Compiler::is_vertex_like_shader() const
 {
 	auto model = get_execution_model();
-	return model == ExecutionModelVertex || model == ExecutionModelGeometry ||
-	       model == ExecutionModelTessellationControl || model == ExecutionModelTessellationEvaluation;
+	return model == ExecutionModel::Vertex || model == ExecutionModel::Geometry ||
+	       model == ExecutionModel::TessellationControl || model == ExecutionModel::TessellationEvaluation;
 }
 
 bool Compiler::is_tessellation_shader() const
