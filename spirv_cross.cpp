@@ -2536,7 +2536,7 @@ bool Compiler::is_tessellation_shader() const
 
 bool Compiler::is_tessellating_triangles() const
 {
-	return get_execution_mode_bitset().get(ExecutionModeTriangles);
+	return get_execution_mode_bitset().get(static_cast<uint32_t>(ExecutionMode::Triangles));
 }
 
 void Compiler::set_remapped_variable_state(VariableID id, bool remap_enable)
@@ -2722,8 +2722,8 @@ bool Compiler::interface_variable_exists_in_entry_point(uint32_t id) const
 
 	if (ir.get_spirv_version() < 0x10400)
 	{
-		if (var.storage != StorageClassInput && var.storage != StorageClassOutput &&
-		    var.storage != StorageClassUniformConstant)
+		if (var.storage != StorageClass::Input && var.storage != StorageClass::Output &&
+		    var.storage != StorageClass::UniformConstant)
 			SPIRV_CROSS_THROW("Only Input, Output variables and Uniform constants are part of a shader linking interface.");
 
 		// This is to avoid potential problems with very old glslang versions which did
@@ -2879,19 +2879,19 @@ void Compiler::CombinedImageSamplerHandler::register_combined_image_sampler(SPIR
 		auto ptr_type_id = id + 1;
 		auto combined_id = id + 2;
 		auto &base = compiler.expression_type(image_id);
-		auto &type = compiler.set<SPIRType>(type_id, OpTypeSampledImage);
-		auto &ptr_type = compiler.set<SPIRType>(ptr_type_id, OpTypePointer);
+		auto &type = compiler.set<SPIRType>(type_id, Op::OpTypeSampledImage);
+		auto &ptr_type = compiler.set<SPIRType>(ptr_type_id, Op::OpTypePointer);
 
 		type = base;
 		type.self = type_id;
 		type.basetype = SPIRType::SampledImage;
 		type.pointer = false;
-		type.storage = StorageClassGeneric;
+		type.storage = StorageClass::Generic;
 		type.image.depth = depth;
 
 		ptr_type = type;
 		ptr_type.pointer = true;
-		ptr_type.storage = StorageClassUniformConstant;
+		ptr_type.storage = StorageClass::UniformConstant;
 		ptr_type.parent_type = type_id;
 
 		// Build new variable.
@@ -2900,12 +2900,12 @@ void Compiler::CombinedImageSamplerHandler::register_combined_image_sampler(SPIR
 		// Inherit RelaxedPrecision.
 		// If any of OpSampledImage, underlying image or sampler are marked, inherit the decoration.
 		bool relaxed_precision =
-		    compiler.has_decoration(sampler_id, DecorationRelaxedPrecision) ||
-		    compiler.has_decoration(image_id, DecorationRelaxedPrecision) ||
-		    (combined_module_id && compiler.has_decoration(combined_module_id, DecorationRelaxedPrecision));
+		    compiler.has_decoration(sampler_id, Decoration::RelaxedPrecision) ||
+		    compiler.has_decoration(image_id, Decoration::RelaxedPrecision) ||
+		    (combined_module_id && compiler.has_decoration(combined_module_id, Decoration::RelaxedPrecision));
 
 		if (relaxed_precision)
-			compiler.set_decoration(combined_id, DecorationRelaxedPrecision);
+			compiler.set_decoration(combined_id, Decoration::RelaxedPrecision);
 
 		param.id = combined_id;
 
@@ -2960,7 +2960,7 @@ bool Compiler::DummySamplerForCombinedImageHandler::handle(Op opcode, const uint
 		if (var)
 		{
 			auto &type = compiler.get<SPIRType>(var->basetype);
-			if (type.basetype == SPIRType::Image && type.image.sampled == 1 && type.image.dim != DimBuffer)
+			if (type.basetype == SPIRType::Image && type.image.sampled == 1 && type.image.dim != Dim::Buffer)
 				need_dummy_sampler = true;
 		}
 
@@ -3072,7 +3072,7 @@ bool Compiler::CombinedImageSamplerHandler::handle(Op opcode, const uint32_t *ar
 			return true;
 
 		auto &type = compiler.get<SPIRType>(var->basetype);
-		if (type.basetype == SPIRType::Image && type.image.sampled == 1 && type.image.dim != DimBuffer)
+		if (type.basetype == SPIRType::Image && type.image.sampled == 1 && type.image.dim != Dim::Buffer)
 		{
 			if (compiler.dummy_sampler_id == 0)
 				SPIRV_CROSS_THROW("texelFetch without sampler was found, but no dummy sampler has been created with "
@@ -3139,7 +3139,7 @@ bool Compiler::CombinedImageSamplerHandler::handle(Op opcode, const uint32_t *ar
 		{
 			// Have to invent the sampled image type.
 			sampled_type = compiler.ir.increase_bound_by(1);
-			auto &type = compiler.set<SPIRType>(sampled_type, OpTypeSampledImage);
+			auto &type = compiler.set<SPIRType>(sampled_type, Op::OpTypeSampledImage);
 			type = compiler.expression_type(args[2]);
 			type.self = sampled_type;
 			type.basetype = SPIRType::SampledImage;
@@ -3158,25 +3158,25 @@ bool Compiler::CombinedImageSamplerHandler::handle(Op opcode, const uint32_t *ar
 
 		// Make a new type, pointer to OpTypeSampledImage, so we can make a variable of this type.
 		// We will probably have this type lying around, but it doesn't hurt to make duplicates for internal purposes.
-		auto &type = compiler.set<SPIRType>(type_id, OpTypePointer);
+		auto &type = compiler.set<SPIRType>(type_id, Op::OpTypePointer);
 		auto &base = compiler.get<SPIRType>(sampled_type);
 		type = base;
 		type.pointer = true;
-		type.storage = StorageClassUniformConstant;
+		type.storage = StorageClass::UniformConstant;
 		type.parent_type = type_id;
 
 		// Build new variable.
-		compiler.set<SPIRVariable>(combined_id, type_id, StorageClassUniformConstant, 0);
+		compiler.set<SPIRVariable>(combined_id, type_id, StorageClass::UniformConstant, 0);
 
 		// Inherit RelaxedPrecision (and potentially other useful flags if deemed relevant).
 		// If any of OpSampledImage, underlying image or sampler are marked, inherit the decoration.
 		bool relaxed_precision =
-		    (sampler_id && compiler.has_decoration(sampler_id, DecorationRelaxedPrecision)) ||
-		    (image_id && compiler.has_decoration(image_id, DecorationRelaxedPrecision)) ||
-		    (combined_module_id && compiler.has_decoration(combined_module_id, DecorationRelaxedPrecision));
+		    (sampler_id && compiler.has_decoration(sampler_id, Decoration::RelaxedPrecision)) ||
+		    (image_id && compiler.has_decoration(image_id, Decoration::RelaxedPrecision)) ||
+		    (combined_module_id && compiler.has_decoration(combined_module_id, Decoration::RelaxedPrecision));
 
 		if (relaxed_precision)
-			compiler.set_decoration(combined_id, DecorationRelaxedPrecision);
+			compiler.set_decoration(combined_id, Decoration::RelaxedPrecision);
 
 		// Propagate the array type for the original image as well.
 		auto *var = compiler.maybe_get_backing_variable(image_id);
@@ -3204,17 +3204,17 @@ VariableID Compiler::build_dummy_sampler_for_combined_images()
 		auto ptr_type_id = offset + 1;
 		auto var_id = offset + 2;
 
-		auto &sampler = set<SPIRType>(type_id, OpTypeSampler);
+		auto &sampler = set<SPIRType>(type_id, Op::OpTypeSampler);
 		sampler.basetype = SPIRType::Sampler;
 
-		auto &ptr_sampler = set<SPIRType>(ptr_type_id, OpTypePointer);
+		auto &ptr_sampler = set<SPIRType>(ptr_type_id, Op::OpTypePointer);
 		ptr_sampler = sampler;
 		ptr_sampler.self = type_id;
-		ptr_sampler.storage = StorageClassUniformConstant;
+		ptr_sampler.storage = StorageClass::UniformConstant;
 		ptr_sampler.pointer = true;
 		ptr_sampler.parent_type = type_id;
 
-		set<SPIRVariable>(var_id, ptr_type_id, StorageClassUniformConstant, 0);
+		set<SPIRVariable>(var_id, ptr_type_id, StorageClass::UniformConstant, 0);
 		set_name(var_id, "SPIRV_Cross_DummySampler");
 		dummy_sampler_id = var_id;
 		return var_id;
@@ -3241,7 +3241,7 @@ SmallVector<SpecializationConstant> Compiler::get_specialization_constants() con
 	SmallVector<SpecializationConstant> spec_consts;
 	ir.for_each_typed_id<SPIRConstant>([&](uint32_t, const SPIRConstant &c) {
 		if (c.specialization && has_decoration(c.self, DecorationSpecId))
-			spec_consts.push_back({ c.self, get_decoration(c.self, DecorationSpecId) });
+			spec_consts.push_back({ c.self, get_decoration(c.self, Decoration::SpecId) });
 	});
 	return spec_consts;
 }
