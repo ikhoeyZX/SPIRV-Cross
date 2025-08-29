@@ -492,7 +492,7 @@ void CompilerGLSL::find_static_extensions()
 		if (!options.es && options.version < 150)
 			require_extension_internal("GL_ARB_geometry_shader4");
 
-		if (execution.flags.get(ExecutionMode::Invocations) && execution.invocations != 1)
+		if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::Invocations)) && execution.invocations != 1)
 		{
 			// Instanced GS is part of 400 core or this extension.
 			if (!options.es && options.version < 400)
@@ -688,8 +688,8 @@ void CompilerGLSL::find_static_extensions()
 		require_extension_internal("GL_OVR_multiview2");
 	}
 
-	if (execution.flags.get(ExecutionMode::QuadDerivativesKHR) ||
-	    (execution.flags.get(ExecutionMode::RequireFullQuadsKHR) && get_execution_model() == ExecutionModelFragment))
+	if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::QuadDerivativesKHR)) ||
+	    (execution.flags.get(static_cast<uint32_t>(ExecutionMode::RequireFullQuadsKHR)) && get_execution_model() == ExecutionModel::Fragment))
 	{
 		require_extension_internal("GL_EXT_shader_quad_control");
 	}
@@ -765,7 +765,7 @@ string CompilerGLSL::compile()
 
 	// Shaders might cast unrelated data to pointers of non-block types.
 	// Find all such instances and make sure we can cast the pointers to a synthesized block type.
-	if (ir.addressing_model == AddressingModelPhysicalStorageBuffer64)
+	if (ir.addressing_model == AddressingModel::PhysicalStorageBuffer64)
 		analyze_non_block_pointer_types();
 
 	uint32_t pass_count = 0;
@@ -818,7 +818,7 @@ void CompilerGLSL::build_workgroup_size(SmallVector<string> &arguments, const Sp
 {
 	auto &execution = get_entry_point();
 	bool builtin_workgroup = execution.workgroup_size.constant != 0;
-	bool use_local_size_id = !builtin_workgroup && execution.flags.get(ExecutionModeLocalSizeId);
+	bool use_local_size_id = !builtin_workgroup && execution.flags.get(ExecutionMode::LocalSizeId);
 
 	if (wg_x.id)
 	{
@@ -887,19 +887,19 @@ void CompilerGLSL::emit_header()
 			statement("#endif");
 		}
 		// Needed for: layout(early_fragment_tests) in;
-		if (execution.flags.get(ExecutionModeEarlyFragmentTests))
+		if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::EarlyFragmentTests)))
 			require_extension_internal("GL_ARB_shader_image_load_store");
 	}
 
 	// Needed for: layout(post_depth_coverage) in;
-	if (execution.flags.get(ExecutionModePostDepthCoverage))
+	if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::PostDepthCoverage)))
 		require_extension_internal("GL_ARB_post_depth_coverage");
 
 	// Needed for: layout({pixel,sample}_interlock_[un]ordered) in;
-	bool interlock_used = execution.flags.get(ExecutionModePixelInterlockOrderedEXT) ||
-	                      execution.flags.get(ExecutionModePixelInterlockUnorderedEXT) ||
-	                      execution.flags.get(ExecutionModeSampleInterlockOrderedEXT) ||
-	                      execution.flags.get(ExecutionModeSampleInterlockUnorderedEXT);
+	bool interlock_used = execution.flags.get(static_cast<uint32_t>(ExecutionMode::PixelInterlockOrderedEXT)) ||
+	                      execution.flags.get(static_cast<uint32_t>(ExecutionMode::PixelInterlockUnorderedEXT)) ||
+	                      execution.flags.get(static_cast<uint32_t>(ExecutionMode::SampleInterlockOrderedEXT)) ||
+	                      execution.flags.get(static_cast<uint32_t>(ExecutionMode::SampleInterlockUnorderedEXT));
 
 	if (interlock_used)
 	{
