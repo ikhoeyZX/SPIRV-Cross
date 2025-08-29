@@ -2425,7 +2425,7 @@ uint32_t Compiler::get_work_group_size_specialization_constants(SpecializationCo
 			z.constant_id = get_decoration(c.m.c[0].id[2], Decoration::SpecId);
 		}
 	}
-	else if (execution.flags.get(ExecutionMode::LocalSizeId))
+	else if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::LocalSizeId)))
 	{
 		auto &cx = get<SPIRConstant>(execution.workgroup_size.id_x);
 		if (cx.specialization)
@@ -2457,8 +2457,8 @@ uint32_t Compiler::get_execution_mode_argument(spv::ExecutionMode mode, uint32_t
 	auto &execution = get_entry_point();
 	switch (mode)
 	{
-	case ExecutionModeLocalSizeId:
-		if (execution.flags.get(ExecutionMode::LocalSizeId))
+	case ExecutionMode::LocalSizeId:
+		if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::LocalSizeId)))
 		{
 			switch (index)
 			{
@@ -2475,21 +2475,21 @@ uint32_t Compiler::get_execution_mode_argument(spv::ExecutionMode mode, uint32_t
 		else
 			return 0;
 
-	case ExecutionModeLocalSize:
+	case ExecutionMode::LocalSize:
 		switch (index)
 		{
 		case 0:
-			if (execution.flags.get(ExecutionMode::LocalSizeId) && execution.workgroup_size.id_x != 0)
+			if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::LocalSizeId)) && execution.workgroup_size.id_x != 0)
 				return get<SPIRConstant>(execution.workgroup_size.id_x).scalar();
 			else
 				return execution.workgroup_size.x;
 		case 1:
-			if (execution.flags.get(ExecutionMode::LocalSizeId) && execution.workgroup_size.id_y != 0)
+			if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::LocalSizeId)) && execution.workgroup_size.id_y != 0)
 				return get<SPIRConstant>(execution.workgroup_size.id_y).scalar();
 			else
 				return execution.workgroup_size.y;
 		case 2:
-			if (execution.flags.get(ExecutionMode::LocalSizeId) && execution.workgroup_size.id_z != 0)
+			if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::LocalSizeId)) && execution.workgroup_size.id_z != 0)
 				return get<SPIRConstant>(execution.workgroup_size.id_z).scalar();
 			else
 				return execution.workgroup_size.z;
