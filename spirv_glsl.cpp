@@ -4161,7 +4161,7 @@ void CompilerGLSL::emit_output_variable_initializer(const SPIRVariable &var)
 	}
 }
 
-void CompilerGLSL::emit_subgroup_arithmetic_workaround(const std::string &func, Op op, GroupOperation:: group_op)
+void CompilerGLSL::emit_subgroup_arithmetic_workaround(const std::string &func, Op op, GroupOperation group_op)
 {
 	std::string result;
 	switch (group_op)
