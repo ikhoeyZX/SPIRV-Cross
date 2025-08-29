@@ -2154,7 +2154,7 @@ string CompilerGLSL::layout_for_variable(const SPIRVariable &var)
 	}
 
 	// Can only declare Component if we can declare location.
-	if (flags.get(DecorationComponent) && can_use_io_location(var.storage, is_block))
+	if (flags.get(static_cast<uint32_t>(Decoration::Component)) && can_use_io_location(var.storage, is_block))
 	{
 		uses_enhanced_layouts = true;
 		attr.push_back(join("component = ", get_decoration(var.self, DecorationComponent)));
@@ -2175,7 +2175,7 @@ string CompilerGLSL::layout_for_variable(const SPIRVariable &var)
 			SPIRV_CROSS_THROW("GL_ARB_enhanced_layouts is not supported in ESSL.");
 	}
 
-	if (flags.get(Decoration::Index))
+	if (flags.get(static_cast<uint32_t>(Decoration::Index)))
 		attr.push_back(join("index = ", get_decoration(var.self, Decoration::Index)));
 
 	// Do not emit set = decoration in regular GLSL output, but
@@ -2190,7 +2190,7 @@ string CompilerGLSL::layout_for_variable(const SPIRVariable &var)
 	bool ssbo_block = var.storage == StorageClass::StorageBuffer || var.storage == StorageClass::ShaderRecordBufferKHR ||
 	                  (var.storage == StorageClass::Uniform && typeflags.get(static_cast<uint32_t>(Decoration::BufferBlock)));
 	bool emulated_ubo = var.storage == StorageClass::PushConstant && options.emit_push_constant_as_uniform_buffer;
-	bool ubo_block = var.storage == StorageClass::Uniform && typeflags.get(Decoration::Block);
+	bool ubo_block = var.storage == StorageClass::Uniform && typeflags.get(static_cast<uint32_t>(Decoration::Block));
 
 	// GL 3.0/GLSL 1.30 is not considered legacy, but it doesn't have UBOs ...
 	bool can_use_buffer_blocks = (options.es && options.version >= 300) || (!options.es && options.version >= 140);
@@ -2389,7 +2389,7 @@ void CompilerGLSL::emit_buffer_block_legacy(const SPIRVariable &var)
 	// We're emitting the push constant block as a regular struct, so disable the block qualifier temporarily.
 	// Otherwise, we will end up emitting layout() qualifiers on naked structs which is not allowed.
 	auto &block_flags = ir.meta[type.self].decoration.decoration_flags;
-	bool block_flag = block_flags.get(Decoration::Block);
+	bool block_flag = block_flags.get(static_cast<uint32_t>(Decoration::Block));
 	block_flags.clear(Decoration::Block);
 	emit_struct(type);
 	if (block_flag)
@@ -2460,9 +2460,9 @@ void CompilerGLSL::emit_buffer_reference_block(uint32_t type_id, bool forward_de
 			string decorations;
 			if (flags.get(static_cast<uint32_t>(Decoration::Restrict)))
 				decorations += " restrict";
-			if (flags.get(Decoration::Coherent))
+			if (flags.get(static_cast<uint32_t>(Decoration::Coherent)))
 				decorations += " coherent";
-			if (flags.get(Decoration::NonReadable))
+			if (flags.get(static_cast<uint32_t>(Decoration::NonReadable)))
 				decorations += " writeonly";
 			if (flags.get(Decoration::NonWritable))
 				decorations += " readonly";
@@ -2529,9 +2529,9 @@ void CompilerGLSL::emit_buffer_block_native(const SPIRVariable &var)
 	bool ssbo = var.storage == StorageClass::StorageBuffer || var.storage == StorageClass::ShaderRecordBufferKHR ||
 	            ir.meta[type.self].decoration.decoration_flags.get(static_cast<uint32_t>(Decoration::BufferBlock));
 	bool is_restrict = ssbo && flags.get(static_cast<uint32_t>(Decoration::Restrict));
-	bool is_writeonly = ssbo && flags.get(Decoration::NonReadable);
+	bool is_writeonly = ssbo && flags.get(static_cast<uint32_t>(Decoration::NonReadable));
 	bool is_readonly = ssbo && flags.get(Decoration::NonWritable);
-	bool is_coherent = ssbo && flags.get(Decoration::Coherent);
+	bool is_coherent = ssbo && flags.get(static_cast<uint32_t>(Decoration::Coherent));
 
 	// Block names should never alias, but from HLSL input they kind of can because block types are reused for UAVs ...
 	auto buffer_name = to_name(type.self, false);
@@ -2785,7 +2785,7 @@ void CompilerGLSL::emit_interface_block(const SPIRVariable &var)
 	}
 
 	// Either make it plain in/out or in/out blocks depending on what shader is doing ...
-	bool block = ir.meta[type.self].decoration.decoration_flags.get(Decoration::Block);
+	bool block = ir.meta[type.self].decoration.decoration_flags.get(static_cast<uint32_t>(Decoration::Block));
 	const char *qual = to_storage_qualifiers_glsl(var);
 
 	if (block)
@@ -3856,7 +3856,7 @@ void CompilerGLSL::emit_resources()
 
 		bool is_block_storage = type.storage == StorageClass::StorageBuffer || type.storage == StorageClass::Uniform ||
 		                        type.storage == StorageClass::ShaderRecordBufferKHR;
-		bool has_block_flags = ir.meta[type.self].decoration.decoration_flags.get(Decoration::Block) ||
+		bool has_block_flags = ir.meta[type.self].decoration.decoration_flags.get(static_cast<uint32_t>(Decoration::Block)) ||
 		                       ir.meta[type.self].decoration.decoration_flags.get(static_cast<uint32_t>(Decoration::BufferBlock));
 
 		if (var.storage != StorageClass::Function && type.pointer && is_block_storage && !is_hidden_variable(var) &&
@@ -14537,7 +14537,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		if (var)
 		{
 			auto &flags = get_decoration_bitset(var->self);
-			if (flags.get(Decoration::NonReadable))
+			if (flags.get(static_cast<uint32_t>(Decoration::NonReadable)))
 			{
 				unset_decoration(var->self, Decoration::NonReadable);
 				force_recompile();
@@ -16190,7 +16190,7 @@ void CompilerGLSL::emit_struct_member(const SPIRType &type, uint32_t member_type
 		memberflags = memb[index].decoration_flags;
 
 	string qualifiers;
-	bool is_block = ir.meta[type.self].decoration.decoration_flags.get(Decoration::Block) ||
+	bool is_block = ir.meta[type.self].decoration.decoration_flags.get(static_cast<uint32_t>(Decoration::Block)) ||
 	                ir.meta[type.self].decoration.decoration_flags.get(static_cast<uint32_t>(Decoration::BufferBlock));
 
 	if (is_block)
@@ -16346,7 +16346,7 @@ string CompilerGLSL::to_qualifiers_glsl(uint32_t id)
 	auto &type = expression_type(id);
 	if (type.image.dim != DimSubpassData && type.image.sampled == 2)
 	{
-		if (flags.get(Decoration::Coherent))
+		if (flags.get(static_cast<uint32_t>(Decoration::Coherent)))
 			res += "coherent ";
 		if (flags.get(static_cast<uint32_t>(Decoration::Restrict)))
 			res += "restrict ";
@@ -16355,7 +16355,7 @@ string CompilerGLSL::to_qualifiers_glsl(uint32_t id)
 			res += "readonly ";
 
 		bool formatted_load = type.image.format == ImageFormatUnknown;
-		if (flags.get(Decoration::NonReadable))
+		if (flags.get(static_cast<uint32_t>(Decoration::NonReadable)))
 		{
 			res += "writeonly ";
 			formatted_load = false;
@@ -16373,7 +16373,7 @@ string CompilerGLSL::to_qualifiers_glsl(uint32_t id)
 	{
 		if (flags.get(Decoration::NonWritable))
 			res += "readonly ";
-		if (flags.get(Decoration::NonReadable))
+		if (flags.get(static_cast<uint32_t>(Decoration::NonReadable)))
 			res += "writeonly ";
 	}
 
@@ -17119,7 +17119,7 @@ void CompilerGLSL::flatten_buffer_block(VariableID id)
 		SPIRV_CROSS_THROW(name + " is an array of UBOs.");
 	if (type.basetype != SPIRType::Struct)
 		SPIRV_CROSS_THROW(name + " is not a struct.");
-	if (!flags.get(Decoration::Block))
+	if (!flags.get(static_cast<uint32_t>(Decoration::Block)))
 		SPIRV_CROSS_THROW(name + " is not a block.");
 	if (type.member_types.empty())
 		SPIRV_CROSS_THROW(name + " is an empty struct.");
