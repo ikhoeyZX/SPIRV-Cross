@@ -631,7 +631,7 @@ void CompilerGLSL::find_static_extensions()
 			break;
 
 		case Capability::VariablePointers:
-		case CapabilityVariablePointersStorageBuffer:
+		case Capability::VariablePointersStorageBuffer:
 			SPIRV_CROSS_THROW("VariablePointers capability is not supported in GLSL.");
 
 		case Capability::MultiView:
@@ -818,7 +818,7 @@ void CompilerGLSL::build_workgroup_size(SmallVector<string> &arguments, const Sp
 {
 	auto &execution = get_entry_point();
 	bool builtin_workgroup = execution.workgroup_size.constant != 0;
-	bool use_local_size_id = !builtin_workgroup && execution.flags.get(ExecutionMode::LocalSizeId);
+	bool use_local_size_id = !builtin_workgroup && execution.flags.get(static_cast<uint32_t>(ExecutionMode::LocalSizeId));
 
 	if (wg_x.id)
 	{
@@ -1089,73 +1089,73 @@ void CompilerGLSL::emit_header()
 
 	switch (execution.model)
 	{
-	case ExecutionModelVertex:
+	case ExecutionModel::Vertex:
 		if (options.ovr_multiview_view_count)
 			inputs.push_back(join("num_views = ", options.ovr_multiview_view_count));
 		break;
-	case ExecutionModelGeometry:
-		if ((execution.flags.get(ExecutionModeInvocations)) && execution.invocations != 1)
+	case ExecutionModel::Geometry:
+		if ((execution.flags.get(static_cast<uint32_t>(ExecutionMode::Invocations))) && execution.invocations != 1)
 			inputs.push_back(join("invocations = ", execution.invocations));
-		if (execution.flags.get(ExecutionModeInputPoints))
+		if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::InputPoints)))
 			inputs.push_back("points");
-		if (execution.flags.get(ExecutionModeInputLines))
+		if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::InputLines)))
 			inputs.push_back("lines");
-		if (execution.flags.get(ExecutionModeInputLinesAdjacency))
+		if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::InputLinesAdjacency)))
 			inputs.push_back("lines_adjacency");
-		if (execution.flags.get(ExecutionModeTriangles))
+		if (execution.flags.get(static_cast<uint32_t>(ExecutionModeTriangles)))
 			inputs.push_back("triangles");
-		if (execution.flags.get(ExecutionModeInputTrianglesAdjacency))
+		if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::InputTrianglesAdjacency)))
 			inputs.push_back("triangles_adjacency");
 
 		if (!execution.geometry_passthrough)
 		{
 			// For passthrough, these are implies and cannot be declared in shader.
 			outputs.push_back(join("max_vertices = ", execution.output_vertices));
-			if (execution.flags.get(ExecutionModeOutputTriangleStrip))
+			if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::OutputTriangleStrip)))
 				outputs.push_back("triangle_strip");
-			if (execution.flags.get(ExecutionModeOutputPoints))
+			if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::OutputPoints)))
 				outputs.push_back("points");
-			if (execution.flags.get(ExecutionModeOutputLineStrip))
+			if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::OutputLineStrip)))
 				outputs.push_back("line_strip");
 		}
 		break;
 
-	case ExecutionModelTessellationControl:
-		if (execution.flags.get(ExecutionModeOutputVertices))
+	case ExecutionModel::TessellationControl:
+		if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::OutputVertices)))
 			outputs.push_back(join("vertices = ", execution.output_vertices));
 		break;
 
-	case ExecutionModelTessellationEvaluation:
-		if (execution.flags.get(ExecutionModeQuads))
+	case ExecutionModel::TessellationEvaluation:
+		if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::Quads)))
 			inputs.push_back("quads");
-		if (execution.flags.get(ExecutionModeTriangles))
+		if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::Triangles)))
 			inputs.push_back("triangles");
-		if (execution.flags.get(ExecutionModeIsolines))
+		if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::Isolines)))
 			inputs.push_back("isolines");
-		if (execution.flags.get(ExecutionModePointMode))
+		if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::PointMode)))
 			inputs.push_back("point_mode");
 
-		if (!execution.flags.get(ExecutionModeIsolines))
+		if (!execution.flags.get(static_cast<uint32_t>(ExecutionMode::Isolines)))
 		{
-			if (execution.flags.get(ExecutionModeVertexOrderCw))
+			if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::VertexOrderCw)))
 				inputs.push_back("cw");
-			if (execution.flags.get(ExecutionModeVertexOrderCcw))
+			if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::VertexOrderCcw)))
 				inputs.push_back("ccw");
 		}
 
-		if (execution.flags.get(ExecutionModeSpacingFractionalEven))
+		if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::SpacingFractionalEven)))
 			inputs.push_back("fractional_even_spacing");
-		if (execution.flags.get(ExecutionModeSpacingFractionalOdd))
+		if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::SpacingFractionalOdd)))
 			inputs.push_back("fractional_odd_spacing");
-		if (execution.flags.get(ExecutionModeSpacingEqual))
+		if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::SpacingEqual)))
 			inputs.push_back("equal_spacing");
 		break;
 
-	case ExecutionModelGLCompute:
-	case ExecutionModelTaskEXT:
-	case ExecutionModelMeshEXT:
+	case ExecutionModel::GLCompute:
+	case ExecutionModel::TaskEXT:
+	case ExecutionModel::MeshEXT:
 	{
-		if (execution.workgroup_size.constant != 0 || execution.flags.get(ExecutionModeLocalSizeId))
+		if (execution.workgroup_size.constant != 0 || execution.flags.get(ExecutionMode::LocalSizeId))
 		{
 			SpecializationConstant wg_x, wg_y, wg_z;
 			get_work_group_size_specialization_constants(wg_x, wg_y, wg_z);
@@ -1173,21 +1173,21 @@ void CompilerGLSL::emit_header()
 			inputs.push_back(join("local_size_z = ", execution.workgroup_size.z));
 		}
 
-		if (execution.model == ExecutionModelMeshEXT)
+		if (execution.model == ExecutionModel::MeshEXT)
 		{
 			outputs.push_back(join("max_vertices = ", execution.output_vertices));
 			outputs.push_back(join("max_primitives = ", execution.output_primitives));
-			if (execution.flags.get(ExecutionModeOutputTrianglesEXT))
+			if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::OutputTrianglesEXT)))
 				outputs.push_back("triangles");
-			else if (execution.flags.get(ExecutionModeOutputLinesEXT))
+			else if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::OutputLinesEXT)))
 				outputs.push_back("lines");
-			else if (execution.flags.get(ExecutionModeOutputPoints))
+			else if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::OutputPoints)))
 				outputs.push_back("points");
 		}
 		break;
 	}
 
-	case ExecutionModelFragment:
+	case ExecutionModel::Fragment:
 		if (options.es)
 		{
 			switch (options.fragment.default_float_precision)
@@ -1227,21 +1227,21 @@ void CompilerGLSL::emit_header()
 			}
 		}
 
-		if (execution.flags.get(ExecutionModeEarlyFragmentTests))
+		if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::EarlyFragmentTests)))
 			inputs.push_back("early_fragment_tests");
-		if (execution.flags.get(ExecutionModePostDepthCoverage))
+		if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::PostDepthCoverage)))
 			inputs.push_back("post_depth_coverage");
 
 		if (interlock_used)
 			statement("#if defined(GL_ARB_fragment_shader_interlock)");
 
-		if (execution.flags.get(ExecutionModePixelInterlockOrderedEXT))
+		if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::PixelInterlockOrderedEXT)))
 			statement("layout(pixel_interlock_ordered) in;");
-		else if (execution.flags.get(ExecutionModePixelInterlockUnorderedEXT))
+		else if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::PixelInterlockUnorderedEXT)))
 			statement("layout(pixel_interlock_unordered) in;");
-		else if (execution.flags.get(ExecutionModeSampleInterlockOrderedEXT))
+		else if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::SampleInterlockOrderedEXT)))
 			statement("layout(sample_interlock_ordered) in;");
-		else if (execution.flags.get(ExecutionModeSampleInterlockUnorderedEXT))
+		else if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::SampleInterlockUnorderedEXT)))
 			statement("layout(sample_interlock_unordered) in;");
 
 		if (interlock_used)
@@ -1251,12 +1251,12 @@ void CompilerGLSL::emit_header()
 			statement("#endif");
 		}
 
-		if (!options.es && execution.flags.get(ExecutionModeDepthGreater))
+		if (!options.es && execution.flags.get(static_cast<uint32_t>(ExecutionMode::DepthGreater)))
 			statement("layout(depth_greater) out float gl_FragDepth;");
-		else if (!options.es && execution.flags.get(ExecutionModeDepthLess))
+		else if (!options.es && execution.flags.get(static_cast<uint32_t>(ExecutionMode::DepthLess)))
 			statement("layout(depth_less) out float gl_FragDepth;");
 
-		if (execution.flags.get(ExecutionModeRequireFullQuadsKHR))
+		if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::RequireFullQuadsKHR)))
 			statement("layout(full_quads) in;");
 
 		break;
@@ -1266,10 +1266,10 @@ void CompilerGLSL::emit_header()
 	}
 
 	for (auto &cap : ir.declared_capabilities)
-		if (cap == CapabilityRayTraversalPrimitiveCullingKHR)
+		if (cap == Capability::RayTraversalPrimitiveCullingKHR)
 			statement("layout(primitive_culling);");
 
-	if (execution.flags.get(ExecutionModeQuadDerivativesKHR))
+	if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::QuadDerivativesKHR)))
 		statement("layout(quad_derivatives) in;");
 
 	if (!inputs.empty())
