@@ -85,8 +85,8 @@ static const GlslConstantNameMapping CoopVecMatrixLayoutNames[] = {
 };
 
 static const GlslConstantNameMapping CoopMatMatrixLayoutNames[] = {
-	DEF_GLSL_MAPPING_EXT(static_cast<uint32_t>(CooperativeMatrixLayout::RowMajor)),
-	DEF_GLSL_MAPPING_EXT(static_cast<uint32_t>(CooperativeMatrixLayout::ColumnMajor)),
+	DEF_GLSL_MAPPING_EXT(static_cast<uint32_t>(CooperativeMatrixLayout::RowMajorKHR)),
+	DEF_GLSL_MAPPING_EXT(static_cast<uint32_t>(CooperativeMatrixLayout::ColumnMajorKHR)),
 };
 #undef DEF_GLSL_MAPPING
 #undef DEF_GLSL_MAPPING_EXT
