@@ -362,7 +362,7 @@ void ParsedIR::set_member_name(TypeID id, uint32_t index, const string &name)
 void ParsedIR::set_decoration_string(ID id, Decoration decoration, const string &argument)
 {
 	auto &dec = meta[id].decoration;
-	dec.decoration_flags.set(decoration);
+	dec.decoration_flags.set(static_cast<uint32_t>(decoration));
 
 	switch (decoration)
 	{
@@ -382,7 +382,7 @@ void ParsedIR::set_decoration_string(ID id, Decoration decoration, const string 
 void ParsedIR::set_decoration(ID id, Decoration decoration, uint32_t argument)
 {
 	auto &dec = meta[id].decoration;
-	dec.decoration_flags.set(decoration);
+	dec.decoration_flags.set(static_cast<uint32_t>(decoration));
 
 	switch (decoration)
 	{
@@ -466,7 +466,7 @@ void ParsedIR::set_member_decoration(TypeID id, uint32_t index, Decoration decor
 	auto &m = meta[id];
 	m.members.resize(max(m.members.size(), size_t(index) + 1));
 	auto &dec = m.members[index];
-	dec.decoration_flags.set(decoration);
+	dec.decoration_flags.set(static_cast<uint32_t>(decoration));
 
 	switch (decoration)
 	{
@@ -552,9 +552,9 @@ void ParsedIR::mark_used_as_array_length(ID id)
 	case TypeConstantOp:
 	{
 		auto &cop = get<SPIRConstantOp>(id);
-		if (cop.opcode == OpCompositeExtract)
+		if (cop.opcode == Op::OpCompositeExtract)
 			mark_used_as_array_length(cop.arguments[0]);
-		else if (cop.opcode == OpCompositeInsert)
+		else if (cop.opcode == Op::OpCompositeInsert)
 		{
 			mark_used_as_array_length(cop.arguments[0]);
 			mark_used_as_array_length(cop.arguments[1]);
@@ -621,7 +621,7 @@ const Bitset &ParsedIR::get_member_decoration_bitset(TypeID id, uint32_t index) 
 
 bool ParsedIR::has_decoration(ID id, Decoration decoration) const
 {
-	return get_decoration_bitset(id).get(decoration);
+	return get_decoration_bitset(id).get(static_cast<uint32_t>(decoration));
 }
 
 uint32_t ParsedIR::get_decoration(ID id, Decoration decoration) const
@@ -631,13 +631,13 @@ uint32_t ParsedIR::get_decoration(ID id, Decoration decoration) const
 		return 0;
 
 	auto &dec = m->decoration;
-	if (!dec.decoration_flags.get(decoration))
+	if (!dec.decoration_flags.get(static_cast<uint32_t>(decoration)))
 		return 0;
 
 	switch (decoration)
 	{
 	case Decoration::BuiltIn:
-		return dec.builtin_type;
+		return static_cast<uint32_t>(dec.builtin_type);
 	case Decoration::Location:
 		return dec.location;
 	case Decoration::Component:
@@ -665,9 +665,9 @@ uint32_t ParsedIR::get_decoration(ID id, Decoration decoration) const
 	case Decoration::Index:
 		return dec.index;
 	case Decoration::FPRoundingMode:
-		return dec.fp_rounding_mode;
+		return static_cast<uint32_t>(dec.fp_rounding_mode);
 	case Decoration::FPFastMathMode:
-		return dec.fp_fast_math_mode;
+		return static_cast<uint32_t>(dec.fp_fast_math_mode);
 	default:
 		return 1;
 	}
@@ -681,7 +681,7 @@ const string &ParsedIR::get_decoration_string(ID id, Decoration decoration) cons
 
 	auto &dec = m->decoration;
 
-	if (!dec.decoration_flags.get(decoration))
+	if (!dec.decoration_flags.get(static_cast<uint32_t>(decoration)))
 		return empty_string;
 
 	switch (decoration)
@@ -700,7 +700,7 @@ const string &ParsedIR::get_decoration_string(ID id, Decoration decoration) cons
 void ParsedIR::unset_decoration(ID id, Decoration decoration)
 {
 	auto &dec = meta[id].decoration;
-	dec.decoration_flags.clear(decoration);
+	dec.decoration_flags.clear(static_cast<uint32_t>(decoration));
 	switch (decoration)
 	{
 	case Decoration::BuiltIn:
@@ -752,11 +752,11 @@ void ParsedIR::unset_decoration(ID id, Decoration decoration)
 		break;
 
 	case Decoration::FPRoundingMode:
-		dec.fp_rounding_mode = FPRoundingModeMax;
+		dec.fp_rounding_mode = FPRoundingMode::Max;
 		break;
 
 	case Decoration::FPFastMathMode:
-		dec.fp_fast_math_mode = FPFastMathModeMaskNone;
+		dec.fp_fast_math_mode = FPFastMathModeMask::MaskNone;
 		break;
 
 	case Decoration::HlslCounterBufferGOOGLE:
@@ -777,7 +777,7 @@ void ParsedIR::unset_decoration(ID id, Decoration decoration)
 
 bool ParsedIR::has_member_decoration(TypeID id, uint32_t index, Decoration decoration) const
 {
-	return get_member_decoration_bitset(id, index).get(decoration);
+	return get_member_decoration_bitset(id, index).get(static_cast<uint32_t>(decoration));
 }
 
 uint32_t ParsedIR::get_member_decoration(TypeID id, uint32_t index, Decoration decoration) const
@@ -790,13 +790,13 @@ uint32_t ParsedIR::get_member_decoration(TypeID id, uint32_t index, Decoration d
 		return 0;
 
 	auto &dec = m->members[index];
-	if (!dec.decoration_flags.get(decoration))
+	if (!dec.decoration_flags.get(static_cast<uint32_t>(decoration)))
 		return 0;
 
 	switch (decoration)
 	{
 	case Decoration::BuiltIn:
-		return dec.builtin_type;
+		return static_cast<uint32_t>(dec.builtin_type);
 	case Decoration::Location:
 		return dec.location;
 	case Decoration::Component:
@@ -839,7 +839,7 @@ void ParsedIR::set_member_decoration_string(TypeID id, uint32_t index, Decoratio
 	auto &m = meta[id];
 	m.members.resize(max(m.members.size(), size_t(index) + 1));
 	auto &dec = meta[id].members[index];
-	dec.decoration_flags.set(decoration);
+	dec.decoration_flags.set(static_cast<uint32_t>(decoration));
 
 	switch (decoration)
 	{
@@ -883,7 +883,7 @@ void ParsedIR::unset_member_decoration(TypeID id, uint32_t index, Decoration dec
 
 	auto &dec = m.members[index];
 
-	dec.decoration_flags.clear(decoration);
+	dec.decoration_flags.clear(static_cast<uint32_t>(decoration));
 	switch (decoration)
 	{
 	case Decoration::BuiltIn:
