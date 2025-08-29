@@ -79,14 +79,14 @@ bool Compiler::variable_storage_is_aliased(const SPIRVariable &v)
 {
 	auto &type = get<SPIRType>(v.basetype);
 	bool ssbo = v.storage == StorageClass::StorageBuffer ||
-	            ir.meta[type.self].decoration.decoration_flags.get(Decoration::BufferBlock);
+	            ir.meta[type.self].decoration.decoration_flags.get(ststic_cast<uint32_t>(Decoration::BufferBlock));
 	bool image = type.basetype == SPIRType::Image;
 	bool counter = type.basetype == SPIRType::AtomicCounter;
 	bool buffer_reference = type.storage == StorageClass::PhysicalStorageBuffer;
 
 	bool is_restrict;
 	if (ssbo)
-		is_restrict = ir.get_buffer_block_flags(v).get(DecorationRestrict);
+		is_restrict = ir.get_buffer_block_flags(v).get(ststic_cast<uint32_t>(DecorationRestrict));
 	else
 		is_restrict = has_decoration(v.self, DecorationRestrict);
 
@@ -381,12 +381,12 @@ void Compiler::register_global_read_dependencies(const SPIRBlock &block, uint32_
 		{
 			// If we're in a storage class which does not get invalidated, adding dependencies here is no big deal.
 			auto *var = maybe_get_backing_variable(ops[2]);
-			if (var && var->storage != StorageClassFunction)
+			if (var && var->storage != StorageClass::Function)
 			{
 				auto &type = get<SPIRType>(var->basetype);
 
 				// InputTargets are immutable.
-				if (type.basetype != SPIRType::Image && type.image.dim != DimSubpassData)
+				if (type.basetype != SPIRType::Image && type.image.dim != Dim::SubpassData)
 					var->dependees.push_back(id);
 			}
 			break;
@@ -632,13 +632,13 @@ static inline bool storage_class_is_interface(spv::StorageClass storage)
 {
 	switch (storage)
 	{
-	case StorageClassInput:
-	case StorageClassOutput:
-	case StorageClassUniform:
-	case StorageClassUniformConstant:
-	case StorageClassAtomicCounter:
-	case StorageClassPushConstant:
-	case StorageClassStorageBuffer:
+	case StorageClass::Input:
+	case StorageClass::Output:
+	case StorageClass::Uniform:
+	case StorageClass::UniformConstant:
+	case StorageClass::AtomicCounter:
+	case StorageClass::PushConstant:
+	case StorageClass::StorageBuffer:
 		return true;
 
 	default:
@@ -661,8 +661,8 @@ bool Compiler::is_hidden_variable(const SPIRVariable &var, bool include_builtins
 
 	// In SPIR-V 1.4 and up we must also use the active variable interface to disable global variables
 	// which are not part of the entry point.
-	if (ir.get_spirv_version() >= 0x10400 && var.storage != spv::StorageClassGeneric &&
-	    var.storage != spv::StorageClassFunction && !interface_variable_exists_in_entry_point(var.self))
+	if (ir.get_spirv_version() >= 0x10400 && var.storage != spv::StorageClass::Generic &&
+	    var.storage != spv::StorageClass::Function && !interface_variable_exists_in_entry_point(var.self))
 	{
 		return true;
 	}
@@ -729,29 +729,29 @@ bool Compiler::is_matrix(const SPIRType &type) const
 
 bool Compiler::is_array(const SPIRType &type) const
 {
-	return type.op == OpTypeArray || type.op == OpTypeRuntimeArray;
+	return type.op == Op::OpTypeArray || type.op == Op::OpTypeRuntimeArray;
 }
 
 bool Compiler::is_pointer(const SPIRType &type) const
 {
-	return type.op == OpTypePointer && type.basetype != SPIRType::Unknown; // Ignore function pointers.
+	return type.op == Op::OpTypePointer && type.basetype != SPIRType::Unknown; // Ignore function pointers.
 }
 
 bool Compiler::is_physical_pointer(const SPIRType &type) const
 {
-	return type.op == OpTypePointer && type.storage == StorageClass::PhysicalStorageBuffer;
+	return type.op == Op::OpTypePointer && type.storage == StorageClass::PhysicalStorageBuffer;
 }
 
 bool Compiler::is_physical_pointer_to_buffer_block(const SPIRType &type) const
 {
 	return is_physical_pointer(type) && get_pointee_type(type).self == type.parent_type &&
-	       (has_decoration(type.self, DecorationBlock) ||
-	        has_decoration(type.self, DecorationBufferBlock));
+	       (has_decoration(type.self, Decoration::Block) ||
+	        has_decoration(type.self, Decoration::BufferBlock));
 }
 
 bool Compiler::is_runtime_size_array(const SPIRType &type)
 {
-	return type.op == OpTypeRuntimeArray;
+	return type.op == Op::OpTypeRuntimeArray;
 }
 
 ShaderResources Compiler::get_shader_resources() const
