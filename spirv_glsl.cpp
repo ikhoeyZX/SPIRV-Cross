@@ -60,33 +60,33 @@ struct GlslConstantNameMapping
 #define DEF_GLSL_MAPPING(x) { x, "gl_" #x }
 #define DEF_GLSL_MAPPING_EXT(x) { x##KHR, "gl_" #x }
 static const GlslConstantNameMapping CoopVecComponentTypeNames[] = {
-	DEF_GLSL_MAPPING(ComponentType::Float16NV),
-	DEF_GLSL_MAPPING(ComponentType::Float32NV),
-	DEF_GLSL_MAPPING(ComponentType::Float64NV),
-	DEF_GLSL_MAPPING(ComponentType::SignedInt8NV),
-	DEF_GLSL_MAPPING(ComponentType::SignedInt16NV),
-	DEF_GLSL_MAPPING(ComponentType::SignedInt32NV),
-	DEF_GLSL_MAPPING(ComponentType::SignedInt64NV),
-	DEF_GLSL_MAPPING(ComponentType::UnsignedInt8NV),
-	DEF_GLSL_MAPPING(ComponentType::UnsignedInt16NV),
-	DEF_GLSL_MAPPING(ComponentType::UnsignedInt32NV),
-	DEF_GLSL_MAPPING(ComponentType::UnsignedInt64NV),
-	DEF_GLSL_MAPPING(ComponentType::SignedInt8PackedNV),
-	DEF_GLSL_MAPPING(ComponentType::UnsignedInt8PackedNV),
-	DEF_GLSL_MAPPING(ComponentType::FloatE4M3NV),
-	DEF_GLSL_MAPPING(ComponentType::FloatE5M2NV),
+	DEF_GLSL_MAPPING(static_cast<uint32_t>(ComponentType::Float16NV)),
+	DEF_GLSL_MAPPING(static_cast<uint32_t>(ComponentType::Float32NV)),
+	DEF_GLSL_MAPPING(static_cast<uint32_t>(ComponentType::Float64NV)),
+	DEF_GLSL_MAPPING(static_cast<uint32_t>(ComponentType::SignedInt8NV)),
+	DEF_GLSL_MAPPING(static_cast<uint32_t>(ComponentType::SignedInt16NV)),
+	DEF_GLSL_MAPPING(static_cast<uint32_t>(ComponentType::SignedInt32NV)),
+	DEF_GLSL_MAPPING(static_cast<uint32_t>(ComponentType::SignedInt64NV)),
+	DEF_GLSL_MAPPING(static_cast<uint32_t>(ComponentType::UnsignedInt8NV)),
+	DEF_GLSL_MAPPING(static_cast<uint32_t>(ComponentType::UnsignedInt16NV)),
+	DEF_GLSL_MAPPING(static_cast<uint32_t>(ComponentType::UnsignedInt32NV)),
+	DEF_GLSL_MAPPING(static_cast<uint32_t>(ComponentType::UnsignedInt64NV)),
+	DEF_GLSL_MAPPING(static_cast<uint32_t>(ComponentType::SignedInt8PackedNV)),
+	DEF_GLSL_MAPPING(static_cast<uint32_t>(ComponentType::UnsignedInt8PackedNV)),
+	DEF_GLSL_MAPPING(static_cast<uint32_t>(ComponentType::FloatE4M3NV)),
+	DEF_GLSL_MAPPING(static_cast<uint32_t>(ComponentType::FloatE5M2NV)),
 };
 
 static const GlslConstantNameMapping CoopVecMatrixLayoutNames[] = {
-	DEF_GLSL_MAPPING(CooperativeVectorMatrixLayoutRowMajorNV),
-	DEF_GLSL_MAPPING(CooperativeVectorMatrixLayoutColumnMajorNV),
-	DEF_GLSL_MAPPING(CooperativeVectorMatrixLayoutInferencingOptimalNV),
-	DEF_GLSL_MAPPING(CooperativeVectorMatrixLayoutTrainingOptimalNV),
+	DEF_GLSL_MAPPING(static_cast<uint32_t>(CooperativeVectorMatrixLayout::RowMajorNV)),
+	DEF_GLSL_MAPPING(static_cast<uint32_t>(CooperativeVectorMatrixLayout::ColumnMajorNV)),
+	DEF_GLSL_MAPPING(static_cast<uint32_t>(CooperativeVectorMatrixLayout::InferencingOptimalNV)),
+	DEF_GLSL_MAPPING(static_cast<uint32_t>(CooperativeVectorMatrixLayout::TrainingOptimalNV)),
 };
 
 static const GlslConstantNameMapping CoopMatMatrixLayoutNames[] = {
-	DEF_GLSL_MAPPING_EXT(CooperativeMatrixLayoutRowMajor),
-	DEF_GLSL_MAPPING_EXT(CooperativeMatrixLayoutColumnMajor),
+	DEF_GLSL_MAPPING_EXT(static_cast<uint32_t>(CooperativeMatrixLayout::RowMajor)),
+	DEF_GLSL_MAPPING_EXT(static_cast<uint32_t>(CooperativeMatrixLayout::ColumnMajor)),
 };
 #undef DEF_GLSL_MAPPING
 #undef DEF_GLSL_MAPPING_EXT
@@ -96,17 +96,17 @@ static bool is_unsigned_opcode(Op op)
 	// Don't have to be exhaustive, only relevant for legacy target checking ...
 	switch (op)
 	{
-	case OpShiftRightLogical:
-	case OpUGreaterThan:
-	case OpUGreaterThanEqual:
-	case OpULessThan:
-	case OpULessThanEqual:
-	case OpUConvert:
-	case OpUDiv:
-	case OpUMod:
-	case OpUMulExtended:
-	case OpConvertUToF:
-	case OpConvertFToU:
+	case Op::OpShiftRightLogical:
+	case Op::OpUGreaterThan:
+	case Op::OpUGreaterThanEqual:
+	case Op::OpULessThan:
+	case Op::OpULessThanEqual:
+	case Op::OpUConvert:
+	case Op::OpUDiv:
+	case Op::OpUMod:
+	case Op::OpUMulExtended:
+	case Op::OpConvertUToF:
+	case Op::OpConvertFToU:
 		return true;
 
 	default:
