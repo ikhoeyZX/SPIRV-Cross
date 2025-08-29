@@ -1963,7 +1963,7 @@ bool CompilerGLSL::can_use_io_location(StorageClass storage, bool block)
 	// Location specifiers are must have in SPIR-V, but they aren't really supported in earlier versions of GLSL.
 	// Be very explicit here about how to solve the issue.
 	if ((get_execution_model() != ExecutionModel::Vertex && storage == StorageClass::Input) ||
-	    (get_execution_model() != ExecutionModel::Fragment && storage == StorageClassOutput))
+	    (get_execution_model() != ExecutionModel::Fragment && storage == StorageClass::Output))
 	{
 		uint32_t minimum_desktop_version = block ? 440 : 410;
 		// ARB_enhanced_layouts vs ARB_separate_shader_objects ...
@@ -1975,7 +1975,7 @@ bool CompilerGLSL::can_use_io_location(StorageClass storage, bool block)
 	}
 
 	if ((get_execution_model() == ExecutionModel::Vertex && storage == StorageClass::Input) ||
-	    (get_execution_model() == ExecutionModel::Fragment && storage == StorageClassOutput))
+	    (get_execution_model() == ExecutionModel::Fragment && storage == StorageClass::Output))
 	{
 		if (options.es && options.version < 300)
 			return false;
@@ -1983,7 +1983,7 @@ bool CompilerGLSL::can_use_io_location(StorageClass storage, bool block)
 			return false;
 	}
 
-	if (storage == StorageClassUniform || storage == StorageClass::UniformConstant || storage == StorageClass::PushConstant)
+	if (storage == StorageClass::Uniform || storage == StorageClass::UniformConstant || storage == StorageClass::PushConstant)
 	{
 		if (options.es && options.version < 310)
 			return false;
@@ -2032,7 +2032,7 @@ string CompilerGLSL::layout_for_variable(const SPIRVariable &var)
 	}
 
 	bool is_block = has_decoration(type.self, Decoration::Block);
-	if (flags.get(DecorationLocation) && can_use_io_location(var.storage, is_block))
+	if (flags.get(Decoration::Location) && can_use_io_location(var.storage, is_block))
 	{
 		Bitset combined_decoration;
 		for (uint32_t i = 0; i < ir.meta[type.self].members.size(); i++)
@@ -2040,19 +2040,19 @@ string CompilerGLSL::layout_for_variable(const SPIRVariable &var)
 
 		// If our members have location decorations, we don't need to
 		// emit location decorations at the top as well (looks weird).
-		if (!combined_decoration.get(DecorationLocation))
-			attr.push_back(join("location = ", get_decoration(var.self, DecorationLocation)));
+		if (!combined_decoration.get(Decoration::Location))
+			attr.push_back(join("location = ", get_decoration(var.self, Decoration::Location)));
 	}
 
-	if (get_execution_model() == ExecutionModel::Fragment && var.storage == StorageClassOutput &&
-	    location_is_non_coherent_framebuffer_fetch(get_decoration(var.self, DecorationLocation)))
+	if (get_execution_model() == ExecutionModel::Fragment && var.storage == StorageClass::Output &&
+	    location_is_non_coherent_framebuffer_fetch(get_decoration(var.self, Decoration::Location)))
 	{
 		attr.push_back("noncoherent");
 	}
 
 	// Transform feedback
 	bool uses_enhanced_layouts = false;
-	if (is_block && var.storage == StorageClassOutput)
+	if (is_block && var.storage == StorageClass::Output)
 	{
 		// For blocks, there is a restriction where xfb_stride/xfb_buffer must only be declared on the block itself,
 		// since all members must match the same xfb_buffer. The only thing we will declare for members of the block
@@ -2130,7 +2130,7 @@ string CompilerGLSL::layout_for_variable(const SPIRVariable &var)
 			attr.push_back(join("stream = ", get_decoration(var.self, DecorationStream)));
 		}
 	}
-	else if (var.storage == StorageClassOutput)
+	else if (var.storage == StorageClass::Output)
 	{
 		if (flags.get(DecorationXfbBuffer) && flags.get(DecorationXfbStride) && flags.get(DecorationOffset))
 		{
@@ -2182,15 +2182,15 @@ string CompilerGLSL::layout_for_variable(const SPIRVariable &var)
 	// we need to preserve it in Vulkan GLSL mode.
 	if (var.storage != StorageClass::PushConstant && var.storage != StorageClass::ShaderRecordBufferKHR)
 	{
-		if (flags.get(DecorationDescriptorSet) && options.vulkan_semantics)
+		if (flags.get(static_cast<uint32_t>(Decoration::DescriptorSet)) && options.vulkan_semantics)
 			attr.push_back(join("set = ", get_decoration(var.self, DecorationDescriptorSet)));
 	}
 
 	bool push_constant_block = options.vulkan_semantics && var.storage == StorageClass::PushConstant;
-	bool ssbo_block = var.storage == StorageClassStorageBuffer || var.storage == StorageClass::ShaderRecordBufferKHR ||
-	                  (var.storage == StorageClassUniform && typeflags.get(Decoration::BufferBlock));
+	bool ssbo_block = var.storage == StorageClass::StorageBuffer || var.storage == StorageClass::ShaderRecordBufferKHR ||
+	                  (var.storage == StorageClass::Uniform && typeflags.get(Decoration::BufferBlock));
 	bool emulated_ubo = var.storage == StorageClass::PushConstant && options.emit_push_constant_as_uniform_buffer;
-	bool ubo_block = var.storage == StorageClassUniform && typeflags.get(Decoration::Block);
+	bool ubo_block = var.storage == StorageClass::Uniform && typeflags.get(Decoration::Block);
 
 	// GL 3.0/GLSL 1.30 is not considered legacy, but it doesn't have UBOs ...
 	bool can_use_buffer_blocks = (options.es && options.version >= 300) || (!options.es && options.version >= 140);
@@ -2206,16 +2206,16 @@ string CompilerGLSL::layout_for_variable(const SPIRVariable &var)
 		can_use_binding = options.enable_420pack_extension || (options.version >= 420);
 
 	// Make sure we don't emit binding layout for a classic uniform on GLSL 1.30.
-	if (!can_use_buffer_blocks && var.storage == StorageClassUniform)
+	if (!can_use_buffer_blocks && var.storage == StorageClass::Uniform)
 		can_use_binding = false;
 
 	if (var.storage == StorageClass::ShaderRecordBufferKHR)
 		can_use_binding = false;
 
-	if (can_use_binding && flags.get(DecorationBinding))
-		attr.push_back(join("binding = ", get_decoration(var.self, DecorationBinding)));
+	if (can_use_binding && flags.get(Decoration::Binding))
+		attr.push_back(join("binding = ", get_decoration(var.self, Decoration::Binding)));
 
-	if (var.storage != StorageClassOutput && flags.get(DecorationOffset))
+	if (var.storage != StorageClass::Output && flags.get(DecorationOffset))
 		attr.push_back(join("offset = ", get_decoration(var.self, DecorationOffset)));
 
 	// Instead of adding explicit offsets for every element here, just assume we're using std140 or std430.
@@ -2341,11 +2341,11 @@ void CompilerGLSL::emit_push_constant_block_glsl(const SPIRVariable &var)
 	// OpenGL has no concept of push constant blocks, implement it as a uniform struct.
 	auto &type = get<SPIRType>(var.basetype);
 
-	unset_decoration(var.self, DecorationBinding);
+	unset_decoration(var.self, Decoration::Binding);
 	unset_decoration(var.self, DecorationDescriptorSet);
 
 #if 0
-    if (flags & ((1ull << DecorationBinding) | (1ull << DecorationDescriptorSet)))
+    if (flags & ((1ull << Decoration::Binding) | (1ull << DecorationDescriptorSet)))
         SPIRV_CROSS_THROW("Push constant blocks cannot be compiled to GLSL with Binding or Set syntax. "
                             "Remap to location with reflection API first or disable these decorations.");
 #endif
@@ -2367,7 +2367,7 @@ void CompilerGLSL::emit_push_constant_block_glsl(const SPIRVariable &var)
 void CompilerGLSL::emit_buffer_block(const SPIRVariable &var)
 {
 	auto &type = get<SPIRType>(var.basetype);
-	bool ubo_block = var.storage == StorageClassUniform && has_decoration(type.self, Decoration::Block);
+	bool ubo_block = var.storage == StorageClass::Uniform && has_decoration(type.self, Decoration::Block);
 
 	if (flattened_buffer_blocks.count(var.self))
 		emit_buffer_block_flattened(var);
@@ -2381,7 +2381,7 @@ void CompilerGLSL::emit_buffer_block(const SPIRVariable &var)
 void CompilerGLSL::emit_buffer_block_legacy(const SPIRVariable &var)
 {
 	auto &type = get<SPIRType>(var.basetype);
-	bool ssbo = var.storage == StorageClassStorageBuffer ||
+	bool ssbo = var.storage == StorageClass::StorageBuffer ||
 	            ir.meta[type.self].decoration.decoration_flags.get(Decoration::BufferBlock);
 	if (ssbo)
 		SPIRV_CROSS_THROW("SSBOs not supported in legacy targets.");
@@ -2526,7 +2526,7 @@ void CompilerGLSL::emit_buffer_block_native(const SPIRVariable &var)
 	auto &type = get<SPIRType>(var.basetype);
 
 	Bitset flags = ir.get_buffer_block_flags(var);
-	bool ssbo = var.storage == StorageClassStorageBuffer || var.storage == StorageClass::ShaderRecordBufferKHR ||
+	bool ssbo = var.storage == StorageClass::StorageBuffer || var.storage == StorageClass::ShaderRecordBufferKHR ||
 	            ir.meta[type.self].decoration.decoration_flags.get(Decoration::BufferBlock);
 	bool is_restrict = ssbo && flags.get(DecorationRestrict);
 	bool is_writeonly = ssbo && flags.get(DecorationNonReadable);
@@ -2624,15 +2624,15 @@ const char *CompilerGLSL::to_storage_qualifiers_glsl(const SPIRVariable &var)
 	if (subpass_input_is_framebuffer_fetch(var.self))
 		return "";
 
-	if (var.storage == StorageClass::Input || var.storage == StorageClassOutput)
+	if (var.storage == StorageClass::Input || var.storage == StorageClass::Output)
 	{
 		if (is_legacy() && execution.model == ExecutionModel::Vertex)
 			return var.storage == StorageClass::Input ? "attribute " : "varying ";
 		else if (is_legacy() && execution.model == ExecutionModel::Fragment)
 			return "varying "; // Fragment outputs are renamed so they never hit this case.
-		else if (execution.model == ExecutionModel::Fragment && var.storage == StorageClassOutput)
+		else if (execution.model == ExecutionModel::Fragment && var.storage == StorageClass::Output)
 		{
-			uint32_t loc = get_decoration(var.self, DecorationLocation);
+			uint32_t loc = get_decoration(var.self, Decoration::Location);
 			bool is_inout = location_is_framebuffer_fetch(loc);
 			if (is_inout)
 				return "inout ";
@@ -2642,7 +2642,7 @@ const char *CompilerGLSL::to_storage_qualifiers_glsl(const SPIRVariable &var)
 		else
 			return var.storage == StorageClass::Input ? "in " : "out ";
 	}
-	else if (var.storage == StorageClass::UniformConstant || var.storage == StorageClassUniform ||
+	else if (var.storage == StorageClass::UniformConstant || var.storage == StorageClass::Uniform ||
 	         var.storage == StorageClass::PushConstant || var.storage == StorageClassAtomicCounter)
 	{
 		return "uniform ";
@@ -3118,7 +3118,7 @@ void CompilerGLSL::replace_fragment_output(SPIRVariable &var)
 {
 	auto &m = ir.meta[var.self].decoration;
 	uint32_t location = 0;
-	if (m.decoration_flags.get(DecorationLocation))
+	if (m.decoration_flags.get(Decoration::Location))
 		location = m.location;
 
 	// If our variable is arrayed, we must not emit the array part of this as the SPIR-V will
@@ -3157,7 +3157,7 @@ void CompilerGLSL::replace_fragment_outputs()
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t, SPIRVariable &var) {
 		auto &type = this->get<SPIRType>(var.basetype);
 
-		if (!is_builtin_variable(var) && !var.remapped_variable && type.pointer && var.storage == StorageClassOutput)
+		if (!is_builtin_variable(var) && !var.remapped_variable && type.pointer && var.storage == StorageClass::Output)
 			replace_fragment_output(var);
 	});
 }
@@ -3248,7 +3248,7 @@ bool CompilerGLSL::should_force_emit_builtin_block(StorageClass storage)
 {
 	// If the builtin block uses XFB, we need to force explicit redeclaration of the builtin block.
 
-	if (storage != StorageClassOutput)
+	if (storage != StorageClass::Output)
 		return false;
 	bool should_force = false;
 
@@ -3301,13 +3301,13 @@ void CompilerGLSL::fixup_implicit_builtin_block_names(ExecutionModel model)
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t, SPIRVariable &var) {
 		auto &type = this->get<SPIRType>(var.basetype);
 		bool block = has_decoration(type.self, Decoration::Block);
-		if ((var.storage == StorageClassOutput || var.storage == StorageClass::Input) && block &&
+		if ((var.storage == StorageClass::Output || var.storage == StorageClass::Input) && block &&
 		    is_builtin_variable(var))
 		{
 			if (model != ExecutionModelMeshEXT)
 			{
 				// Make sure the array has a supported name in the code.
-				if (var.storage == StorageClassOutput)
+				if (var.storage == StorageClass::Output)
 					set_name(var.self, "gl_out");
 				else if (var.storage == StorageClass::Input)
 					set_name(var.self, "gl_in");
@@ -3328,7 +3328,7 @@ void CompilerGLSL::fixup_implicit_builtin_block_names(ExecutionModel model)
 			}
 		}
 
-		if (model == ExecutionModelMeshEXT && var.storage == StorageClassOutput && !block)
+		if (model == ExecutionModelMeshEXT && var.storage == StorageClass::Output && !block)
 		{
 			auto *m = ir.find_meta(var.self);
 			if (m && m->decoration.builtin)
@@ -3404,7 +3404,7 @@ void CompilerGLSL::emit_declared_builtin_block(StorageClass storage, ExecutionMo
 				index++;
 			}
 
-			if (storage == StorageClassOutput && has_decoration(var.self, DecorationXfbBuffer) &&
+			if (storage == StorageClass::Output && has_decoration(var.self, DecorationXfbBuffer) &&
 			    has_decoration(var.self, DecorationXfbStride))
 			{
 				uint32_t buffer_index = get_decoration(var.self, DecorationXfbBuffer);
@@ -3418,7 +3418,7 @@ void CompilerGLSL::emit_declared_builtin_block(StorageClass storage, ExecutionMo
 				xfb_stride = stride;
 			}
 
-			if (storage == StorageClassOutput && has_decoration(var.self, DecorationStream))
+			if (storage == StorageClass::Output && has_decoration(var.self, DecorationStream))
 			{
 				uint32_t stream = get_decoration(var.self, DecorationStream);
 				if (have_geom_stream && geom_stream != stream)
@@ -3491,7 +3491,7 @@ void CompilerGLSL::emit_declared_builtin_block(StorageClass storage, ExecutionMo
 	if (emitted_builtins.empty())
 		return;
 
-	if (storage == StorageClassOutput)
+	if (storage == StorageClass::Output)
 	{
 		SmallVector<string> attr;
 		if (have_xfb_buffer_stride && have_any_xfb_offset)
@@ -3577,7 +3577,7 @@ void CompilerGLSL::emit_declared_builtin_block(StorageClass storage, ExecutionMo
 	}
 
 	bool builtin_array = model == ExecutionModelTessellationControl ||
-	                     (model == ExecutionModelMeshEXT && storage == StorageClassOutput) ||
+	                     (model == ExecutionModelMeshEXT && storage == StorageClass::Output) ||
 	                     (model == ExecutionModelGeometry && storage == StorageClass::Input) ||
 	                     (model == ExecutionModelTessellationEvaluation && storage == StorageClass::Input);
 
@@ -3589,7 +3589,7 @@ void CompilerGLSL::emit_declared_builtin_block(StorageClass storage, ExecutionMo
 		else
 			instance_name = storage == StorageClass::Input ? "gl_in" : "gl_out";
 
-		if (model == ExecutionModelTessellationControl && storage == StorageClassOutput)
+		if (model == ExecutionModelTessellationControl && storage == StorageClass::Output)
 			end_scope_decl(join(instance_name, "[", get_entry_point().output_vertices, "]"));
 		else
 			end_scope_decl(join(instance_name, "[]"));
@@ -3652,13 +3652,13 @@ void CompilerGLSL::emit_resources()
 		case ExecutionModelTessellationControl:
 		case ExecutionModelTessellationEvaluation:
 			emit_declared_builtin_block(StorageClass::Input, execution.model);
-			emit_declared_builtin_block(StorageClassOutput, execution.model);
+			emit_declared_builtin_block(StorageClass::Output, execution.model);
 			global_invariant_position = false;
 			break;
 
 		case ExecutionModel::Vertex:
 		case ExecutionModelMeshEXT:
-			emit_declared_builtin_block(StorageClassOutput, execution.model);
+			emit_declared_builtin_block(StorageClass::Output, execution.model);
 			global_invariant_position = false;
 			break;
 
@@ -3666,9 +3666,9 @@ void CompilerGLSL::emit_resources()
 			break;
 		}
 	}
-	else if (should_force_emit_builtin_block(StorageClassOutput))
+	else if (should_force_emit_builtin_block(StorageClass::Output))
 	{
-		emit_declared_builtin_block(StorageClassOutput, execution.model);
+		emit_declared_builtin_block(StorageClass::Output, execution.model);
 		global_invariant_position = false;
 	}
 	else if (execution.geometry_passthrough)
@@ -3854,7 +3854,7 @@ void CompilerGLSL::emit_resources()
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t, SPIRVariable &var) {
 		auto &type = this->get<SPIRType>(var.basetype);
 
-		bool is_block_storage = type.storage == StorageClassStorageBuffer || type.storage == StorageClassUniform ||
+		bool is_block_storage = type.storage == StorageClass::StorageBuffer || type.storage == StorageClass::Uniform ||
 		                        type.storage == StorageClass::ShaderRecordBufferKHR;
 		bool has_block_flags = ir.meta[type.self].decoration.decoration_flags.get(Decoration::Block) ||
 		                       ir.meta[type.self].decoration.decoration_flags.get(Decoration::BufferBlock);
@@ -3918,14 +3918,14 @@ void CompilerGLSL::emit_resources()
 		bool is_hidden = is_hidden_variable(var);
 
 		// Unused output I/O variables might still be required to implement framebuffer fetch.
-		if (var.storage == StorageClassOutput && !is_legacy() &&
-		    location_is_framebuffer_fetch(get_decoration(var.self, DecorationLocation)) != 0)
+		if (var.storage == StorageClass::Output && !is_legacy() &&
+		    location_is_framebuffer_fetch(get_decoration(var.self, Decoration::Location)) != 0)
 		{
 			is_hidden = false;
 		}
 
 		if (var.storage != StorageClassFunction && type.pointer &&
-		    (var.storage == StorageClass::Input || var.storage == StorageClassOutput) &&
+		    (var.storage == StorageClass::Input || var.storage == StorageClass::Output) &&
 		    interface_variable_exists_in_entry_point(var.self) && !is_hidden)
 		{
 			if (options.es && get_execution_model() == ExecutionModel::Vertex && var.storage == StorageClass::Input &&
@@ -3985,7 +3985,7 @@ void CompilerGLSL::emit_resources()
 		if (is_hidden_variable(var, true))
 			continue;
 
-		if (var.storage != StorageClassOutput)
+		if (var.storage != StorageClass::Output)
 		{
 			if (!variable_is_lut(var))
 			{
@@ -4014,7 +4014,7 @@ void CompilerGLSL::emit_resources()
 
 void CompilerGLSL::emit_output_variable_initializer(const SPIRVariable &var)
 {
-	// If a StorageClassOutput variable has an initializer, we need to initialize it in main().
+	// If a StorageClass::Output variable has an initializer, we need to initialize it in main().
 	auto &entry_func = this->get<SPIRFunction>(ir.default_entry_point);
 	auto &type = get<SPIRType>(var.basetype);
 	bool is_patch = has_decoration(var.self, DecorationPatch);
@@ -10668,7 +10668,7 @@ string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indice
 						expr = join("gl_MeshVerticesEXT[", to_expression(index, register_expression_read), "].", expr);
 					else if (var->storage == StorageClass::Input)
 						expr = join("gl_in[", to_expression(index, register_expression_read), "].", expr);
-					else if (var->storage == StorageClassOutput)
+					else if (var->storage == StorageClass::Output)
 						expr = join("gl_out[", to_expression(index, register_expression_read), "].", expr);
 					else
 						append_index(index, is_literal);
@@ -10691,7 +10691,7 @@ string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indice
 				}
 			}
 			else if (backend.force_merged_mesh_block && i == 0 && var &&
-			         !is_builtin_variable(*var) && var->storage == StorageClassOutput)
+			         !is_builtin_variable(*var) && var->storage == StorageClass::Output)
 			{
 				if (is_per_primitive_variable(*var))
 					expr = join("gl_MeshPrimitivesEXT[", to_expression(index, register_expression_read), "].", expr);
@@ -10893,7 +10893,7 @@ string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indice
 				// Cleans up some cases where it's very painful to determine the accurate storage class
 				// since blocks can be partially masked ...
 				auto *var = maybe_get_backing_variable(base);
-				if (var && var->storage == StorageClassOutput &&
+				if (var && var->storage == StorageClass::Output &&
 				    get_execution_model() == ExecutionModelTessellationControl &&
 				    !has_decoration(var->self, DecorationPatch))
 				{
@@ -15457,12 +15457,12 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		flush_control_dependent_expressions(current_emitting_block->self);
 		break;
 	case OpTraceRayKHR:
-		if (!has_decoration(ops[10], DecorationLocation))
+		if (!has_decoration(ops[10], Decoration::Location))
 			SPIRV_CROSS_THROW("A memory declaration object must be used in TraceRayKHR.");
 		statement("traceRayEXT(", to_non_uniform_aware_expression(ops[0]), ", ", to_expression(ops[1]), ", ", to_expression(ops[2]), ", ",
 		          to_expression(ops[3]), ", ", to_expression(ops[4]), ", ", to_expression(ops[5]), ", ",
 		          to_expression(ops[6]), ", ", to_expression(ops[7]), ", ", to_expression(ops[8]), ", ",
-		          to_expression(ops[9]), ", ", get_decoration(ops[10], DecorationLocation), ");");
+		          to_expression(ops[9]), ", ", get_decoration(ops[10], Decoration::Location), ");");
 		flush_control_dependent_expressions(current_emitting_block->self);
 		break;
 	case OpExecuteCallableNV:
@@ -15470,9 +15470,9 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		flush_control_dependent_expressions(current_emitting_block->self);
 		break;
 	case OpExecuteCallableKHR:
-		if (!has_decoration(ops[1], DecorationLocation))
+		if (!has_decoration(ops[1], Decoration::Location))
 			SPIRV_CROSS_THROW("A memory declaration object must be used in ExecuteCallableKHR.");
-		statement("executeCallableEXT(", to_expression(ops[0]), ", ", get_decoration(ops[1], DecorationLocation), ");");
+		statement("executeCallableEXT(", to_expression(ops[0]), ", ", get_decoration(ops[1], Decoration::Location), ");");
 		flush_control_dependent_expressions(current_emitting_block->self);
 		break;
 
@@ -16391,13 +16391,13 @@ string CompilerGLSL::argument_decl(const SPIRFunction::Parameter &arg)
 	if (is_pointer(type) &&
 	    (type.storage == StorageClassFunction ||
 	     type.storage == StorageClassPrivate ||
-	     type.storage == StorageClassOutput))
+	     type.storage == StorageClass::Output))
 	{
 		// If we're passing around block types to function, we really mean reference in a pointer sense,
 		// but DXC does not like inout for mesh blocks, so workaround that. out is technically not correct,
 		// but it works in practice due to legalization. It's ... not great, but you gotta do what you gotta do.
 		// GLSL will never hit this case since it's not valid.
-		if (type.storage == StorageClassOutput && get_execution_model() == ExecutionModelMeshEXT &&
+		if (type.storage == StorageClass::Output && get_execution_model() == ExecutionModelMeshEXT &&
 		    has_decoration(type.self, Decoration::Block) && is_builtin_type(type) && arg.write_count)
 		{
 			direction = "out ";
@@ -18993,7 +18993,7 @@ bool CompilerGLSL::unroll_array_to_complex_store(uint32_t target_id, uint32_t so
 	// This path is only relevant for GL backends.
 
 	auto *var = maybe_get<SPIRVariable>(target_id);
-	if (!var || var->storage != StorageClassOutput)
+	if (!var || var->storage != StorageClass::Output)
 		return false;
 
 	if (!is_builtin_variable(*var) || BuiltIn(get_decoration(var->self, DecorationBuiltIn)) != BuiltInSampleMask)
@@ -19033,7 +19033,7 @@ void CompilerGLSL::unroll_array_from_complex_load(uint32_t target_id, uint32_t s
 	if (!var)
 		return;
 
-	if (var->storage != StorageClass::Input && var->storage != StorageClassOutput)
+	if (var->storage != StorageClass::Input && var->storage != StorageClass::Output)
 		return;
 
 	auto &type = get_variable_data_type(*var);
@@ -19204,8 +19204,8 @@ void CompilerGLSL::convert_non_uniform_expression(string &expr, uint32_t ptr_id)
 		return;
 
 	if (var->storage != StorageClass::UniformConstant &&
-	    var->storage != StorageClassStorageBuffer &&
-	    var->storage != StorageClassUniform)
+	    var->storage != StorageClass::StorageBuffer &&
+	    var->storage != StorageClass::Uniform)
 		return;
 
 	auto &backing_type = get<SPIRType>(var->basetype);
@@ -19566,7 +19566,7 @@ const SPIRVariable *CompilerGLSL::find_color_output_by_location(uint32_t locatio
 {
 	const SPIRVariable *ret = nullptr;
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t, const SPIRVariable &var) {
-		if (var.storage == StorageClassOutput && get_decoration(var.self, DecorationLocation) == location)
+		if (var.storage == StorageClass::Output && get_decoration(var.self, Decoration::Location) == location)
 			ret = &var;
 	});
 	return ret;
@@ -19591,7 +19591,7 @@ void CompilerGLSL::emit_inout_fragment_outputs_copy_to_subpass_inputs()
 			if (is_legacy())
 			{
 				statement(to_expression(subpass_var->self), " = ", "gl_LastFragData[",
-				          get_decoration(output_var->self, DecorationLocation), "];");
+				          get_decoration(output_var->self, Decoration::Location), "];");
 			}
 			else
 			{
@@ -19871,7 +19871,7 @@ void CompilerGLSL::rewrite_load_for_wrapped_row_major(std::string &expr, TypeID 
 		return;
 
 	auto &backing_type = get<SPIRType>(var->basetype);
-	bool is_ubo = backing_type.basetype == SPIRType::Struct && backing_type.storage == StorageClassUniform &&
+	bool is_ubo = backing_type.basetype == SPIRType::Struct && backing_type.storage == StorageClass::Uniform &&
 	              has_decoration(backing_type.self, Decoration::Block);
 	if (!is_ubo)
 		return;
@@ -19943,11 +19943,11 @@ bool CompilerGLSL::is_stage_output_variable_masked(const SPIRVariable &var) cons
 	}
 	else
 	{
-		if (!has_decoration(var.self, DecorationLocation))
+		if (!has_decoration(var.self, Decoration::Location))
 			return false;
 
 		return is_stage_output_location_masked(
-				get_decoration(var.self, DecorationLocation),
+				get_decoration(var.self, Decoration::Location),
 				get_decoration(var.self, DecorationComponent));
 	}
 }
@@ -20001,8 +20001,8 @@ bool CompilerGLSL::is_stage_output_builtin_masked(spv::BuiltIn builtin) const
 uint32_t CompilerGLSL::get_declared_member_location(const SPIRVariable &var, uint32_t mbr_idx, bool strip_array) const
 {
 	auto &block_type = get<SPIRType>(var.basetype);
-	if (has_member_decoration(block_type.self, mbr_idx, DecorationLocation))
-		return get_member_decoration(block_type.self, mbr_idx, DecorationLocation);
+	if (has_member_decoration(block_type.self, mbr_idx, Decoration::Location))
+		return get_member_decoration(block_type.self, mbr_idx, Decoration::Location);
 	else
 		return get_accumulated_member_location(var, mbr_idx, strip_array);
 }
@@ -20010,15 +20010,15 @@ uint32_t CompilerGLSL::get_declared_member_location(const SPIRVariable &var, uin
 uint32_t CompilerGLSL::get_accumulated_member_location(const SPIRVariable &var, uint32_t mbr_idx, bool strip_array) const
 {
 	auto &type = strip_array ? get_variable_element_type(var) : get_variable_data_type(var);
-	uint32_t location = get_decoration(var.self, DecorationLocation);
+	uint32_t location = get_decoration(var.self, Decoration::Location);
 
 	for (uint32_t i = 0; i < mbr_idx; i++)
 	{
 		auto &mbr_type = get<SPIRType>(type.member_types[i]);
 
 		// Start counting from any place we have a new location decoration.
-		if (has_member_decoration(type.self, mbr_idx, DecorationLocation))
-			location = get_member_decoration(type.self, mbr_idx, DecorationLocation);
+		if (has_member_decoration(type.self, mbr_idx, Decoration::Location))
+			location = get_member_decoration(type.self, mbr_idx, Decoration::Location);
 
 		uint32_t location_count = type_to_location_count(mbr_type);
 		location += location_count;
@@ -20043,13 +20043,13 @@ StorageClass CompilerGLSL::get_expression_effective_storage_class(uint32_t ptr)
 	{
 		if (variable_decl_is_remapped_storage(*var, StorageClassWorkgroup))
 			return StorageClassWorkgroup;
-		if (variable_decl_is_remapped_storage(*var, StorageClassStorageBuffer))
-			return StorageClassStorageBuffer;
+		if (variable_decl_is_remapped_storage(*var, StorageClass::StorageBuffer))
+			return StorageClass::StorageBuffer;
 
 		// Normalize SSBOs to StorageBuffer here.
-		if (var->storage == StorageClassUniform &&
+		if (var->storage == StorageClass::Uniform &&
 		    has_decoration(get<SPIRType>(var->basetype).self, Decoration::BufferBlock))
-			return StorageClassStorageBuffer;
+			return StorageClass::StorageBuffer;
 		else
 			return var->storage;
 	}
