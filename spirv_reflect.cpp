@@ -292,7 +292,7 @@ bool CompilerReflection::type_is_reference(const SPIRType &type) const
 {
 	// Physical pointers and arrays of physical pointers need to refer to the pointee's type.
 	return is_physical_pointer(type) ||
-	       (type_is_array_of_pointers(type) && type.storage == StorageClassPhysicalStorageBuffer);
+	       (type_is_array_of_pointers(type) && type.storage == StorageClass::PhysicalStorageBuffer);
 }
 
 void CompilerReflection::emit_types()
@@ -350,7 +350,7 @@ void CompilerReflection::emit_type(uint32_t type_id, bool &emitted_open_tag)
 	{
 		emit_type_array(type);
 		json_stream->emit_json_key_value("type", "_" + std::to_string(type.parent_type));
-		json_stream->emit_json_key_value("array_stride", get_decoration(type_id, DecorationArrayStride));
+		json_stream->emit_json_key_value("array_stride", get_decoration(type_id, Decoration::ArrayStride));
 	}
 	else
 	{
