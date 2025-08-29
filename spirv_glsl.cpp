@@ -4161,20 +4161,20 @@ void CompilerGLSL::emit_output_variable_initializer(const SPIRVariable &var)
 	}
 }
 
-void CompilerGLSL::emit_subgroup_arithmetic_workaround(const std::string &func, Op op, GroupOperation group_op)
+void CompilerGLSL::emit_subgroup_arithmetic_workaround(const std::string &func, Op op, GroupOperation:: group_op)
 {
 	std::string result;
 	switch (group_op)
 	{
-	case GroupOperationReduce:
+	case GroupOperation::Reduce:
 		result = "reduction";
 		break;
 
-	case GroupOperationExclusiveScan:
+	case GroupOperation::ExclusiveScan:
 		result = "excl_scan";
 		break;
 
-	case GroupOperationInclusiveScan:
+	case GroupOperation::InclusiveScan:
 		result = "incl_scan";
 		break;
 
@@ -4273,11 +4273,11 @@ void CompilerGLSL::emit_subgroup_arithmetic_workaround(const std::string &func, 
 		statement("for (uint i = 1u; i <= total; i <<= 1u)");
 		begin_scope();
 		statement("bool valid;");
-		if (group_op == GroupOperationReduce)
+		if (group_op == GroupOperation::Reduce)
 		{
 			statement(t.type, " s = shuffleXorNV(", result, ", i, gl_SubgroupSize, valid);");
 		}
-		else if (group_op == GroupOperationExclusiveScan || group_op == GroupOperationInclusiveScan)
+		else if (group_op == GroupOperation::ExclusiveScan || group_op == GroupOperation::InclusiveScan)
 		{
 			statement(t.type, " s = shuffleUpNV(", result, ", i, gl_SubgroupSize, valid);");
 		}
@@ -4286,7 +4286,7 @@ void CompilerGLSL::emit_subgroup_arithmetic_workaround(const std::string &func, 
 			statement(result, " ", op_symbol, " valid ? s : ", t.identity, ";");
 		}
 		end_scope();
-		if (group_op == GroupOperationExclusiveScan)
+		if (group_op == GroupOperation::ExclusiveScan)
 		{
 			statement(result, " = shuffleUpNV(", result, ", 1u, gl_SubgroupSize);");
 			statement("if (subgroupElect())");
@@ -4297,11 +4297,11 @@ void CompilerGLSL::emit_subgroup_arithmetic_workaround(const std::string &func, 
 		end_scope();
 		statement("else");
 		begin_scope();
-		if (group_op == GroupOperationExclusiveScan)
+		if (group_op == GroupOperation::ExclusiveScan)
 		{
 			statement("uint total = subgroupBallotBitCount(gl_SubgroupLtMask);");
 		}
-		else if (group_op == GroupOperationInclusiveScan)
+		else if (group_op == GroupOperation::InclusiveScan)
 		{
 			statement("uint total = subgroupBallotBitCount(gl_SubgroupLeMask);");
 		}
@@ -4309,7 +4309,7 @@ void CompilerGLSL::emit_subgroup_arithmetic_workaround(const std::string &func, 
 		begin_scope();
 		statement("bool valid = subgroupBallotBitExtract(active_threads, i);");
 		statement(t.type, " s = shuffleNV(v, i, gl_SubgroupSize);");
-		if (group_op == GroupOperationExclusiveScan || group_op == GroupOperationInclusiveScan)
+		if (group_op == GroupOperation::ExclusiveScan || group_op == GroupOperation::InclusiveScan)
 		{
 			statement("valid = valid && (i < total);");
 		}
@@ -4754,30 +4754,30 @@ void CompilerGLSL::emit_extension_workarounds(spv::ExecutionModel model)
 		};
 
 		arithmetic_feature_helper(Supp::SubgroupArithmeticIAddReduce, "subgroupAdd", OpGroupNonUniformIAdd,
-		                          GroupOperationReduce);
+		                          GroupOperation::Reduce);
 		arithmetic_feature_helper(Supp::SubgroupArithmeticIAddExclusiveScan, "subgroupExclusiveAdd",
-		                          OpGroupNonUniformIAdd, GroupOperationExclusiveScan);
+		                          OpGroupNonUniformIAdd, GroupOperation::ExclusiveScan);
 		arithmetic_feature_helper(Supp::SubgroupArithmeticIAddInclusiveScan, "subgroupInclusiveAdd",
-		                          OpGroupNonUniformIAdd, GroupOperationInclusiveScan);
+		                          OpGroupNonUniformIAdd, GroupOperation::InclusiveScan);
 		arithmetic_feature_helper(Supp::SubgroupArithmeticFAddReduce, "subgroupAdd", OpGroupNonUniformFAdd,
-		                          GroupOperationReduce);
+		                          GroupOperation::Reduce);
 		arithmetic_feature_helper(Supp::SubgroupArithmeticFAddExclusiveScan, "subgroupExclusiveAdd",
-		                          OpGroupNonUniformFAdd, GroupOperationExclusiveScan);
+		                          OpGroupNonUniformFAdd, GroupOperation::ExclusiveScan);
 		arithmetic_feature_helper(Supp::SubgroupArithmeticFAddInclusiveScan, "subgroupInclusiveAdd",
-		                          OpGroupNonUniformFAdd, GroupOperationInclusiveScan);
+		                          OpGroupNonUniformFAdd, GroupOperation::InclusiveScan);
 
 		arithmetic_feature_helper(Supp::SubgroupArithmeticIMulReduce, "subgroupMul", OpGroupNonUniformIMul,
-		                          GroupOperationReduce);
+		                          GroupOperation::Reduce);
 		arithmetic_feature_helper(Supp::SubgroupArithmeticIMulExclusiveScan, "subgroupExclusiveMul",
-		                          OpGroupNonUniformIMul, GroupOperationExclusiveScan);
+		                          OpGroupNonUniformIMul, GroupOperation::ExclusiveScan);
 		arithmetic_feature_helper(Supp::SubgroupArithmeticIMulInclusiveScan, "subgroupInclusiveMul",
-		                          OpGroupNonUniformIMul, GroupOperationInclusiveScan);
+		                          OpGroupNonUniformIMul, GroupOperation::InclusiveScan);
 		arithmetic_feature_helper(Supp::SubgroupArithmeticFMulReduce, "subgroupMul", OpGroupNonUniformFMul,
-		                          GroupOperationReduce);
+		                          GroupOperation::Reduce);
 		arithmetic_feature_helper(Supp::SubgroupArithmeticFMulExclusiveScan, "subgroupExclusiveMul",
-		                          OpGroupNonUniformFMul, GroupOperationExclusiveScan);
+		                          OpGroupNonUniformFMul, GroupOperation::ExclusiveScan);
 		arithmetic_feature_helper(Supp::SubgroupArithmeticFMulInclusiveScan, "subgroupInclusiveMul",
-		                          OpGroupNonUniformFMul, GroupOperationInclusiveScan);
+		                          OpGroupNonUniformFMul, GroupOperation::InclusiveScan);
 	}
 
 	if (!workaround_ubo_load_overload_types.empty())
@@ -7826,9 +7826,9 @@ bool CompilerGLSL::is_supported_subgroup_op_in_opengl(spv::Op op, const uint32_t
 	case Op::OpGroupNonUniformIMul:
 	case Op::OpGroupNonUniformFMul:
 	{
-		const GroupOperation operation = static_cast<GroupOperation>(ops[3]);
-		if (operation == GroupOperationReduce || operation == GroupOperationInclusiveScan ||
-		    operation == GroupOperationExclusiveScan)
+		const GroupOperation:: operation = static_cast<GroupOperation>(ops[3]);
+		if (operation == GroupOperation::Reduce || operation == GroupOperation::InclusiveScan ||
+		    operation == GroupOperation::ExclusiveScan)
 		{
 			return true;
 		}
@@ -9525,10 +9525,10 @@ void CompilerGLSL::emit_subgroup_op(const Instruction &i)
 
 	case Op::OpGroupNonUniformBallotBitCount:
 	{
-		const GroupOperation operation = static_cast<GroupOperation>(ops[3]);
-		if (operation == GroupOperationReduce)
+		const GroupOperation:: operation = static_cast<GroupOperation>(ops[3]);
+		if (operation == GroupOperation::Reduce)
 			request_subgroup_feature(ShaderSubgroupSupportHelper::SubgroupBallotBitCount);
-		else if (operation == GroupOperationInclusiveScan || operation == GroupOperationExclusiveScan)
+		else if (operation == GroupOperation::InclusiveScan || operation == GroupOperation::ExclusiveScan)
 			request_subgroup_feature(ShaderSubgroupSupportHelper::SubgroupInverseBallot_InclBitCount_ExclBitCout);
 	}
 	break;
@@ -9586,13 +9586,13 @@ void CompilerGLSL::emit_subgroup_op(const Instruction &i)
 	case Op::OpGroupNonUniform##OP:\
 	{\
 		auto operation = static_cast<GroupOperation>(ops[3]);\
-		if (operation == GroupOperationClusteredReduce)\
+		if (operation == GroupOperation::ClusteredReduce)\
 			require_extension_internal("GL_KHR_shader_subgroup_clustered");\
-		else if (operation == GroupOperationReduce)\
+		else if (operation == GroupOperation::Reduce)\
 			request_subgroup_feature(ShaderSubgroupSupportHelper::SubgroupArithmetic##OP##Reduce);\
-		else if (operation == GroupOperationExclusiveScan)\
+		else if (operation == GroupOperation::ExclusiveScan)\
 			request_subgroup_feature(ShaderSubgroupSupportHelper::SubgroupArithmetic##OP##ExclusiveScan);\
-		else if (operation == GroupOperationInclusiveScan)\
+		else if (operation == GroupOperation::InclusiveScan)\
 			request_subgroup_feature(ShaderSubgroupSupportHelper::SubgroupArithmetic##OP##InclusiveScan);\
 		else\
 			SPIRV_CROSS_THROW("Invalid group operation.");\
@@ -9621,12 +9621,12 @@ void CompilerGLSL::emit_subgroup_op(const Instruction &i)
 	case Op::OpGroupNonUniformLogicalXor:
 	{
 		auto operation = static_cast<GroupOperation>(ops[3]);
-		if (operation == GroupOperationClusteredReduce)
+		if (operation == GroupOperation::ClusteredReduce)
 		{
 			require_extension_internal("GL_KHR_shader_subgroup_clustered");
 		}
-		else if (operation == GroupOperationExclusiveScan || operation == GroupOperationInclusiveScan ||
-		         operation == GroupOperationReduce)
+		else if (operation == GroupOperation::ExclusiveScan || operation == GroupOperation::InclusiveScan ||
+		         operation == GroupOperation::Reduce)
 		{
 			require_extension_internal("GL_KHR_shader_subgroup_arithmetic");
 		}
@@ -9699,11 +9699,11 @@ void CompilerGLSL::emit_subgroup_op(const Instruction &i)
 	case Op::OpGroupNonUniformBallotBitCount:
 	{
 		auto operation = static_cast<GroupOperation>(ops[3]);
-		if (operation == GroupOperationReduce)
+		if (operation == GroupOperation::Reduce)
 			emit_unary_func_op(result_type, id, ops[4], "subgroupBallotBitCount");
-		else if (operation == GroupOperationInclusiveScan)
+		else if (operation == GroupOperation::InclusiveScan)
 			emit_unary_func_op(result_type, id, ops[4], "subgroupBallotInclusiveBitCount");
-		else if (operation == GroupOperationExclusiveScan)
+		else if (operation == GroupOperation::ExclusiveScan)
 			emit_unary_func_op(result_type, id, ops[4], "subgroupBallotExclusiveBitCount");
 		else
 			SPIRV_CROSS_THROW("Invalid BitCount operation.");
@@ -9750,13 +9750,13 @@ void CompilerGLSL::emit_subgroup_op(const Instruction &i)
 case Op::OpGroupNonUniform##op: \
 	{ \
 		auto operation = static_cast<GroupOperation>(ops[3]); \
-		if (operation == GroupOperationReduce) \
+		if (operation == GroupOperation::Reduce) \
 			emit_unary_func_op(result_type, id, ops[4], "subgroup" #glsl_op); \
-		else if (operation == GroupOperationInclusiveScan) \
+		else if (operation == GroupOperation::InclusiveScan) \
 			emit_unary_func_op(result_type, id, ops[4], "subgroupInclusive" #glsl_op); \
-		else if (operation == GroupOperationExclusiveScan) \
+		else if (operation == GroupOperation::ExclusiveScan) \
 			emit_unary_func_op(result_type, id, ops[4], "subgroupExclusive" #glsl_op); \
-		else if (operation == GroupOperationClusteredReduce) \
+		else if (operation == GroupOperation::ClusteredReduce) \
 			emit_binary_func_op(result_type, id, ops[4], ops[5], "subgroupClustered" #glsl_op); \
 		else \
 			SPIRV_CROSS_THROW("Invalid group operation."); \
@@ -9767,13 +9767,13 @@ case Op::OpGroupNonUniform##op: \
 case Op::OpGroupNonUniform##op: \
 	{ \
 		auto operation = static_cast<GroupOperation>(ops[3]); \
-		if (operation == GroupOperationReduce) \
+		if (operation == GroupOperation::Reduce) \
 			emit_unary_func_op_cast(result_type, id, ops[4], "subgroup" #glsl_op, type, type); \
-		else if (operation == GroupOperationInclusiveScan) \
+		else if (operation == GroupOperation::InclusiveScan) \
 			emit_unary_func_op_cast(result_type, id, ops[4], "subgroupInclusive" #glsl_op, type, type); \
-		else if (operation == GroupOperationExclusiveScan) \
+		else if (operation == GroupOperation::ExclusiveScan) \
 			emit_unary_func_op_cast(result_type, id, ops[4], "subgroupExclusive" #glsl_op, type, type); \
-		else if (operation == GroupOperationClusteredReduce) \
+		else if (operation == GroupOperation::ClusteredReduce) \
 			emit_binary_func_op_cast_clustered(result_type, id, ops[4], ops[5], "subgroupClustered" #glsl_op, type); \
 		else \
 			SPIRV_CROSS_THROW("Invalid group operation."); \
