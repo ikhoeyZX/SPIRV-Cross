@@ -2063,7 +2063,7 @@ string CompilerGLSL::layout_for_variable(const SPIRVariable &var)
 		bool have_geom_stream = false;
 		uint32_t xfb_stride = 0, xfb_buffer = 0, geom_stream = 0;
 
-		if (flags.get(static_cast<uint32_t>(Decoration::XfbBuffer)) && flags.get(Decoration::XfbStride))
+		if (flags.get(static_cast<uint32_t>(Decoration::XfbBuffer)) && flags.get(static_cast<uint32_t>(Decoration::XfbStride)))
 		{
 			have_xfb_buffer_stride = true;
 			xfb_buffer = get_decoration(var.self, Decoration::XfbBuffer);
@@ -2132,7 +2132,7 @@ string CompilerGLSL::layout_for_variable(const SPIRVariable &var)
 	}
 	else if (var.storage == StorageClass::Output)
 	{
-		if (flags.get(static_cast<uint32_t>(Decoration::XfbBuffer)) && flags.get(Decoration::XfbStride) && flags.get(Decoration::Offset))
+		if (flags.get(static_cast<uint32_t>(Decoration::XfbBuffer)) && flags.get(static_cast<uint32_t>(Decoration::XfbStride)) && flags.get(static_cast<uint32_t>(Decoration::Offset)))
 		{
 			// XFB for standalone variables, we can emit all decorations.
 			attr.push_back(join("xfb_buffer = ", get_decoration(var.self, Decoration::XfbBuffer)));
@@ -2188,7 +2188,7 @@ string CompilerGLSL::layout_for_variable(const SPIRVariable &var)
 
 	bool push_constant_block = options.vulkan_semantics && var.storage == StorageClass::PushConstant;
 	bool ssbo_block = var.storage == StorageClass::StorageBuffer || var.storage == StorageClass::ShaderRecordBufferKHR ||
-	                  (var.storage == StorageClass::Uniform && typeflags.get(Decoration::BufferBlock));
+	                  (var.storage == StorageClass::Uniform && typeflags.get(static_cast<uint32_t>(Decoration::BufferBlock)));
 	bool emulated_ubo = var.storage == StorageClass::PushConstant && options.emit_push_constant_as_uniform_buffer;
 	bool ubo_block = var.storage == StorageClass::Uniform && typeflags.get(Decoration::Block);
 
@@ -2212,10 +2212,10 @@ string CompilerGLSL::layout_for_variable(const SPIRVariable &var)
 	if (var.storage == StorageClass::ShaderRecordBufferKHR)
 		can_use_binding = false;
 
-	if (can_use_binding && flags.get(Decoration::Binding))
+	if (can_use_binding && flags.get(static_cast<uint32_t>(Decoration::Binding)))
 		attr.push_back(join("binding = ", get_decoration(var.self, Decoration::Binding)));
 
-	if (var.storage != StorageClass::Output && flags.get(Decoration::Offset))
+	if (var.storage != StorageClass::Output && flags.get(static_cast<uint32_t>(Decoration::Offset)))
 		attr.push_back(join("offset = ", get_decoration(var.self, Decoration::Offset)));
 
 	// Instead of adding explicit offsets for every element here, just assume we're using std140 or std430.
@@ -2382,7 +2382,7 @@ void CompilerGLSL::emit_buffer_block_legacy(const SPIRVariable &var)
 {
 	auto &type = get<SPIRType>(var.basetype);
 	bool ssbo = var.storage == StorageClass::StorageBuffer ||
-	            ir.meta[type.self].decoration.decoration_flags.get(Decoration::BufferBlock);
+	            ir.meta[type.self].decoration.decoration_flags.get(static_cast<uint32_t>(Decoration::BufferBlock));
 	if (ssbo)
 		SPIRV_CROSS_THROW("SSBOs not supported in legacy targets.");
 
@@ -2527,7 +2527,7 @@ void CompilerGLSL::emit_buffer_block_native(const SPIRVariable &var)
 
 	Bitset flags = ir.get_buffer_block_flags(var);
 	bool ssbo = var.storage == StorageClass::StorageBuffer || var.storage == StorageClass::ShaderRecordBufferKHR ||
-	            ir.meta[type.self].decoration.decoration_flags.get(Decoration::BufferBlock);
+	            ir.meta[type.self].decoration.decoration_flags.get(static_cast<uint32_t>(Decoration::BufferBlock));
 	bool is_restrict = ssbo && flags.get(static_cast<uint32_t>(Decoration::Restrict));
 	bool is_writeonly = ssbo && flags.get(Decoration::NonReadable);
 	bool is_readonly = ssbo && flags.get(Decoration::NonWritable);
@@ -3386,7 +3386,7 @@ void CompilerGLSL::emit_declared_builtin_block(StorageClass storage, ExecutionMo
 					else if (m.builtin_type == BuiltIn::ClipDistance)
 						clip_distance_size = to_array_size_literal(this->get<SPIRType>(type.member_types[index]));
 
-					if (is_block_builtin(m.builtin_type) && m.decoration_flags.get(Decoration::Offset))
+					if (is_block_builtin(m.builtin_type) && m.decoration_flags.get(static_cast<uint32_t>(Decoration::Offset)))
 					{
 						have_any_xfb_offset = true;
 						builtin_xfb_offsets[m.builtin_type] = m.offset;
@@ -3441,8 +3441,8 @@ void CompilerGLSL::emit_declared_builtin_block(StorageClass storage, ExecutionMo
 				else if (m.builtin_type == BuiltIn::ClipDistance)
 					clip_distance_size = to_array_size_literal(type, 0);
 
-				if (is_block_builtin(m.builtin_type) && m.decoration_flags.get(Decoration::XfbStride) &&
-				    m.decoration_flags.get(static_cast<uint32_t>(Decoration::XfbBuffer)) && m.decoration_flags.get(Decoration::Offset))
+				if (is_block_builtin(m.builtin_type) && m.decoration_flags.get(static_cast<uint32_t>(Decoration::XfbStride)) &&
+				    m.decoration_flags.get(static_cast<uint32_t>(Decoration::XfbBuffer)) && m.decoration_flags.get(static_cast<uint32_t>(Decoration::Offset)))
 				{
 					have_any_xfb_offset = true;
 					builtin_xfb_offsets[m.builtin_type] = m.offset;
@@ -3857,7 +3857,7 @@ void CompilerGLSL::emit_resources()
 		bool is_block_storage = type.storage == StorageClass::StorageBuffer || type.storage == StorageClass::Uniform ||
 		                        type.storage == StorageClass::ShaderRecordBufferKHR;
 		bool has_block_flags = ir.meta[type.self].decoration.decoration_flags.get(Decoration::Block) ||
-		                       ir.meta[type.self].decoration.decoration_flags.get(Decoration::BufferBlock);
+		                       ir.meta[type.self].decoration.decoration_flags.get(static_cast<uint32_t>(Decoration::BufferBlock));
 
 		if (var.storage != StorageClass::Function && type.pointer && is_block_storage && !is_hidden_variable(var) &&
 		    has_block_flags)
@@ -10772,7 +10772,7 @@ string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indice
 			}
 			else
 			{
-				BuiltIn builtin = BuiltInMax;
+				BuiltIn builtin = BuiltIn::Max;
 				if (is_member_builtin(*type, index, &builtin) && access_chain_needs_stage_io_builtin_translation(base))
 				{
 					if (access_chain_is_arrayed)
@@ -16191,7 +16191,7 @@ void CompilerGLSL::emit_struct_member(const SPIRType &type, uint32_t member_type
 
 	string qualifiers;
 	bool is_block = ir.meta[type.self].decoration.decoration_flags.get(Decoration::Block) ||
-	                ir.meta[type.self].decoration.decoration_flags.get(Decoration::BufferBlock);
+	                ir.meta[type.self].decoration.decoration_flags.get(static_cast<uint32_t>(Decoration::BufferBlock));
 
 	if (is_block)
 		qualifiers = to_interpolation_qualifiers(memberflags);
@@ -16213,7 +16213,7 @@ string CompilerGLSL::flags_to_qualifiers_glsl(const SPIRType &type, uint32_t id,
 	string qual;
 
 	if (type_is_floating_point(type) &&
-	    (flags.get(DecorationNoContraction) || (type.self && has_legacy_nocontract(type.self, id))) &&
+	    (flags.get(Decoration::NoContraction) || (type.self && has_legacy_nocontract(type.self, id))) &&
 	    backend.support_precise_qualifier)
 	{
 		qual = "precise ";
@@ -19959,7 +19959,7 @@ bool CompilerGLSL::is_stage_output_block_member_masked(const SPIRVariable &var, 
 	if (!is_block)
 		return false;
 
-	BuiltIn builtin = BuiltInMax;
+	BuiltIn builtin = BuiltIn::Max;
 	if (is_member_builtin(type, index, &builtin))
 	{
 		return is_stage_output_builtin_masked(builtin);
@@ -20155,10 +20155,10 @@ uint32_t CompilerGLSL::get_fp_fast_math_flags_for_op(uint32_t result_type, uint3
 	}
 
 	if (szinp)
-		fp_flags &= ~(FPFastMathModeNSZMask | FPFastMathModeNotInfMask | FPFastMathModeNotNaNMask);
+		fp_flags &= ~(FPFastMathModeNSZMask | FPFastMathModeNotInfMask | FPFastMathModeMask::NotNaN);
 
 	// Legacy NoContraction deals with any kind of transform to the expression.
-	if (id != 0 && has_decoration(id, DecorationNoContraction))
+	if (id != 0 && has_decoration(id, Decoration::NoContraction))
 		fp_flags &= ~(FPFastMathModeAllowContractMask | FPFastMathModeAllowTransformMask | FPFastMathModeAllowReassocMask);
 
 	// Handle float_controls2 execution modes.
