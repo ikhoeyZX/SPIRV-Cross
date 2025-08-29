@@ -4498,7 +4498,7 @@ void Compiler::ActiveBuiltinHandler::add_if_builtin(uint32_t id, bool allow_bloc
 				{
 					auto &member_type = compiler.get<SPIRType>(type.member_types[i]);
 					BuiltIn builtin = BuiltIn(compiler.get_member_decoration(type.self, i, Decoration::BuiltIn));
-					flags.set(builtin);
+					flags.set(static_cast<uint32_t>(builtin));
 					handle_builtin(member_type, builtin, compiler.get_member_decoration_bitset(type.self, i));
 				}
 			}
@@ -4605,7 +4605,7 @@ bool Compiler::ActiveBuiltinHandler::handle(spv::Op opcode, const uint32_t *args
 		{
 			// Pointers
 			// PtrAccessChain functions more like a pointer offset. Type remains the same.
-			if (opcode == OpPtrAccessChain && i == 0)
+			if (opcode == static_cast<uint32_t>(Op::OpPtrAccessChain) && i == 0)
 				continue;
 
 			// Arrays
@@ -4623,7 +4623,7 @@ bool Compiler::ActiveBuiltinHandler::handle(spv::Op opcode, const uint32_t *args
 					auto &decorations = compiler.ir.meta[type->self].members[index];
 					if (decorations.builtin)
 					{
-						flags.set(decorations.builtin_type);
+						flags.set(static_cast<uint32_t>(decorations.builtin_type));
 						handle_builtin(compiler.get<SPIRType>(type->member_types[index]), decorations.builtin_type,
 						               decorations.decoration_flags);
 					}
@@ -4657,7 +4657,7 @@ void Compiler::update_active_builtins()
 	traverse_all_reachable_opcodes(get<SPIRFunction>(ir.default_entry_point), handler);
 
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t, const SPIRVariable &var) {
-		if (var.storage != StorageClassOutput)
+		if (var.storage != StorageClass::Output)
 			return;
 		if (!interface_variable_exists_in_entry_point(var.self))
 			return;
@@ -4674,17 +4674,17 @@ bool Compiler::has_active_builtin(BuiltIn builtin, StorageClass storage) const
 	const Bitset *flags;
 	switch (storage)
 	{
-	case StorageClassInput:
+	case StorageClass::Input:
 		flags = &active_input_builtins;
 		break;
-	case StorageClassOutput:
+	case StorageClass::Output:
 		flags = &active_output_builtins;
 		break;
 
 	default:
 		return false;
 	}
-	return flags->get(builtin);
+	return flags->get(static_cast<uint32_t>(builtin));
 }
 
 void Compiler::analyze_image_and_sampler_usage()
@@ -4892,7 +4892,7 @@ bool Compiler::CombinedImageSamplerUsageHandler::handle(Op opcode, const uint32_
 		// Ideally defer this to OpImageRead, but then we'd need to track loaded IDs.
 		// If we load an image, we're going to use it and there is little harm in declaring an unused gl_FragCoord.
 		auto &type = compiler.get<SPIRType>(args[0]);
-		if (type.image.dim == DimSubpassData)
+		if (type.image.dim == Dim::SubpassData)
 		{
 			need_subpass_input = true;
 			if (type.image.ms)
@@ -5060,7 +5060,7 @@ bool Compiler::reflection_ssbo_instance_name_is_significant() const
 			return;
 
 		bool ssbo = var.storage == StorageClass::StorageBuffer ||
-		            (var.storage == StorageClass::Uniform && has_decoration(type.self, DecorationBufferBlock));
+		            (var.storage == StorageClass::Uniform && has_decoration(type.self, Decoration::BufferBlock));
 
 		if (ssbo)
 		{
@@ -5127,26 +5127,26 @@ bool Compiler::is_desktop_only_format(spv::ImageFormat format)
 	switch (format)
 	{
 	// Desktop-only formats
-	case ImageFormatR11fG11fB10f:
-	case ImageFormatR16f:
-	case ImageFormatRgb10A2:
-	case ImageFormatR8:
-	case ImageFormatRg8:
-	case ImageFormatR16:
-	case ImageFormatRg16:
-	case ImageFormatRgba16:
-	case ImageFormatR16Snorm:
-	case ImageFormatRg16Snorm:
-	case ImageFormatRgba16Snorm:
-	case ImageFormatR8Snorm:
-	case ImageFormatRg8Snorm:
-	case ImageFormatR8ui:
-	case ImageFormatRg8ui:
-	case ImageFormatR16ui:
-	case ImageFormatRgb10a2ui:
-	case ImageFormatR8i:
-	case ImageFormatRg8i:
-	case ImageFormatR16i:
+	case ImageFormat::R11fG11fB10f:
+	case ImageFormat::R16f:
+	case ImageFormat::Rgb10A2:
+	case ImageFormat::R8:
+	case ImageFormat::Rg8:
+	case ImageFormat::R16:
+	case ImageFormat::Rg16:
+	case ImageFormat::Rgba16:
+	case ImageFormat::R16Snorm:
+	case ImageFormat::Rg16Snorm:
+	case ImageFormat::Rgba16Snorm:
+	case ImageFormat::R8Snorm:
+	case ImageFormat::Rg8Snorm:
+	case ImageFormat::R8ui:
+	case ImageFormat::Rg8ui:
+	case ImageFormat::R16ui:
+	case ImageFormat::Rgb10a2ui:
+	case ImageFormat::R8i:
+	case ImageFormat::Rg8i:
+	case ImageFormat::R16i:
 		return true;
 	default:
 		break;
@@ -5159,7 +5159,7 @@ bool Compiler::is_desktop_only_format(spv::ImageFormat format)
 // explicitly marked with a color format, or if there are any sample/gather compare operations on it.
 bool Compiler::is_depth_image(const SPIRType &type, uint32_t id) const
 {
-	return (type.image.depth && type.image.format == ImageFormatUnknown) || comparison_ids.count(id);
+	return (type.image.depth && type.image.format == ImageFormat::Unknown) || comparison_ids.count(id);
 }
 
 bool Compiler::type_is_opaque_value(const SPIRType &type) const
@@ -5210,13 +5210,13 @@ void Compiler::PhysicalStorageBufferPointerHandler::mark_aligned_access(uint32_t
 	uint32_t mask = *args;
 	args++;
 	length--;
-	if (length && (mask & MemoryAccessVolatileMask) != 0)
+	if (length && (mask & MemoryAccessMask::Volatile) != 0)
 	{
 		args++;
 		length--;
 	}
 
-	if (length && (mask & MemoryAccessAlignedMask) != 0)
+	if (length && (mask & MemoryAccessMask::Aligned) != 0)
 	{
 		uint32_t alignment = *args;
 		auto *meta = find_block_meta(id);
@@ -5241,7 +5241,7 @@ bool Compiler::PhysicalStorageBufferPointerHandler::type_is_bda_block_entry(uint
 
 uint32_t Compiler::PhysicalStorageBufferPointerHandler::get_minimum_scalar_alignment(const SPIRType &type) const
 {
-	if (type.storage == spv::StorageClassPhysicalStorageBuffer)
+	if (type.storage == spv::StorageClass::PhysicalStorageBuffer)
 		return 8;
 	else if (type.basetype == SPIRType::Struct)
 	{
@@ -5371,8 +5371,8 @@ void Compiler::analyze_non_block_pointer_types()
 	ir.for_each_typed_id<SPIRType>([&](uint32_t id, SPIRType &type) {
 		// Only analyze the raw block struct, not any pointer-to-struct, since that's just redundant.
 		if (type.self == id &&
-		    (has_decoration(type.self, DecorationBlock) ||
-		     has_decoration(type.self, DecorationBufferBlock)))
+		    (has_decoration(type.self, Decoration::Block) ||
+		     has_decoration(type.self, Decoration::BufferBlock)))
 		{
 			handler.analyze_non_block_types_from_block(type);
 		}
@@ -5387,7 +5387,7 @@ void Compiler::analyze_non_block_pointer_types()
 
 bool Compiler::InterlockedResourceAccessPrepassHandler::handle(Op op, const uint32_t *, uint32_t)
 {
-	if (op == OpBeginInvocationInterlockEXT || op == OpEndInvocationInterlockEXT)
+	if (op == Op::OpBeginInvocationInterlockEXT || op == Op::OpEndInvocationInterlockEXT)
 	{
 		if (interlock_function_id != 0 && interlock_function_id != call_stack.back())
 		{
@@ -5465,13 +5465,13 @@ bool Compiler::InterlockedResourceAccessHandler::handle(Op opcode, const uint32_
 	// Only care about critical section analysis if we have simple case.
 	if (use_critical_section)
 	{
-		if (opcode == OpBeginInvocationInterlockEXT)
+		if (opcode == Op::OpBeginInvocationInterlockEXT)
 		{
 			in_crit_sec = true;
 			return true;
 		}
 
-		if (opcode == OpEndInvocationInterlockEXT)
+		if (opcode == Op::OpEndInvocationInterlockEXT)
 		{
 			// End critical section--nothing more to do.
 			return false;
