@@ -1204,8 +1204,8 @@ void Compiler::parse_fixup()
 		if (id.get_type() == TypeConstant)
 		{
 			auto &c = id.get<SPIRConstant>();
-			if (has_decoration(c.self, DecorationBuiltIn) &&
-			    BuiltIn(get_decoration(c.self, DecorationBuiltIn)) == BuiltInWorkgroupSize)
+			if (has_decoration(c.self, Decoration::BuiltIn) &&
+			    BuiltIn(get_decoration(c.self, Decoration::BuiltIn)) == BuiltIn::WorkgroupSize)
 			{
 				// In current SPIR-V, there can be just one constant like this.
 				// All entry points will receive the constant value.
@@ -1336,7 +1336,7 @@ const SPIRType &Compiler::get_pointee_type(uint32_t type_id) const
 
 uint32_t Compiler::get_variable_data_type_id(const SPIRVariable &var) const
 {
-	if (var.phi_variable || var.storage == spv::StorageClass::StorageClassAtomicCounter)
+	if (var.phi_variable || var.storage == spv::StorageClass::AtomicCounter)
 		return var.basetype;
 	return get_pointee_type_id(var.basetype);
 }
@@ -1370,7 +1370,7 @@ const SPIRType &Compiler::get_variable_element_type(const SPIRVariable &var) con
 bool Compiler::is_sampled_image_type(const SPIRType &type)
 {
 	return (type.basetype == SPIRType::Image || type.basetype == SPIRType::SampledImage) && type.image.sampled == 1 &&
-	       type.image.dim != DimBuffer;
+	       type.image.dim != Dim::Buffer;
 }
 
 void Compiler::set_member_decoration_string(TypeID id, uint32_t index, spv::Decoration decoration,
@@ -1604,7 +1604,7 @@ bool Compiler::get_binary_offset_for_decoration(VariableID id, spv::Decoration d
 		return false;
 
 	auto &word_offsets = m->decoration_word_offset;
-	auto itr = word_offsets.find(decoration);
+	auto itr = word_offsets.find(static_cast<uint32_t>(decoration));
 	if (itr == end(word_offsets))
 		return false;
 
@@ -1913,7 +1913,7 @@ bool Compiler::traverse_all_reachable_opcodes(const SPIRBlock &block, OpcodeHand
 		if (!handler.handle(op, ops, i.length))
 			return false;
 
-		if (op == OpFunctionCall)
+		if (op == Op::OpFunctionCall)
 		{
 			auto &func = get<SPIRFunction>(ops[2]);
 			if (handler.follow_function_call(func))
@@ -1952,7 +1952,7 @@ uint32_t Compiler::type_struct_member_offset(const SPIRType &type, uint32_t inde
 	{
 		// Decoration must be set in valid SPIR-V, otherwise throw.
 		auto &dec = type_meta->members[index];
-		if (dec.decoration_flags.get(DecorationOffset))
+		if (dec.decoration_flags.get(static_cast<uint32_t>(Decoration::Offset)))
 			return dec.offset;
 		else
 			SPIRV_CROSS_THROW("Struct member does not have Offset set.");
@@ -1969,7 +1969,7 @@ uint32_t Compiler::type_struct_member_array_stride(const SPIRType &type, uint32_
 		// Decoration must be set in valid SPIR-V, otherwise throw.
 		// ArrayStride is part of the array type not OpMemberDecorate.
 		auto &dec = type_meta->decoration;
-		if (dec.decoration_flags.get(DecorationArrayStride))
+		if (dec.decoration_flags.get(static_cast<uint32_t>(Decoration::ArrayStride)))
 			return dec.array_stride;
 		else
 			SPIRV_CROSS_THROW("Struct member does not have ArrayStride set.");
@@ -1986,7 +1986,7 @@ uint32_t Compiler::type_struct_member_matrix_stride(const SPIRType &type, uint32
 		// Decoration must be set in valid SPIR-V, otherwise throw.
 		// MatrixStride is part of OpMemberDecorate.
 		auto &dec = type_meta->members[index];
-		if (dec.decoration_flags.get(DecorationMatrixStride))
+		if (dec.decoration_flags.get(static_cast<uint32_t>(Decoration::MatrixStride)))
 			return dec.matrix_stride;
 		else
 			SPIRV_CROSS_THROW("Struct member does not have MatrixStride set.");
@@ -2243,9 +2243,9 @@ size_t Compiler::get_declared_struct_member_size(const SPIRType &struct_type, ui
 			uint32_t matrix_stride = type_struct_member_matrix_stride(struct_type, index);
 
 			// Per SPIR-V spec, matrices must be tightly packed and aligned up for vec3 accesses.
-			if (flags.get(DecorationRowMajor))
+			if (flags.get(static_cast<uint32_t>(Decoration::RowMajor)))
 				return matrix_stride * vecsize;
-			else if (flags.get(DecorationColMajor))
+			else if (flags.get(static_cast<uint32_t>(Decoration::ColMajor)))
 				return matrix_stride * columns;
 			else
 				SPIRV_CROSS_THROW("Either row-major or column-major must be declared for matrices.");
@@ -2255,10 +2255,10 @@ size_t Compiler::get_declared_struct_member_size(const SPIRType &struct_type, ui
 
 bool Compiler::BufferAccessHandler::handle(Op opcode, const uint32_t *args, uint32_t length)
 {
-	if (opcode != OpAccessChain && opcode != OpInBoundsAccessChain && opcode != OpPtrAccessChain)
+	if (opcode != Op::OpAccessChain && opcode != Op::OpInBoundsAccessChain && opcode != Op::OpPtrAccessChain)
 		return true;
 
-	bool ptr_chain = (opcode == OpPtrAccessChain);
+	bool ptr_chain = (opcode == Op::OpPtrAccessChain);
 
 	// Invalid SPIR-V.
 	if (length < (ptr_chain ? 5u : 4u))
