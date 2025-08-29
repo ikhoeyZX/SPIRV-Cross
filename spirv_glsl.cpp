@@ -1102,7 +1102,7 @@ void CompilerGLSL::emit_header()
 			inputs.push_back("lines");
 		if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::InputLinesAdjacency)))
 			inputs.push_back("lines_adjacency");
-		if (execution.flags.get(static_cast<uint32_t>(ExecutionModeTriangles)))
+		if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::Triangles)))
 			inputs.push_back("triangles");
 		if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::InputTrianglesAdjacency)))
 			inputs.push_back("triangles_adjacency");
@@ -1155,7 +1155,7 @@ void CompilerGLSL::emit_header()
 	case ExecutionModel::TaskEXT:
 	case ExecutionModel::MeshEXT:
 	{
-		if (execution.workgroup_size.constant != 0 || execution.flags.get(ExecutionMode::LocalSizeId))
+		if (execution.workgroup_size.constant != 0 || execution.flags.get(static_cast<uint32_t>(ExecutionMode::LocalSizeId)))
 		{
 			SpecializationConstant wg_x, wg_y, wg_z;
 			get_work_group_size_specialization_constants(wg_x, wg_y, wg_z);
@@ -1335,9 +1335,9 @@ string CompilerGLSL::to_interpolation_qualifiers(const Bitset &flags)
 	string res;
 	//if (flags & (1ull << DecorationSmooth))
 	//    res += "smooth ";
-	if (flags.get(DecorationFlat))
+	if (flags.get(static_cast<uint32_t>(Decoration::Flat)))
 		res += "flat ";
-	if (flags.get(DecorationNoPerspective))
+	if (flags.get(static_cast<uint32_t>(Decoration::NoPerspective)))
 	{
 		if (options.es)
 		{
@@ -1349,11 +1349,11 @@ string CompilerGLSL::to_interpolation_qualifiers(const Bitset &flags)
 			require_extension_internal("GL_EXT_gpu_shader4");
 		res += "noperspective ";
 	}
-	if (flags.get(DecorationCentroid))
+	if (flags.get(static_cast<uint32_t>(Decoration::Centroid)))
 		res += "centroid ";
-	if (flags.get(DecorationPatch))
+	if (flags.get(static_cast<uint32_t>(Decoration::Patch)))
 		res += "patch ";
-	if (flags.get(DecorationSample))
+	if (flags.get(static_cast<uint32_t>(Decoration::Sample)))
 	{
 		if (options.es)
 		{
@@ -1364,21 +1364,21 @@ string CompilerGLSL::to_interpolation_qualifiers(const Bitset &flags)
 		}
 		res += "sample ";
 	}
-	if (flags.get(DecorationInvariant) && (options.es || options.version >= 120))
+	if (flags.get(static_cast<uint32_t>(Decoration::Invariant)) && (options.es || options.version >= 120))
 		res += "invariant ";
-	if (flags.get(DecorationPerPrimitiveEXT))
+	if (flags.get(static_cast<uint32_t>(Decoration::PerPrimitiveEXT)))
 	{
 		res += "perprimitiveEXT ";
 		require_extension_internal("GL_EXT_mesh_shader");
 	}
 
-	if (flags.get(DecorationExplicitInterpAMD))
+	if (flags.get(static_cast<uint32_t>(Decoration::ExplicitInterpAMD)))
 	{
 		require_extension_internal("GL_AMD_shader_explicit_vertex_parameter");
 		res += "__explicitInterpAMD ";
 	}
 
-	if (flags.get(DecorationPerVertexKHR))
+	if (flags.get(static_cast<uint32_t>(Decoration::PerVertexKHR)))
 	{
 		if (options.es && options.version < 320)
 			SPIRV_CROSS_THROW("pervertexEXT requires ESSL 320.");
@@ -1435,17 +1435,17 @@ string CompilerGLSL::layout_for_member(const SPIRType &type, uint32_t index)
 	// buffer UBO { layout(row_major) Foo foo; }; // Apply the layout on top-level.
 	auto flags = combined_decoration_for_member(type, index);
 
-	if (flags.get(DecorationRowMajor))
+	if (flags.get(static_cast<uint32_t>(Decoration::RowMajor)))
 		attr.push_back("row_major");
 	// We don't emit any global layouts, so column_major is default.
 	//if (flags & (1ull << DecorationColMajor))
 	//    attr.push_back("column_major");
 
-	if (dec.decoration_flags.get(DecorationLocation) && can_use_io_location(type.storage, true))
+	if (dec.decoration_flags.get(static_cast<uint32_t>(Decoration::Location)) && can_use_io_location(type.storage, true))
 		attr.push_back(join("location = ", dec.location));
 
 	// Can only declare component if we can declare location.
-	if (dec.decoration_flags.get(DecorationComponent) && can_use_io_location(type.storage, true))
+	if (dec.decoration_flags.get(static_cast<uint32_t>(Decoration::Component)) && can_use_io_location(type.storage, true))
 	{
 		if (!options.es)
 		{
@@ -1462,9 +1462,9 @@ string CompilerGLSL::layout_for_member(const SPIRType &type, uint32_t index)
 	// SPIRVCrossDecorationPacked is set by layout_for_variable earlier to mark that we need to emit offset qualifiers.
 	// This is only done selectively in GLSL as needed.
 	if (has_extended_decoration(type.self, SPIRVCrossDecorationExplicitOffset) &&
-	    dec.decoration_flags.get(DecorationOffset))
+	    dec.decoration_flags.get(static_cast<uint32_t>(Decoration::Offset)))
 		attr.push_back(join("offset = ", dec.offset));
-	else if (type.storage == StorageClassOutput && dec.decoration_flags.get(DecorationOffset))
+	else if (type.storage == StorageClass::Output && dec.decoration_flags.get(static_cast<uint32_t>(Decoration::Offset)))
 		attr.push_back(join("xfb_offset = ", dec.offset));
 
 	if (attr.empty())
@@ -1483,90 +1483,90 @@ const char *CompilerGLSL::format_to_glsl(spv::ImageFormat format)
 
 	switch (format)
 	{
-	case ImageFormatRgba32f:
+	case ImageFormat::Rgba32f:
 		return "rgba32f";
-	case ImageFormatRgba16f:
+	case ImageFormat::Rgba16f:
 		return "rgba16f";
-	case ImageFormatR32f:
+	case ImageFormat::R32f:
 		return "r32f";
-	case ImageFormatRgba8:
+	case ImageFormat::Rgba8:
 		return "rgba8";
-	case ImageFormatRgba8Snorm:
+	case ImageFormat::Rgba8Snorm:
 		return "rgba8_snorm";
-	case ImageFormatRg32f:
+	case ImageFormat::Rg32f:
 		return "rg32f";
-	case ImageFormatRg16f:
+	case ImageFormat::Rg16f:
 		return "rg16f";
-	case ImageFormatRgba32i:
+	case ImageFormat::Rgba32i:
 		return "rgba32i";
-	case ImageFormatRgba16i:
+	case ImageFormat::Rgba16i:
 		return "rgba16i";
-	case ImageFormatR32i:
+	case ImageFormat::R32i:
 		return "r32i";
-	case ImageFormatRgba8i:
+	case ImageFormat::Rgba8i:
 		return "rgba8i";
-	case ImageFormatRg32i:
+	case ImageFormat::Rg32i:
 		return "rg32i";
-	case ImageFormatRg16i:
+	case ImageFormat::Rg16i:
 		return "rg16i";
-	case ImageFormatRgba32ui:
+	case ImageFormat::Rgba32ui:
 		return "rgba32ui";
-	case ImageFormatRgba16ui:
+	case ImageFormat::Rgba16ui:
 		return "rgba16ui";
-	case ImageFormatR32ui:
+	case ImageFormat::R32ui:
 		return "r32ui";
-	case ImageFormatRgba8ui:
+	case ImageFormat::Rgba8ui:
 		return "rgba8ui";
-	case ImageFormatRg32ui:
+	case ImageFormat::Rg32ui:
 		return "rg32ui";
-	case ImageFormatRg16ui:
+	case ImageFormat::Rg16ui:
 		return "rg16ui";
-	case ImageFormatR11fG11fB10f:
+	case ImageFormat::R11fG11fB10f:
 		return "r11f_g11f_b10f";
-	case ImageFormatR16f:
+	case ImageFormat::R16f:
 		return "r16f";
-	case ImageFormatRgb10A2:
+	case ImageFormat::Rgb10A2:
 		return "rgb10_a2";
-	case ImageFormatR8:
+	case ImageFormat::R8:
 		return "r8";
-	case ImageFormatRg8:
+	case ImageFormat::Rg8:
 		return "rg8";
-	case ImageFormatR16:
+	case ImageFormat::R16:
 		return "r16";
-	case ImageFormatRg16:
+	case ImageFormat::Rg16:
 		return "rg16";
-	case ImageFormatRgba16:
+	case ImageFormat::Rgba16:
 		return "rgba16";
-	case ImageFormatR16Snorm:
+	case ImageFormat::R16Snorm:
 		return "r16_snorm";
-	case ImageFormatRg16Snorm:
+	case ImageFormat::Rg16Snorm:
 		return "rg16_snorm";
-	case ImageFormatRgba16Snorm:
+	case ImageFormat::Rgba16Snorm:
 		return "rgba16_snorm";
-	case ImageFormatR8Snorm:
+	case ImageFormat::R8Snorm:
 		return "r8_snorm";
-	case ImageFormatRg8Snorm:
+	case ImageFormat::Rg8Snorm:
 		return "rg8_snorm";
-	case ImageFormatR8ui:
+	case ImageFormat::R8ui:
 		return "r8ui";
-	case ImageFormatRg8ui:
+	case ImageFormat::Rg8ui:
 		return "rg8ui";
-	case ImageFormatR16ui:
+	case ImageFormat::R16ui:
 		return "r16ui";
-	case ImageFormatRgb10a2ui:
+	case ImageFormat::Rgb10a2ui:
 		return "rgb10_a2ui";
-	case ImageFormatR8i:
+	case ImageFormat::R8i:
 		return "r8i";
-	case ImageFormatRg8i:
+	case ImageFormat::Rg8i:
 		return "rg8i";
-	case ImageFormatR16i:
+	case ImageFormat::R16i:
 		return "r16i";
-	case ImageFormatR64i:
+	case ImageFormat::R64i:
 		return "r64i";
-	case ImageFormatR64ui:
+	case ImageFormat::R64ui:
 		return "r64ui";
 	default:
-	case ImageFormatUnknown:
+	case ImageFormat::Unknown:
 		return nullptr;
 	}
 }
@@ -1609,7 +1609,7 @@ uint32_t CompilerGLSL::type_to_packed_alignment(const SPIRType &type, const Bits
 		if (!type.pointer)
 			SPIRV_CROSS_THROW("Types in PhysicalStorageBuffer must be pointers.");
 
-		if (ir.addressing_model == AddressingModelPhysicalStorageBuffer64)
+		if (ir.addressing_model == AddressingModel::PhysicalStorageBuffer64)
 		{
 			if (packing_is_vec4_padded(packing) && type_is_array_of_pointers(type))
 				return 16;
@@ -1693,7 +1693,7 @@ uint32_t CompilerGLSL::type_to_packed_alignment(const SPIRType &type, const Bits
 		// Rule 6 implied.
 
 		// Rule 7.
-		if (flags.get(DecorationRowMajor) && type.vecsize > 1)
+		if (flags.get(static_cast<uint32_t>(Decoration::RowMajor)) && type.vecsize > 1)
 		{
 			if (packing_is_vec4_padded(packing))
 				return 4 * base_alignment;
@@ -1732,7 +1732,7 @@ uint32_t CompilerGLSL::type_to_packed_size(const SPIRType &type, const Bitset &f
 		if (!type.pointer)
 			SPIRV_CROSS_THROW("Types in PhysicalStorageBuffer must be pointers.");
 
-		if (ir.addressing_model == AddressingModelPhysicalStorageBuffer64)
+		if (ir.addressing_model == AddressingModel::PhysicalStorageBuffer64)
 			return 8;
 		else
 			SPIRV_CROSS_THROW("AddressingModelPhysicalStorageBuffer64 must be used for PhysicalStorageBuffer.");
@@ -1787,7 +1787,7 @@ uint32_t CompilerGLSL::type_to_packed_size(const SPIRType &type, const Bitset &f
 			if (type.columns == 1)
 				size = type.vecsize * base_alignment;
 
-			if (flags.get(DecorationColMajor) && type.columns > 1)
+			if (flags.get(static_cast<uint32_t>(Decoration::ColMajor)) && type.columns > 1)
 			{
 				if (packing_is_vec4_padded(packing))
 					size = type.columns * 4 * base_alignment;
