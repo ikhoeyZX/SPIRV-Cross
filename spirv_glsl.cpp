@@ -2458,13 +2458,13 @@ void CompilerGLSL::emit_buffer_reference_block(uint32_t type_id, bool forward_de
 
 			auto flags = ir.get_buffer_block_type_flags(type);
 			string decorations;
-			if (flags.get(DecorationRestrict))
+			if (flags.get(Decoration::Restrict))
 				decorations += " restrict";
-			if (flags.get(DecorationCoherent))
+			if (flags.get(Decoration::Coherent))
 				decorations += " coherent";
 			if (flags.get(Decoration::NonReadable))
 				decorations += " writeonly";
-			if (flags.get(DecorationNonWritable))
+			if (flags.get(Decoration::NonWritable))
 				decorations += " readonly";
 
 			statement("layout(", merge(attributes), ")", decorations, " buffer ", buffer_name);
@@ -2528,10 +2528,10 @@ void CompilerGLSL::emit_buffer_block_native(const SPIRVariable &var)
 	Bitset flags = ir.get_buffer_block_flags(var);
 	bool ssbo = var.storage == StorageClass::StorageBuffer || var.storage == StorageClass::ShaderRecordBufferKHR ||
 	            ir.meta[type.self].decoration.decoration_flags.get(Decoration::BufferBlock);
-	bool is_restrict = ssbo && flags.get(DecorationRestrict);
+	bool is_restrict = ssbo && flags.get(Decoration::Restrict);
 	bool is_writeonly = ssbo && flags.get(Decoration::NonReadable);
-	bool is_readonly = ssbo && flags.get(DecorationNonWritable);
-	bool is_coherent = ssbo && flags.get(DecorationCoherent);
+	bool is_readonly = ssbo && flags.get(Decoration::NonWritable);
+	bool is_coherent = ssbo && flags.get(Decoration::Coherent);
 
 	// Block names should never alias, but from HLSL input they kind of can because block types are reused for UAVs ...
 	auto buffer_name = to_name(type.self, false);
@@ -2643,7 +2643,7 @@ const char *CompilerGLSL::to_storage_qualifiers_glsl(const SPIRVariable &var)
 			return var.storage == StorageClass::Input ? "in " : "out ";
 	}
 	else if (var.storage == StorageClass::UniformConstant || var.storage == StorageClass::Uniform ||
-	         var.storage == StorageClass::PushConstant || var.storage == StorageClassAtomicCounter)
+	         var.storage == StorageClass::PushConstant || var.storage == StorageClass::AtomicCounter)
 	{
 		return "uniform ";
 	}
@@ -3229,9 +3229,9 @@ void CompilerGLSL::fixup_image_load_store_access()
 			// Solve this by making the image access as restricted as possible and loosen up if we need to.
 			// If any no-read/no-write flags are actually set, assume that the compiler knows what it's doing.
 
-			if (!has_decoration(var, DecorationNonWritable) && !has_decoration(var, Decoration::NonReadable))
+			if (!has_decoration(var, Decoration::NonWritable) && !has_decoration(var, Decoration::NonReadable))
 			{
-				set_decoration(var, DecorationNonWritable);
+				set_decoration(var, Decoration::NonWritable);
 				set_decoration(var, Decoration::NonReadable);
 			}
 		}
@@ -3894,7 +3894,7 @@ void CompilerGLSL::emit_resources()
 		}
 
 		if (var.storage != StorageClass::Function && type.pointer &&
-		    (type.storage == StorageClass::UniformConstant || type.storage == StorageClassAtomicCounter ||
+		    (type.storage == StorageClass::UniformConstant || type.storage == StorageClass::AtomicCounter ||
 		     type.storage == StorageClassRayPayloadKHR || type.storage == StorageClassIncomingRayPayloadKHR ||
 		     type.storage == StorageClassCallableDataKHR || type.storage == StorageClassIncomingCallableDataKHR ||
 		     type.storage == StorageClassHitAttributeKHR) &&
@@ -14225,7 +14225,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 	{
 		forced_temporaries.insert(ops[1]);
 		auto &type = expression_type(ops[2]);
-		if (type.storage == StorageClassAtomicCounter)
+		if (type.storage == StorageClass::AtomicCounter)
 		{
 			// Legacy GLSL stuff, not sure if this is relevant to support.
 			if (opcode == OpAtomicIIncrement)
@@ -14732,9 +14732,9 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		auto *var = maybe_get_backing_variable(ops[0]);
 		if (var)
 		{
-			if (has_decoration(var->self, DecorationNonWritable))
+			if (has_decoration(var->self, Decoration::NonWritable))
 			{
-				unset_decoration(var->self, DecorationNonWritable);
+				unset_decoration(var->self, Decoration::NonWritable);
 				force_recompile();
 			}
 		}
@@ -16207,7 +16207,7 @@ void CompilerGLSL::emit_struct_padding_target(const SPIRType &)
 string CompilerGLSL::flags_to_qualifiers_glsl(const SPIRType &type, uint32_t id, const Bitset &flags)
 {
 	// GL_EXT_buffer_reference variables can be marked as restrict.
-	if (flags.get(DecorationRestrictPointerEXT))
+	if (flags.get(Decoration::RestrictPointerEXT))
 		return "restrict ";
 
 	string qual;
@@ -16346,12 +16346,12 @@ string CompilerGLSL::to_qualifiers_glsl(uint32_t id)
 	auto &type = expression_type(id);
 	if (type.image.dim != DimSubpassData && type.image.sampled == 2)
 	{
-		if (flags.get(DecorationCoherent))
+		if (flags.get(Decoration::Coherent))
 			res += "coherent ";
-		if (flags.get(DecorationRestrict))
+		if (flags.get(Decoration::Restrict))
 			res += "restrict ";
 
-		if (flags.get(DecorationNonWritable))
+		if (flags.get(Decoration::NonWritable))
 			res += "readonly ";
 
 		bool formatted_load = type.image.format == ImageFormatUnknown;
@@ -16371,7 +16371,7 @@ string CompilerGLSL::to_qualifiers_glsl(uint32_t id)
 	}
 	else if (type.basetype == SPIRType::Tensor)
 	{
-		if (flags.get(DecorationNonWritable))
+		if (flags.get(Decoration::NonWritable))
 			res += "readonly ";
 		if (flags.get(Decoration::NonReadable))
 			res += "writeonly ";
@@ -17148,9 +17148,9 @@ bool CompilerGLSL::check_atomic_image(uint32_t id)
 		auto *var = maybe_get_backing_variable(id);
 		if (var)
 		{
-			if (has_decoration(var->self, DecorationNonWritable) || has_decoration(var->self, Decoration::NonReadable))
+			if (has_decoration(var->self, Decoration::NonWritable) || has_decoration(var->self, Decoration::NonReadable))
 			{
-				unset_decoration(var->self, DecorationNonWritable);
+				unset_decoration(var->self, Decoration::NonWritable);
 				unset_decoration(var->self, Decoration::NonReadable);
 				force_recompile();
 			}
