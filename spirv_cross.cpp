@@ -1044,7 +1044,7 @@ ShaderResources Compiler::get_shader_resources(const unordered_set<VariableID> *
 			else
 			{
 				bool strip_array =
-						!has_decoration(var.self, DecorationPatch) && (
+						!has_decoration(var.self, Decoration::Patch) && (
 								get_execution_model() == ExecutionModel::TessellationControl ||
 								(get_execution_model() == ExecutionModel::TessellationEvaluation &&
 								 var.storage == StorageClass::Input));
@@ -1058,7 +1058,7 @@ ShaderResources Compiler::get_shader_resources(const unordered_set<VariableID> *
 
 				assert(resource.value_type_id);
 
-				resource.builtin = BuiltIn(get_decoration(var.self, DecorationBuiltIn));
+				resource.builtin = BuiltIn(get_decoration(var.self, Decoration::BuiltIn));
 				list.push_back(std::move(resource));
 			}
 			return;
@@ -1175,7 +1175,7 @@ bool Compiler::type_is_top_level_block(const SPIRType &type) const
 {
 	if (type.basetype != SPIRType::Struct)
 		return false;
-	return has_decoration(type.self, DecorationBlock) || has_decoration(type.self, DecorationBufferBlock);
+	return has_decoration(type.self, Decoration::Block) || has_decoration(type.self, Decoration::BufferBlock);
 }
 
 bool Compiler::type_is_block_like(const SPIRType &type) const
@@ -1187,7 +1187,7 @@ bool Compiler::type_is_block_like(const SPIRType &type) const
 	{
 		// Block-like types may have Offset decorations.
 		for (uint32_t i = 0; i < uint32_t(type.member_types.size()); i++)
-			if (has_member_decoration(type.self, i, DecorationOffset))
+			if (has_member_decoration(type.self, i, Decoration::Offset))
 				return true;
 	}
 
