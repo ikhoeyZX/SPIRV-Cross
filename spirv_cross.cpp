@@ -4307,7 +4307,7 @@ bool Compiler::may_read_undefined_variable_in_block(const SPIRBlock &block, uint
 		auto *ops = stream(op);
 		switch (op.op)
 		{
-		case static_cast<uint32_t>((Op::OpStore):
+		case static_cast<uint32_t>(Op::OpStore):
 		case static_cast<uint32_t>(Op::OpCooperativeMatrixStoreKHR):
 		case static_cast<uint32_t>(Op::OpCopyMemory):
 			if (ops[0] == var)
@@ -4464,7 +4464,7 @@ void Compiler::ActiveBuiltinHandler::handle_builtin(const SPIRType &type, BuiltI
 	}
 	else if (builtin == BuiltIn::Position)
 	{
-		if (decoration_flags.get(Decoration::Invariant))
+		if (decoration_flags.get(static_cast<uint32_t>(Decoration::Invariant)))
 			compiler.position_invariant = true;
 	}
 }
@@ -4486,18 +4486,18 @@ void Compiler::ActiveBuiltinHandler::add_if_builtin(uint32_t id, bool allow_bloc
 		              compiler.active_input_builtins : compiler.active_output_builtins;
 		if (decorations.builtin)
 		{
-			flags.set(decorations.builtin_type);
+			flags.set(static_cast<uint32_t>(decorations.builtin_type));
 			handle_builtin(type, decorations.builtin_type, decorations.decoration_flags);
 		}
-		else if (allow_blocks && compiler.has_decoration(type.self, DecorationBlock))
+		else if (allow_blocks && compiler.has_decoration(type.self, Decoration::Block))
 		{
 			uint32_t member_count = uint32_t(type.member_types.size());
 			for (uint32_t i = 0; i < member_count; i++)
 			{
-				if (compiler.has_member_decoration(type.self, i, DecorationBuiltIn))
+				if (compiler.has_member_decoration(type.self, i, Decoration::BuiltIn))
 				{
 					auto &member_type = compiler.get<SPIRType>(type.member_types[i]);
-					BuiltIn builtin = BuiltIn(compiler.get_member_decoration(type.self, i, DecorationBuiltIn));
+					BuiltIn builtin = BuiltIn(compiler.get_member_decoration(type.self, i, Decoration::BuiltIn));
 					flags.set(builtin);
 					handle_builtin(member_type, builtin, compiler.get_member_decoration_bitset(type.self, i));
 				}
