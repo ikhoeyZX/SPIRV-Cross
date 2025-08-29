@@ -5210,13 +5210,13 @@ void Compiler::PhysicalStorageBufferPointerHandler::mark_aligned_access(uint32_t
 	uint32_t mask = *args;
 	args++;
 	length--;
-	if (length && (mask & MemoryAccessMask::Volatile) != 0)
+	if (length && (mask & static_cast<uint32_t>(MemoryAccessMask::Volatile)) != 0)
 	{
 		args++;
 		length--;
 	}
 
-	if (length && (mask & MemoryAccessMask::Aligned) != 0)
+	if (length && (mask & static_cast<uint32_t>(MemoryAccessMask::Aligned)) != 0)
 	{
 		uint32_t alignment = *args;
 		auto *meta = find_block_meta(id);
@@ -5500,7 +5500,7 @@ bool Compiler::InterlockedResourceAccessHandler::handle(Op opcode, const uint32_
 		default:
 			break;
 
-		case StorageClassUniformConstant:
+		case StorageClass::UniformConstant:
 		{
 			uint32_t result_type = args[0];
 			uint32_t id = args[1];
@@ -5509,12 +5509,12 @@ bool Compiler::InterlockedResourceAccessHandler::handle(Op opcode, const uint32_
 			break;
 		}
 
-		case StorageClassUniform:
+		case StorageClass::Uniform:
 			// Must have BufferBlock; we only care about SSBOs.
 			if (!compiler.has_decoration(compiler.get<SPIRType>(var->basetype).self, DecorationBufferBlock))
 				break;
 			// fallthrough
-		case StorageClassStorageBuffer:
+		case StorageClass::StorageBuffer:
 			access_potential_resource(var->self);
 			break;
 		}
@@ -5593,11 +5593,11 @@ bool Compiler::InterlockedResourceAccessHandler::handle(Op opcode, const uint32_
 
 		if (src_var)
 		{
-			if (src_var->storage != StorageClassUniform && src_var->storage != StorageClassStorageBuffer)
+			if (src_var->storage != StorageClass::Uniform && src_var->storage != StorageClass::StorageBuffer)
 				break;
 
 			if (src_var->storage == StorageClass::Uniform &&
-			    !compiler.has_decoration(compiler.get<SPIRType>(src_var->basetype).self, DecorationBufferBlock))
+			    !compiler.has_decoration(compiler.get<SPIRType>(src_var->basetype).self, Decoration::BufferBlock))
 			{
 				break;
 			}
@@ -5626,13 +5626,13 @@ bool Compiler::InterlockedResourceAccessHandler::handle(Op opcode, const uint32_
 		default:
 			break;
 
-		case StorageClassUniform:
+		case StorageClass::Uniform:
 			// Must have BufferBlock; we only care about SSBOs.
-			if (!compiler.has_decoration(compiler.get<SPIRType>(var->basetype).self, DecorationBufferBlock))
+			if (!compiler.has_decoration(compiler.get<SPIRType>(var->basetype).self, Decoration::BufferBlock))
 				break;
 			// fallthrough
-		case StorageClassUniformConstant:
-		case StorageClassStorageBuffer:
+		case StorageClass::UniformConstant:
+		case StorageClass::StorageBuffer:
 			access_potential_resource(var->self);
 			break;
 		}
@@ -5677,10 +5677,10 @@ bool Compiler::InterlockedResourceAccessHandler::handle(Op opcode, const uint32_
 void Compiler::analyze_interlocked_resource_usage()
 {
 	if (get_execution_model() == ExecutionModelFragment &&
-	    (get_entry_point().flags.get(ExecutionModePixelInterlockOrderedEXT) ||
-	     get_entry_point().flags.get(ExecutionModePixelInterlockUnorderedEXT) ||
-	     get_entry_point().flags.get(ExecutionModeSampleInterlockOrderedEXT) ||
-	     get_entry_point().flags.get(ExecutionModeSampleInterlockUnorderedEXT)))
+	    (get_entry_point().flags.get(ExecutionMode::PixelInterlockOrderedEXT) ||
+	     get_entry_point().flags.get(ExecutionMode::PixelInterlockUnorderedEXT) ||
+	     get_entry_point().flags.get(ExecutionMode::SampleInterlockOrderedEXT) ||
+	     get_entry_point().flags.get(ExecutionMode::SampleInterlockUnorderedEXT)))
 	{
 		InterlockedResourceAccessPrepassHandler prepass_handler(*this, ir.default_entry_point);
 		traverse_all_reachable_opcodes(get<SPIRFunction>(ir.default_entry_point), prepass_handler);
