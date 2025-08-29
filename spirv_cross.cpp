@@ -79,16 +79,16 @@ bool Compiler::variable_storage_is_aliased(const SPIRVariable &v)
 {
 	auto &type = get<SPIRType>(v.basetype);
 	bool ssbo = v.storage == StorageClass::StorageBuffer ||
-	            ir.meta[type.self].decoration.decoration_flags.get(ststic_cast<uint32_t>(Decoration::BufferBlock));
+	            ir.meta[type.self].decoration.decoration_flags.get(static_cast<uint32_t>(Decoration::BufferBlock));
 	bool image = type.basetype == SPIRType::Image;
 	bool counter = type.basetype == SPIRType::AtomicCounter;
 	bool buffer_reference = type.storage == StorageClass::PhysicalStorageBuffer;
 
 	bool is_restrict;
 	if (ssbo)
-		is_restrict = ir.get_buffer_block_flags(v).get(ststic_cast<uint32_t>(DecorationRestrict));
+		is_restrict = ir.get_buffer_block_flags(v).get(static_cast<uint32_t>(DecorationRestrict));
 	else
-		is_restrict = has_decoration(v.self, DecorationRestrict);
+		is_restrict = has_decoration(v.self, Decoration::Restrict);
 
 	return !is_restrict && (ssbo || image || counter || buffer_reference);
 }
