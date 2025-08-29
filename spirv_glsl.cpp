@@ -60,21 +60,21 @@ struct GlslConstantNameMapping
 #define DEF_GLSL_MAPPING(x) { x, "gl_" #x }
 #define DEF_GLSL_MAPPING_EXT(x) { x##KHR, "gl_" #x }
 static const GlslConstantNameMapping CoopVecComponentTypeNames[] = {
-	DEF_GLSL_MAPPING(ComponentTypeFloat16NV),
-	DEF_GLSL_MAPPING(ComponentTypeFloat32NV),
-	DEF_GLSL_MAPPING(ComponentTypeFloat64NV),
-	DEF_GLSL_MAPPING(ComponentTypeSignedInt8NV),
-	DEF_GLSL_MAPPING(ComponentTypeSignedInt16NV),
-	DEF_GLSL_MAPPING(ComponentTypeSignedInt32NV),
-	DEF_GLSL_MAPPING(ComponentTypeSignedInt64NV),
-	DEF_GLSL_MAPPING(ComponentTypeUnsignedInt8NV),
-	DEF_GLSL_MAPPING(ComponentTypeUnsignedInt16NV),
-	DEF_GLSL_MAPPING(ComponentTypeUnsignedInt32NV),
-	DEF_GLSL_MAPPING(ComponentTypeUnsignedInt64NV),
-	DEF_GLSL_MAPPING(ComponentTypeSignedInt8PackedNV),
-	DEF_GLSL_MAPPING(ComponentTypeUnsignedInt8PackedNV),
-	DEF_GLSL_MAPPING(ComponentTypeFloatE4M3NV),
-	DEF_GLSL_MAPPING(ComponentTypeFloatE5M2NV),
+	DEF_GLSL_MAPPING(ComponentType::Float16NV),
+	DEF_GLSL_MAPPING(ComponentType::Float32NV),
+	DEF_GLSL_MAPPING(ComponentType::Float64NV),
+	DEF_GLSL_MAPPING(ComponentType::SignedInt8NV),
+	DEF_GLSL_MAPPING(ComponentType::SignedInt16NV),
+	DEF_GLSL_MAPPING(ComponentType::SignedInt32NV),
+	DEF_GLSL_MAPPING(ComponentType::SignedInt64NV),
+	DEF_GLSL_MAPPING(ComponentType::UnsignedInt8NV),
+	DEF_GLSL_MAPPING(ComponentType::UnsignedInt16NV),
+	DEF_GLSL_MAPPING(ComponentType::UnsignedInt32NV),
+	DEF_GLSL_MAPPING(ComponentType::UnsignedInt64NV),
+	DEF_GLSL_MAPPING(ComponentType::SignedInt8PackedNV),
+	DEF_GLSL_MAPPING(ComponentType::UnsignedInt8PackedNV),
+	DEF_GLSL_MAPPING(ComponentType::FloatE4M3NV),
+	DEF_GLSL_MAPPING(ComponentType::FloatE5M2NV),
 };
 
 static const GlslConstantNameMapping CoopVecMatrixLayoutNames[] = {
