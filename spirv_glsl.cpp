@@ -2834,7 +2834,7 @@ void CompilerGLSL::emit_interface_block(const SPIRVariable &var)
 			resource_names.insert(block_name);
 
 			const char *block_qualifier;
-			if (has_decoration(var.self, DecorationPatch))
+			if (has_decoration(var.self, Decoration::Patch))
 				block_qualifier = "patch ";
 			else if (has_decoration(var.self, DecorationPerPrimitiveEXT))
 				block_qualifier = "perprimitiveEXT ";
@@ -2886,8 +2886,8 @@ void CompilerGLSL::emit_interface_block(const SPIRVariable &var)
 			// gl_MaxPatchVertices or unsized arrays for input arrays.
 			// Opt for unsized as it's the more "correct" variant to use.
 			if (type.storage == StorageClass::Input && !type.array.empty() &&
-			    !has_decoration(var.self, DecorationPatch) &&
-			    (get_entry_point().model == ExecutionModelTessellationControl ||
+			    !has_decoration(var.self, Decoration::Patch) &&
+			    (get_entry_point().model == ExecutionModel::TessellationControl ||
 			     get_entry_point().model == ExecutionModelTessellationEvaluation))
 			{
 				newtype.array.back() = 0;
@@ -3263,8 +3263,8 @@ bool CompilerGLSL::should_force_emit_builtin_block(StorageClass storage)
 			uint32_t member_count = uint32_t(type.member_types.size());
 			for (uint32_t i = 0; i < member_count; i++)
 			{
-				if (has_member_decoration(type.self, i, DecorationBuiltIn) &&
-				    is_block_builtin(BuiltIn(get_member_decoration(type.self, i, DecorationBuiltIn))) &&
+				if (has_member_decoration(type.self, i, Decoration::BuiltIn) &&
+				    is_block_builtin(BuiltIn(get_member_decoration(type.self, i, Decoration::BuiltIn))) &&
 				    has_member_decoration(type.self, i, Decoration::Offset))
 				{
 					should_force = true;
@@ -3273,7 +3273,7 @@ bool CompilerGLSL::should_force_emit_builtin_block(StorageClass storage)
 		}
 		else if (var.storage == storage && !block && is_builtin_variable(var))
 		{
-			if (is_block_builtin(BuiltIn(get_decoration(type.self, DecorationBuiltIn))) &&
+			if (is_block_builtin(BuiltIn(get_decoration(type.self, Decoration::BuiltIn))) &&
 			    has_decoration(var.self, Decoration::Offset))
 			{
 				should_force = true;
@@ -3282,7 +3282,7 @@ bool CompilerGLSL::should_force_emit_builtin_block(StorageClass storage)
 	});
 
 	// If we're declaring clip/cull planes with control points we need to force block declaration.
-	if ((get_execution_model() == ExecutionModelTessellationControl ||
+	if ((get_execution_model() == ExecutionModel::TessellationControl ||
 	     get_execution_model() == ExecutionModelMeshEXT) &&
 	    (clip_distance_count || cull_distance_count))
 	{
@@ -3576,7 +3576,7 @@ void CompilerGLSL::emit_declared_builtin_block(StorageClass storage, ExecutionMo
 			statement("float gl_CullDistance[", cull_distance_size, "];");
 	}
 
-	bool builtin_array = model == ExecutionModelTessellationControl ||
+	bool builtin_array = model == ExecutionModel::TessellationControl ||
 	                     (model == ExecutionModelMeshEXT && storage == StorageClass::Output) ||
 	                     (model == ExecutionModel::Geometry && storage == StorageClass::Input) ||
 	                     (model == ExecutionModelTessellationEvaluation && storage == StorageClass::Input);
@@ -3589,7 +3589,7 @@ void CompilerGLSL::emit_declared_builtin_block(StorageClass storage, ExecutionMo
 		else
 			instance_name = storage == StorageClass::Input ? "gl_in" : "gl_out";
 
-		if (model == ExecutionModelTessellationControl && storage == StorageClass::Output)
+		if (model == ExecutionModel::TessellationControl && storage == StorageClass::Output)
 			end_scope_decl(join(instance_name, "[", get_entry_point().output_vertices, "]"));
 		else
 			end_scope_decl(join(instance_name, "[]"));
@@ -3631,7 +3631,7 @@ void CompilerGLSL::emit_resources()
 	switch (execution.model)
 	{
 	case ExecutionModel::Geometry:
-	case ExecutionModelTessellationControl:
+	case ExecutionModel::TessellationControl:
 	case ExecutionModelTessellationEvaluation:
 	case ExecutionModelMeshEXT:
 		fixup_implicit_builtin_block_names(execution.model);
@@ -3649,7 +3649,7 @@ void CompilerGLSL::emit_resources()
 		switch (execution.model)
 		{
 		case ExecutionModel::Geometry:
-		case ExecutionModelTessellationControl:
+		case ExecutionModel::TessellationControl:
 		case ExecutionModelTessellationEvaluation:
 			emit_declared_builtin_block(StorageClass::Input, execution.model);
 			emit_declared_builtin_block(StorageClass::Output, execution.model);
@@ -3938,7 +3938,7 @@ void CompilerGLSL::emit_resources()
 		}
 		else if (is_builtin_variable(var))
 		{
-			auto builtin = BuiltIn(get_decoration(var.self, DecorationBuiltIn));
+			auto builtin = BuiltIn(get_decoration(var.self, Decoration::BuiltIn));
 			// For gl_InstanceIndex emulation on GLES, the API user needs to
 			// supply this uniform.
 
@@ -4017,9 +4017,9 @@ void CompilerGLSL::emit_output_variable_initializer(const SPIRVariable &var)
 	// If a StorageClass::Output variable has an initializer, we need to initialize it in main().
 	auto &entry_func = this->get<SPIRFunction>(ir.default_entry_point);
 	auto &type = get<SPIRType>(var.basetype);
-	bool is_patch = has_decoration(var.self, DecorationPatch);
+	bool is_patch = has_decoration(var.self, Decoration::Patch);
 	bool is_block = has_decoration(type.self, Decoration::Block);
-	bool is_control_point = get_execution_model() == ExecutionModelTessellationControl && !is_patch;
+	bool is_control_point = get_execution_model() == ExecutionModel::TessellationControl && !is_patch;
 
 	if (is_block)
 	{
@@ -4034,13 +4034,13 @@ void CompilerGLSL::emit_output_variable_initializer(const SPIRVariable &var)
 		for (uint32_t i = 0; i < member_count; i++)
 		{
 			// These outputs might not have been properly declared, so don't initialize them in that case.
-			if (has_member_decoration(type.self, i, DecorationBuiltIn))
+			if (has_member_decoration(type.self, i, Decoration::BuiltIn))
 			{
-				if (get_member_decoration(type.self, i, DecorationBuiltIn) == BuiltInCullDistance &&
+				if (get_member_decoration(type.self, i, Decoration::BuiltIn) == BuiltInCullDistance &&
 				    !cull_distance_count)
 					continue;
 
-				if (get_member_decoration(type.self, i, DecorationBuiltIn) == BuiltInClipDistance &&
+				if (get_member_decoration(type.self, i, Decoration::BuiltIn) == BuiltInClipDistance &&
 				    !clip_distance_count)
 					continue;
 			}
@@ -4128,8 +4128,8 @@ void CompilerGLSL::emit_output_variable_initializer(const SPIRVariable &var)
 			statement(to_expression(var.self), "[gl_InvocationID] = ", lut_name, "[gl_InvocationID];");
 		});
 	}
-	else if (has_decoration(var.self, DecorationBuiltIn) &&
-	         BuiltIn(get_decoration(var.self, DecorationBuiltIn)) == BuiltInSampleMask)
+	else if (has_decoration(var.self, Decoration::BuiltIn) &&
+	         BuiltIn(get_decoration(var.self, Decoration::BuiltIn)) == BuiltInSampleMask)
 	{
 		// We cannot copy the array since gl_SampleMask is unsized in GLSL. Unroll time! <_<
 		entry_func.fixup_hooks_in.push_back([&] {
@@ -5087,7 +5087,7 @@ uint32_t CompilerGLSL::consume_temporary_in_precision_context(uint32_t type_id, 
 		return id;
 	}
 
-	auto current_precision = has_decoration(id, DecorationRelaxedPrecision) ? Options::Mediump : Options::Highp;
+	auto current_precision = has_decoration(id, Decoration::RelaxedPrecision) ? Options::Mediump : Options::Highp;
 	if (current_precision == precision)
 		return id;
 
@@ -5102,12 +5102,12 @@ uint32_t CompilerGLSL::consume_temporary_in_precision_context(uint32_t type_id, 
 		const char *prefix;
 		if (precision == Options::Mediump)
 		{
-			set_decoration(alias_id, DecorationRelaxedPrecision);
+			set_decoration(alias_id, Decoration::RelaxedPrecision);
 			prefix = "mp_copy_";
 		}
 		else
 		{
-			unset_decoration(alias_id, DecorationRelaxedPrecision);
+			unset_decoration(alias_id, Decoration::RelaxedPrecision);
 			prefix = "hp_copy_";
 		}
 
@@ -5529,7 +5529,7 @@ string CompilerGLSL::to_expression(uint32_t id, bool register_expression_read)
 			// when consuming an access chain expression.
 			uint32_t physical_type_id = get_extended_decoration(id, SPIRVCrossDecorationPhysicalTypeID);
 			bool is_packed = has_extended_decoration(id, SPIRVCrossDecorationPhysicalTypePacked);
-			bool relaxed = has_decoration(id, DecorationRelaxedPrecision);
+			bool relaxed = has_decoration(id, Decoration::RelaxedPrecision);
 			return convert_row_major_matrix(e.expression, get<SPIRType>(e.expression_type), physical_type_id,
 			                                is_packed, relaxed);
 		}
@@ -5557,8 +5557,8 @@ string CompilerGLSL::to_expression(uint32_t id, bool register_expression_read)
 		auto &type = get<SPIRType>(c.constant_type);
 
 		// WorkGroupSize may be a constant.
-		if (has_decoration(c.self, DecorationBuiltIn))
-			return builtin_to_glsl(BuiltIn(get_decoration(c.self, DecorationBuiltIn)), StorageClassGeneric);
+		if (has_decoration(c.self, Decoration::BuiltIn))
+			return builtin_to_glsl(BuiltIn(get_decoration(c.self, Decoration::BuiltIn)), StorageClass::Generic);
 		else if (c.specialization)
 		{
 			if (backend.workgroup_size_is_hidden)
@@ -8899,10 +8899,10 @@ void CompilerGLSL::emit_glsl_op(uint32_t result_type, uint32_t id, uint32_t eop,
 				ids = ir.increase_bound_by(2);
 
 				// Inherit precision qualifier (legacy has no NoContraction).
-				if (has_decoration(id, DecorationRelaxedPrecision))
+				if (has_decoration(id, Decoration::RelaxedPrecision))
 				{
-					set_decoration(ids, DecorationRelaxedPrecision);
-					set_decoration(ids + 1, DecorationRelaxedPrecision);
+					set_decoration(ids, Decoration::RelaxedPrecision);
+					set_decoration(ids + 1, Decoration::RelaxedPrecision);
 				}
 			}
 			uint32_t epos_id = ids;
@@ -8984,7 +8984,7 @@ void CompilerGLSL::emit_glsl_op(uint32_t result_type, uint32_t id, uint32_t eop,
 			if (type.basetype != SPIRType::Float)
 				SPIRV_CROSS_THROW("Unsupported type for matrix determinant");
 
-			bool relaxed = has_decoration(id, DecorationRelaxedPrecision);
+			bool relaxed = has_decoration(id, Decoration::RelaxedPrecision);
 			require_polyfill(static_cast<Polyfill>(PolyfillDeterminant2x2 << (type.vecsize - 2)),
 			                 relaxed);
 			emit_unary_func_op(result_type, id, args[0],
@@ -9018,7 +9018,7 @@ void CompilerGLSL::emit_glsl_op(uint32_t result_type, uint32_t id, uint32_t eop,
 			if (type.basetype != SPIRType::Float)
 				SPIRV_CROSS_THROW("Unsupported type for matrix inverse");
 
-			bool relaxed = has_decoration(id, DecorationRelaxedPrecision);
+			bool relaxed = has_decoration(id, Decoration::RelaxedPrecision);
 			require_polyfill(static_cast<Polyfill>(PolyfillMatrixInverse2x2 << (type.vecsize - 2)),
 			                 relaxed);
 			func = (options.es && relaxed) ? "spvInverseMP" : "spvInverse";
@@ -9182,7 +9182,7 @@ void CompilerGLSL::emit_glsl_op(uint32_t result_type, uint32_t id, uint32_t eop,
 		if (options.vulkan_semantics)
 		{
 			require_extension_internal("GL_EXT_spirv_intrinsics");
-			bool relaxed = has_decoration(id, DecorationRelaxedPrecision);
+			bool relaxed = has_decoration(id, Decoration::RelaxedPrecision);
 			Polyfill poly = {};
 			switch (get<SPIRType>(result_type).width)
 			{
@@ -9228,7 +9228,7 @@ void CompilerGLSL::emit_glsl_op(uint32_t result_type, uint32_t id, uint32_t eop,
 		if (options.vulkan_semantics)
 		{
 			require_extension_internal("GL_EXT_spirv_intrinsics");
-			bool relaxed = has_decoration(id, DecorationRelaxedPrecision);
+			bool relaxed = has_decoration(id, Decoration::RelaxedPrecision);
 			Polyfill poly = {};
 			switch (get<SPIRType>(result_type).width)
 			{
@@ -10485,7 +10485,7 @@ string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indice
 	bool is_packed = has_extended_decoration(base, SPIRVCrossDecorationPhysicalTypePacked);
 	uint32_t physical_type = get_extended_decoration(base, SPIRVCrossDecorationPhysicalTypeID);
 	bool is_invariant = has_decoration(base, DecorationInvariant);
-	bool relaxed_precision = has_decoration(base, DecorationRelaxedPrecision);
+	bool relaxed_precision = has_decoration(base, Decoration::RelaxedPrecision);
 	bool pending_array_enclose = false;
 	bool dimension_flatten = false;
 	bool access_meshlet_position_y = false;
@@ -10590,7 +10590,7 @@ string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indice
 					// add yet another virtual interface just for this.
 					auto intptr_expr = join("reinterpret_cast<", type_to_glsl(tmp_type), ">(", expr, ")");
 					intptr_expr += join(" + ", to_enclosed_unpacked_expression(index), " * ",
-					                    get_decoration(ptr_type_id, DecorationArrayStride));
+					                    get_decoration(ptr_type_id, Decoration::ArrayStride));
 
 					if (flags & ACCESS_CHAIN_PTR_CHAIN_CAST_TO_SCALAR_BIT)
 					{
@@ -10722,7 +10722,7 @@ string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indice
 				if (!pending_array_enclose)
 					expr += "]";
 			}
-			else if (index_is_literal || !builtin_translates_to_nonarray(BuiltIn(get_decoration(base, DecorationBuiltIn))))
+			else if (index_is_literal || !builtin_translates_to_nonarray(BuiltIn(get_decoration(base, Decoration::BuiltIn))))
 			{
 				// Some builtins are arrays in SPIR-V but not in other languages, e.g. gl_SampleMask[] is an array in SPIR-V but not in Metal.
 				// By throwing away the index, we imply the index was 0, which it must be for gl_SampleMask.
@@ -10730,8 +10730,8 @@ string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indice
 				append_index(index, is_literal);
 			}
 
-			if (var && has_decoration(var->self, DecorationBuiltIn) &&
-			    get_decoration(var->self, DecorationBuiltIn) == BuiltInPosition &&
+			if (var && has_decoration(var->self, Decoration::BuiltIn) &&
+			    get_decoration(var->self, Decoration::BuiltIn) == BuiltInPosition &&
 			    get_execution_model() == ExecutionModelMeshEXT)
 			{
 				access_meshlet_position_y = true;
@@ -10812,7 +10812,7 @@ string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indice
 
 			if (has_member_decoration(type->self, index, DecorationInvariant))
 				is_invariant = true;
-			if (has_member_decoration(type->self, index, DecorationRelaxedPrecision))
+			if (has_member_decoration(type->self, index, Decoration::RelaxedPrecision))
 				relaxed_precision = true;
 
 			is_packed = member_is_packed_physical_type(*type, index);
@@ -10852,7 +10852,7 @@ string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indice
 			type = &get<SPIRType>(type_id);
 		}
 		// Vector -> Scalar
-		else if (type->op == OpTypeCooperativeMatrixKHR || type->vecsize > 1)
+		else if (type->op == Op::OpTypeCooperativeMatrixKHR || type->vecsize > 1)
 		{
 			string deferred_index;
 			if (row_major_matrix_needs_conversion)
@@ -10880,7 +10880,7 @@ string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indice
 
 			// Internally, access chain implementation can also be used on composites,
 			// ignore scalar access workarounds in this case.
-			StorageClass effective_storage = StorageClassGeneric;
+			StorageClass effective_storage = StorageClass::Generic;
 			bool ignore_potential_sliced_writes = false;
 			if ((flags & ACCESS_CHAIN_FORCE_COMPOSITE_BIT) == 0)
 			{
@@ -10894,8 +10894,8 @@ string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indice
 				// since blocks can be partially masked ...
 				auto *var = maybe_get_backing_variable(base);
 				if (var && var->storage == StorageClass::Output &&
-				    get_execution_model() == ExecutionModelTessellationControl &&
-				    !has_decoration(var->self, DecorationPatch))
+				    get_execution_model() == ExecutionModel::TessellationControl &&
+				    !has_decoration(var->self, Decoration::Patch))
 				{
 					ignore_potential_sliced_writes = true;
 				}
@@ -11091,14 +11091,14 @@ string CompilerGLSL::access_chain(uint32_t base, const uint32_t *indices, uint32
 			flags |= ACCESS_CHAIN_PTR_CHAIN_BIT;
 			// PtrAccessChain could get complicated.
 			TypeID type_id = expression_type_id(base);
-			if (backend.native_pointers && has_decoration(type_id, DecorationArrayStride))
+			if (backend.native_pointers && has_decoration(type_id, Decoration::ArrayStride))
 			{
 				// If there is a mismatch we have to go via 64-bit pointer arithmetic :'(
 				// Using packed hacks only gets us so far, and is not designed to deal with pointer to
 				// random values. It works for structs though.
 				auto &pointee_type = get_pointee_type(get<SPIRType>(type_id));
 				uint32_t physical_stride = get_physical_type_stride(pointee_type);
-				uint32_t requested_stride = get_decoration(type_id, DecorationArrayStride);
+				uint32_t requested_stride = get_decoration(type_id, Decoration::ArrayStride);
 				if (physical_stride != requested_stride)
 				{
 					flags |= ACCESS_CHAIN_PTR_CHAIN_POINTER_ARITH_BIT;
@@ -11225,7 +11225,7 @@ std::string CompilerGLSL::flattened_access_chain_struct(uint32_t base, const uin
 		{
 			auto decorations = combined_decoration_for_member(target_type, i);
 			need_transpose = decorations.get(static_cast<uint32_t>(Decoration::RowMajor));
-			relaxed = decorations.get(DecorationRelaxedPrecision);
+			relaxed = decorations.get(Decoration::RelaxedPrecision);
 			matrix_stride = type_struct_member_matrix_stride(target_type, i);
 		}
 
@@ -11357,7 +11357,7 @@ std::pair<std::string, uint32_t> CompilerGLSL::flattened_access_chain_offset(
 		if (ptr_chain && i == 0)
 		{
 			// Here, the pointer type will be decorated with an array stride.
-			array_stride = get_decoration(basetype.self, DecorationArrayStride);
+			array_stride = get_decoration(basetype.self, Decoration::ArrayStride);
 			if (!array_stride)
 				SPIRV_CROSS_THROW("SPIR-V does not define ArrayStride for buffer block.");
 
@@ -11416,7 +11416,7 @@ std::pair<std::string, uint32_t> CompilerGLSL::flattened_access_chain_offset(
 			type = &get<SPIRType>(parent_type);
 
 			if (!type->array.empty())
-				array_stride = get_decoration(parent_type, DecorationArrayStride);
+				array_stride = get_decoration(parent_type, Decoration::ArrayStride);
 		}
 		// For structs, the index refers to a constant, which indexes into the members.
 		// We also check if this member is a builtin, since we then replace the entire expression with the builtin one.
@@ -11582,7 +11582,7 @@ bool CompilerGLSL::should_forward(uint32_t id) const
 	if (var)
 	{
 		// Never forward volatile builtin variables, e.g. SPIR-V 1.6 HelperInvocation.
-		return !(has_decoration(id, DecorationBuiltIn) && has_decoration(id, DecorationVolatile));
+		return !(has_decoration(id, Decoration::BuiltIn) && has_decoration(id, Decoration::Volatile));
 	}
 
 	// For debugging emit temporary variables for all expressions
@@ -11597,8 +11597,8 @@ bool CompilerGLSL::should_forward(uint32_t id) const
 		return false;
 
 	if (expr && expr->loaded_from
-		&& has_decoration(expr->loaded_from, DecorationBuiltIn)
-		&& has_decoration(expr->loaded_from, DecorationVolatile))
+		&& has_decoration(expr->loaded_from, Decoration::BuiltIn)
+		&& has_decoration(expr->loaded_from, Decoration::Volatile))
 	{
 		// Never forward volatile builtin variables, e.g. SPIR-V 1.6 HelperInvocation.
 		return false;
@@ -11740,7 +11740,7 @@ void CompilerGLSL::flush_variable_declaration(uint32_t id)
 	{
 		string initializer;
 		if (options.force_zero_initialized_variables &&
-		    (var->storage == StorageClass::Function || var->storage == StorageClassGeneric ||
+		    (var->storage == StorageClass::Function || var->storage == StorageClass::Generic ||
 		     var->storage == StorageClass::Private) &&
 		    !var->initializer && type_can_zero_initialize(get_variable_data_type(*var)))
 		{
@@ -12209,7 +12209,7 @@ void CompilerGLSL::forward_relaxed_precision(uint32_t dst_id, const uint32_t *ar
 	// For expressions which are loaded or directly forwarded, we inherit mediump implicitly.
 	// For dst_id to be analyzed properly, it must inherit any relaxed precision decoration from src_id.
 	if (input_precision == Options::Mediump)
-		set_decoration(dst_id, DecorationRelaxedPrecision);
+		set_decoration(dst_id, Decoration::RelaxedPrecision);
 }
 
 CompilerGLSL::Options::Precision CompilerGLSL::analyze_expression_precision(const uint32_t *args, uint32_t length) const
@@ -12231,7 +12231,7 @@ CompilerGLSL::Options::Precision CompilerGLSL::analyze_expression_precision(cons
 		if (handle_type == TypeConstant || handle_type == TypeConstantOp || handle_type == TypeUndef)
 			continue;
 
-		if (has_decoration(arg, DecorationRelaxedPrecision))
+		if (has_decoration(arg, Decoration::RelaxedPrecision))
 			expression_has_mediump = true;
 		else
 			expression_has_highp = true;
@@ -12256,7 +12256,7 @@ void CompilerGLSL::analyze_precision_requirements(uint32_t type_id, uint32_t dst
 	if (type.basetype != SPIRType::Float && type.basetype != SPIRType::Int && type.basetype != SPIRType::UInt)
 		return;
 
-	bool operation_is_highp = !has_decoration(dst_id, DecorationRelaxedPrecision);
+	bool operation_is_highp = !has_decoration(dst_id, Decoration::RelaxedPrecision);
 
 	auto input_precision = analyze_expression_precision(args, length);
 	if (input_precision == Options::DontCare)
@@ -12665,9 +12665,9 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		if (meta.flattened_struct)
 			flattened_structs[ops[1]] = true;
 		if (meta.relaxed_precision && backend.requires_relaxed_precision_analysis)
-			set_decoration(ops[1], DecorationRelaxedPrecision);
+			set_decoration(ops[1], Decoration::RelaxedPrecision);
 		if (meta.chain_is_builtin)
-			set_decoration(ops[1], DecorationBuiltIn, meta.builtin);
+			set_decoration(ops[1], Decoration::BuiltIn, meta.builtin);
 
 		// If we have some expression dependencies in our access chain, this access chain is technically a forwarded
 		// temporary which could be subject to invalidation.
@@ -13041,7 +13041,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			e->base_expression = ops[2];
 
 			if (meta.relaxed_precision && backend.requires_relaxed_precision_analysis)
-				set_decoration(ops[1], DecorationRelaxedPrecision);
+				set_decoration(ops[1], Decoration::RelaxedPrecision);
 		}
 		else
 		{
@@ -13098,8 +13098,8 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			can_modify_in_place = false;
 		}
 		else if (backend.requires_relaxed_precision_analysis &&
-		         has_decoration(composite, DecorationRelaxedPrecision) !=
-		         has_decoration(id, DecorationRelaxedPrecision) &&
+		         has_decoration(composite, Decoration::RelaxedPrecision) !=
+		         has_decoration(id, Decoration::RelaxedPrecision) &&
 		         get<SPIRType>(result_type).basetype != SPIRType::Struct)
 		{
 			// Similarly, if precision does not match for input and output,
@@ -14949,7 +14949,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			}
 		}
 
-		if (execution_scope != ScopeSubgroup && get_entry_point().model == ExecutionModelTessellationControl)
+		if (execution_scope != ScopeSubgroup && get_entry_point().model == ExecutionModel::TessellationControl)
 		{
 			// Control shaders only have barriers, and it implies memory barriers.
 			if (opcode == OpControlBarrier)
@@ -16237,7 +16237,7 @@ string CompilerGLSL::flags_to_qualifiers_glsl(const SPIRType &type, uint32_t id,
 			// HACK: This is a bool. See comment in type_to_glsl().
 			qual += "lowp ";
 		}
-		else if (flags.get(DecorationRelaxedPrecision))
+		else if (flags.get(Decoration::RelaxedPrecision))
 		{
 			bool implied_fmediump = type.basetype == SPIRType::Float &&
 			                        options.fragment.default_float_precision == Options::Mediump &&
@@ -16268,7 +16268,7 @@ string CompilerGLSL::flags_to_qualifiers_glsl(const SPIRType &type, uint32_t id,
 	{
 		// Vulkan GLSL supports precision qualifiers, even in desktop profiles, which is convenient.
 		// The default is highp however, so only emit mediump in the rare case that a shader has these.
-		if (flags.get(DecorationRelaxedPrecision))
+		if (flags.get(Decoration::RelaxedPrecision))
 			qual += "mediump ";
 	}
 
@@ -16304,9 +16304,9 @@ void CompilerGLSL::fixup_io_block_patch_primitive_qualifiers(const SPIRVariable 
 		bool do_promote_decoration = false;
 		for (uint32_t i = 0; i < member_count; i++)
 		{
-			if (has_member_decoration(type.self, i, DecorationPatch))
+			if (has_member_decoration(type.self, i, Decoration::Patch))
 			{
-				promoted_decoration = DecorationPatch;
+				promoted_decoration = Decoration::Patch;
 				do_promote_decoration = true;
 				break;
 			}
@@ -16421,7 +16421,7 @@ string CompilerGLSL::to_zero_initialized_expression(uint32_t type_id)
 #ifndef NDEBUG
 	auto &type = get<SPIRType>(type_id);
 	assert(type.storage == StorageClass::Private || type.storage == StorageClass::Function ||
-	       type.storage == StorageClassGeneric);
+	       type.storage == StorageClass::Generic);
 #endif
 	uint32_t id = ir.increase_bound_by(1);
 	ir.make_constant_null(id, type_id, false);
@@ -16491,7 +16491,7 @@ string CompilerGLSL::variable_decl(const SPIRVariable &variable)
 const char *CompilerGLSL::to_pls_qualifiers_glsl(const SPIRVariable &variable)
 {
 	auto &flags = get_decoration_bitset(variable.self);
-	if (flags.get(DecorationRelaxedPrecision))
+	if (flags.get(Decoration::RelaxedPrecision))
 		return "mediump ";
 	else
 		return "highp ";
@@ -16765,7 +16765,7 @@ string CompilerGLSL::type_to_glsl(const SPIRType &type, uint32_t id)
 		auto *parent = &get_pointee_type(type);
 		string name = type_to_glsl(*parent);
 
-		uint32_t array_stride = get_decoration(type.parent_type, DecorationArrayStride);
+		uint32_t array_stride = get_decoration(type.parent_type, Decoration::ArrayStride);
 
 		// Resolve all array dimensions in one go since once we lose the pointer type,
 		// array information is left to to_array_type_glsl. The base type loses array information.
@@ -16778,7 +16778,7 @@ string CompilerGLSL::type_to_glsl(const SPIRType &type, uint32_t id)
 
 			name += "stride_" + std::to_string(array_stride);
 
-			array_stride = get_decoration(parent->parent_type, DecorationArrayStride);
+			array_stride = get_decoration(parent->parent_type, Decoration::ArrayStride);
 			parent = &get<SPIRType>(parent->parent_type);
 		}
 
@@ -18996,7 +18996,7 @@ bool CompilerGLSL::unroll_array_to_complex_store(uint32_t target_id, uint32_t so
 	if (!var || var->storage != StorageClass::Output)
 		return false;
 
-	if (!is_builtin_variable(*var) || BuiltIn(get_decoration(var->self, DecorationBuiltIn)) != BuiltInSampleMask)
+	if (!is_builtin_variable(*var) || BuiltIn(get_decoration(var->self, Decoration::BuiltIn)) != BuiltInSampleMask)
 		return false;
 
 	auto &type = expression_type(source_id);
@@ -19040,13 +19040,13 @@ void CompilerGLSL::unroll_array_from_complex_load(uint32_t target_id, uint32_t s
 	if (type.array.empty())
 		return;
 
-	auto builtin = BuiltIn(get_decoration(var->self, DecorationBuiltIn));
+	auto builtin = BuiltIn(get_decoration(var->self, Decoration::BuiltIn));
 	bool is_builtin = is_builtin_variable(*var) &&
 	                  (builtin == BuiltInPointSize ||
 	                   builtin == BuiltInPosition ||
 	                   builtin == BuiltInSampleMask);
 	bool is_tess = is_tessellation_shader();
-	bool is_patch = has_decoration(var->self, DecorationPatch);
+	bool is_patch = has_decoration(var->self, Decoration::Patch);
 	bool is_sample_mask = is_builtin && builtin == BuiltInSampleMask;
 
 	// Tessellation input arrays are special in that they are unsized, so we cannot directly copy from it.
@@ -19098,7 +19098,7 @@ void CompilerGLSL::cast_from_variable_load(uint32_t source_id, std::string &expr
 		source_id = var->self;
 
 	// Only interested in standalone builtin variables.
-	if (!has_decoration(source_id, DecorationBuiltIn))
+	if (!has_decoration(source_id, Decoration::BuiltIn))
 	{
 		// Except for int attributes in legacy GLSL, which are cast from float.
 		if (is_legacy() && expr_type.basetype == SPIRType::Int && var && var->storage == StorageClass::Input)
@@ -19106,7 +19106,7 @@ void CompilerGLSL::cast_from_variable_load(uint32_t source_id, std::string &expr
 		return;
 	}
 
-	auto builtin = static_cast<BuiltIn>(get_decoration(source_id, DecorationBuiltIn));
+	auto builtin = static_cast<BuiltIn>(get_decoration(source_id, Decoration::BuiltIn));
 	auto expected_type = expr_type.basetype;
 
 	// TODO: Fill in for more builtins.
@@ -19180,10 +19180,10 @@ void CompilerGLSL::cast_to_variable_store(uint32_t target_id, std::string &expr,
 		target_id = var->self;
 
 	// Only interested in standalone builtin variables.
-	if (!has_decoration(target_id, DecorationBuiltIn))
+	if (!has_decoration(target_id, Decoration::BuiltIn))
 		return;
 
-	auto builtin = static_cast<BuiltIn>(get_decoration(target_id, DecorationBuiltIn));
+	auto builtin = static_cast<BuiltIn>(get_decoration(target_id, Decoration::BuiltIn));
 	auto expected_type = get_builtin_basetype(builtin, expr_type.basetype);
 
 	if (expected_type != expr_type.basetype)
@@ -19905,7 +19905,7 @@ void CompilerGLSL::rewrite_load_for_wrapped_row_major(std::string &expr, TypeID 
 				rewrite = true;
 
 			// Since we decide on a per-struct basis, only use mediump wrapper if all candidates are mediump.
-			if (!decorations.get(DecorationRelaxedPrecision))
+			if (!decorations.get(Decoration::RelaxedPrecision))
 				relaxed = false;
 		}
 	}
@@ -19935,11 +19935,11 @@ bool CompilerGLSL::is_stage_output_variable_masked(const SPIRVariable &var) cons
 	if (is_block)
 		return false;
 
-	bool is_builtin = has_decoration(var.self, DecorationBuiltIn);
+	bool is_builtin = has_decoration(var.self, Decoration::BuiltIn);
 
 	if (is_builtin)
 	{
-		return is_stage_output_builtin_masked(BuiltIn(get_decoration(var.self, DecorationBuiltIn)));
+		return is_stage_output_builtin_masked(BuiltIn(get_decoration(var.self, Decoration::BuiltIn)));
 	}
 	else
 	{
