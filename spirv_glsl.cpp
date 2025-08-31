@@ -3389,7 +3389,7 @@ void CompilerGLSL::emit_declared_builtin_block(StorageClass storage, ExecutionMo
 					if (is_block_builtin(m.builtin_type) && m.decoration_flags.get(static_cast<uint32_t>(Decoration::Offset)))
 					{
 						have_any_xfb_offset = true;
-						builtin_xfb_offsets[m.builtin_type] = m.offset;
+						builtin_xfb_offsets[m.builtin_type] = static_cast<uint32_t>(m.offset);
 					}
 
 					if (is_block_builtin(m.builtin_type) && m.decoration_flags.get(static_cast<uint32_t>(Decoration::Stream)))
@@ -3445,7 +3445,7 @@ void CompilerGLSL::emit_declared_builtin_block(StorageClass storage, ExecutionMo
 				    m.decoration_flags.get(static_cast<uint32_t>(Decoration::XfbBuffer)) && m.decoration_flags.get(static_cast<uint32_t>(Decoration::Offset)))
 				{
 					have_any_xfb_offset = true;
-					builtin_xfb_offsets[m.builtin_type] = m.offset;
+					builtin_xfb_offsets[m.builtin_type] = static_cast<uint32_t>(m.offset);
 					uint32_t buffer_index = m.xfb_buffer;
 					uint32_t stride = m.xfb_stride;
 					if (have_xfb_buffer_stride && buffer_index != xfb_buffer)
@@ -3549,7 +3549,7 @@ void CompilerGLSL::emit_declared_builtin_block(StorageClass storage, ExecutionMo
 			statement("vec4 gl_Position;");
 	}
 
-	if (emitted_builtins.get(BuiltIn::PointSize))
+	if (emitted_builtins.get(static_cast<uint32_t>(BuiltIn::PointSize)))
 	{
 		auto itr = builtin_xfb_offsets.find(static_cast<uint32_t>(BuiltIn::PointSize));
 		if (itr != end(builtin_xfb_offsets))
@@ -3569,7 +3569,7 @@ void CompilerGLSL::emit_declared_builtin_block(StorageClass storage, ExecutionMo
 
 	if (emitted_builtins.get(static_cast<uint32_t>(BuiltIn::CullDistance)))
 	{
-		auto itr = builtin_xfb_offsets.find(BuiltIn::CullDistance);
+		auto itr = builtin_xfb_offsets.find(static_cast<uint32_t>(BuiltIn::CullDistance));
 		if (itr != end(builtin_xfb_offsets))
 			statement("layout(xfb_offset = ", itr->second, ") float gl_CullDistance[", cull_distance_size, "];");
 		else
@@ -3947,7 +3947,7 @@ void CompilerGLSL::emit_resources()
 			{
 				if (!emitted_base_instance &&
 				    ((options.vertex.support_nonzero_base_instance && builtin == BuiltInInstanceIndex) ||
-				     (builtin == BuiltInBaseInstance)))
+				     (builtin == BuiltIn::BaseInstance)))
 				{
 					statement("#ifdef GL_ARB_shader_draw_parameters");
 					statement("#define SPIRV_Cross_BaseInstance gl_BaseInstanceARB");
@@ -3958,7 +3958,7 @@ void CompilerGLSL::emit_resources()
 					emitted = true;
 					emitted_base_instance = true;
 				}
-				else if (builtin == BuiltInBaseVertex)
+				else if (builtin == BuiltIn::BaseVertex)
 				{
 					statement("#ifdef GL_ARB_shader_draw_parameters");
 					statement("#define SPIRV_Cross_BaseVertex gl_BaseVertexARB");
@@ -3967,7 +3967,7 @@ void CompilerGLSL::emit_resources()
 					statement("uniform int SPIRV_Cross_BaseVertex;");
 					statement("#endif");
 				}
-				else if (builtin == BuiltInDrawIndex)
+				else if (builtin == BuiltIn::DrawIndex)
 				{
 					statement("#ifndef GL_ARB_shader_draw_parameters");
 					// Cannot really be worked around.
@@ -4040,7 +4040,7 @@ void CompilerGLSL::emit_output_variable_initializer(const SPIRVariable &var)
 				    !cull_distance_count)
 					continue;
 
-				if (get_member_decoration(type.self, i, Decoration::BuiltIn) == BuiltIn::ClipDistance &&
+				if (get_member_decoration(type.self, i, static_cast<uint32_t>(Decoration::BuiltIn)) == static_cast<uint32_t>(BuiltIn::ClipDistance) &&
 				    !clip_distance_count)
 					continue;
 			}
@@ -4055,7 +4055,7 @@ void CompilerGLSL::emit_output_variable_initializer(const SPIRVariable &var)
 				auto &member_type = get<SPIRType>(member_type_id);
 				auto array_type = member_type;
 				array_type.parent_type = member_type_id;
-				array_type.op = OpTypeArray;
+				array_type.op = Op::OpTypeArray;
 				array_type.array.push_back(array_size);
 				array_type.array_size_literal.push_back(true);
 
