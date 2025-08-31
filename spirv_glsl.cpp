@@ -1617,7 +1617,7 @@ uint32_t CompilerGLSL::type_to_packed_alignment(const SPIRType &type, const Bits
 				return 8;
 		}
 		else
-			SPIRV_CROSS_THROW("AddressingModelPhysicalStorageBuffer64 must be used for PhysicalStorageBuffer.");
+			SPIRV_CROSS_THROW("AddressingModel::PhysicalStorageBuffer64 must be used for PhysicalStorageBuffer.");
 	}
 	else if (is_array(type))
 	{
@@ -1735,7 +1735,7 @@ uint32_t CompilerGLSL::type_to_packed_size(const SPIRType &type, const Bitset &f
 		if (ir.addressing_model == AddressingModel::PhysicalStorageBuffer64)
 			return 8;
 		else
-			SPIRV_CROSS_THROW("AddressingModelPhysicalStorageBuffer64 must be used for PhysicalStorageBuffer.");
+			SPIRV_CROSS_THROW("AddressingModel::PhysicalStorageBuffer64 must be used for PhysicalStorageBuffer.");
 	}
 	else if (is_array(type))
 	{
@@ -3380,7 +3380,7 @@ void CompilerGLSL::emit_declared_builtin_block(StorageClass storage, ExecutionMo
 			{
 				if (m.builtin && builtin_is_per_vertex_set(m.builtin_type))
 				{
-					builtins.set(m.builtin_type);
+					builtins.set(static_cast<uint32_t>(m.builtin_type));
 					if (m.builtin_type == BuiltIn::CullDistance)
 						cull_distance_size = to_array_size_literal(this->get<SPIRType>(type.member_types[index]));
 					else if (m.builtin_type == BuiltIn::ClipDistance)
@@ -3435,7 +3435,7 @@ void CompilerGLSL::emit_declared_builtin_block(StorageClass storage, ExecutionMo
 			{
 				// For mesh/tesc output, Clip/Cull is an array-of-array. Look at innermost array type
 				// for correct result.
-				global_builtins.set(m.builtin_type);
+				global_builtins.set(static_cast<uint32_t>(m.builtin_type));
 				if (m.builtin_type == BuiltIn::CullDistance)
 					cull_distance_size = to_array_size_literal(type, 0);
 				else if (m.builtin_type == BuiltIn::ClipDistance)
@@ -3480,8 +3480,8 @@ void CompilerGLSL::emit_declared_builtin_block(StorageClass storage, ExecutionMo
 	});
 
 	global_builtins =
-	    Bitset(global_builtins.get_lower() & ((1ull << BuiltIn::Position) | (1ull << BuiltIn::PointSize) |
-	                                          (1ull << BuiltIn::ClipDistance) | (1ull << BuiltIn::CullDistance)));
+	    Bitset(global_builtins.get_lower() & ((1ull << static_cast<uint32_t>(BuiltIn::Position)) | (1ull << static_cast<uint32_t>(BuiltIn::PointSize)) |
+	                                          (1ull << static_cast<uint32_t>(BuiltIn::ClipDistance)) | (1ull << static_cast<uint32_t>(BuiltIn::CullDistance))));
 
 	// Try to collect all other declared builtins.
 	if (!emitted_block)
@@ -3551,7 +3551,7 @@ void CompilerGLSL::emit_declared_builtin_block(StorageClass storage, ExecutionMo
 
 	if (emitted_builtins.get(BuiltIn::PointSize))
 	{
-		auto itr = builtin_xfb_offsets.find(BuiltIn::PointSize);
+		auto itr = builtin_xfb_offsets.find(static_cast<uint32_t>(BuiltIn::PointSize));
 		if (itr != end(builtin_xfb_offsets))
 			statement("layout(xfb_offset = ", itr->second, ") float gl_PointSize;");
 		else
@@ -3560,14 +3560,14 @@ void CompilerGLSL::emit_declared_builtin_block(StorageClass storage, ExecutionMo
 
 	if (emitted_builtins.get(static_cast<uint32_t>(BuiltIn::ClipDistance)))
 	{
-		auto itr = builtin_xfb_offsets.find(BuiltIn::ClipDistance);
+		auto itr = builtin_xfb_offsets.find(static_cast<uint32_t>(BuiltIn::ClipDistance));
 		if (itr != end(builtin_xfb_offsets))
 			statement("layout(xfb_offset = ", itr->second, ") float gl_ClipDistance[", clip_distance_size, "];");
 		else
 			statement("float gl_ClipDistance[", clip_distance_size, "];");
 	}
 
-	if (emitted_builtins.get(BuiltIn::CullDistance))
+	if (emitted_builtins.get(static_cast<uint32_t>(BuiltIn::CullDistance)))
 	{
 		auto itr = builtin_xfb_offsets.find(BuiltIn::CullDistance);
 		if (itr != end(builtin_xfb_offsets))
@@ -3698,7 +3698,7 @@ void CompilerGLSL::emit_resources()
 
 	bool emitted = false;
 
-	if (ir.addressing_model == AddressingModelPhysicalStorageBuffer64)
+	if (ir.addressing_model == AddressingModel::PhysicalStorageBuffer64)
 	{
 		// Output buffer reference block forward declarations.
 		ir.for_each_typed_id<SPIRType>([&](uint32_t id, SPIRType &type)
@@ -3775,8 +3775,8 @@ void CompilerGLSL::emit_resources()
 				// Special case, ray payload and hit attribute blocks are not really blocks, just regular structs.
 				if (type->basetype == SPIRType::Struct && type->pointer &&
 				    has_decoration(type->self, Decoration::Block) &&
-				    (type->storage == StorageClassRayPayloadKHR || type->storage == StorageClassIncomingRayPayloadKHR ||
-				     type->storage == StorageClassHitAttributeKHR))
+				    (type->storage == StorageClass::RayPayloadKHR || type->storage == StorageClass::IncomingRayPayloadKHR ||
+				     type->storage == StorageClass::HitAttributeKHR))
 				{
 					type = &get<SPIRType>(type->parent_type);
 					is_natural_struct = true;
@@ -3820,7 +3820,7 @@ void CompilerGLSL::emit_resources()
 	// If we needed to declare work group size late, check here.
 	// If the work group size depends on a specialization constant, we need to declare the layout() block
 	// after constants (and their macros) have been declared.
-	if (execution.model == ExecutionModelGLCompute && !options.vulkan_semantics &&
+	if (execution.model == ExecutionModel::GLCompute && !options.vulkan_semantics &&
 	    (execution.workgroup_size.constant != 0 || execution.flags.get(static_cast<uint32_t>(ExecutionMode::LocalSizeId))))
 	{
 		SpecializationConstant wg_x, wg_y, wg_z;
@@ -3837,7 +3837,7 @@ void CompilerGLSL::emit_resources()
 
 	emitted = false;
 
-	if (ir.addressing_model == AddressingModelPhysicalStorageBuffer64)
+	if (ir.addressing_model == AddressingModel::PhysicalStorageBuffer64)
 	{
 		// Output buffer reference blocks.
 		// Buffer reference blocks can reference themselves to support things like linked lists.
@@ -4643,7 +4643,7 @@ void CompilerGLSL::emit_extension_workarounds(spv::ExecutionModel model)
 
 		if (shader_subgroup_supporter.is_feature_requested(Supp::SubgroupMemBarrier))
 		{
-			if (model == spv::ExecutionModelGLCompute)
+			if (model == spv::ExecutionModel::GLCompute)
 			{
 				statement("#ifndef GL_KHR_shader_subgroup_basic");
 				statement("void subgroupMemoryBarrier() { groupMemoryBarrier(); }");
