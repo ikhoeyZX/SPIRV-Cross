@@ -2838,7 +2838,7 @@ void CompilerGLSL::emit_interface_block(const SPIRVariable &var)
 				block_qualifier = "patch ";
 			else if (has_decoration(var.self, Decoration::PerPrimitiveEXT))
 				block_qualifier = "perprimitiveEXT ";
-			else if (has_decoration(var.self, DecorationPerVertexKHR))
+			else if (has_decoration(var.self, Decoration::PerVertexKHR))
 				block_qualifier = "pervertexEXT ";
 			else
 				block_qualifier = "";
@@ -3240,7 +3240,7 @@ void CompilerGLSL::fixup_image_load_store_access()
 
 static bool is_block_builtin(BuiltIn builtin)
 {
-	return builtin == BuiltIn::Position || builtin == BuiltInPointSize || builtin == BuiltIn::ClipDistance ||
+	return builtin == BuiltIn::Position || builtin == BuiltIn::PointSize || builtin == BuiltIn::ClipDistance ||
 	       builtin == BuiltIn::CullDistance;
 }
 
@@ -3315,7 +3315,7 @@ void CompilerGLSL::fixup_implicit_builtin_block_names(ExecutionModel model)
 			else
 			{
 				auto flags = get_buffer_block_flags(var.self);
-				if (flags.get(Decoration::PerPrimitiveEXT))
+				if (flags.get(static_cast<uint32_t>(Decoration::PerPrimitiveEXT)))
 				{
 					set_name(var.self, "gl_MeshPrimitivesEXT");
 					set_name(type.self, "gl_MeshPerPrimitiveEXT");
@@ -3364,7 +3364,7 @@ void CompilerGLSL::emit_declared_builtin_block(StorageClass storage, ExecutionMo
 	std::unordered_map<uint32_t, uint32_t> builtin_xfb_offsets;
 
 	const auto builtin_is_per_vertex_set = [](BuiltIn builtin) -> bool {
-		return builtin == BuiltIn::Position || builtin == BuiltInPointSize ||
+		return builtin == BuiltIn::Position || builtin == BuiltIn::PointSize ||
 			builtin == BuiltIn::ClipDistance || builtin == BuiltIn::CullDistance;
 	};
 
@@ -3480,7 +3480,7 @@ void CompilerGLSL::emit_declared_builtin_block(StorageClass storage, ExecutionMo
 	});
 
 	global_builtins =
-	    Bitset(global_builtins.get_lower() & ((1ull << BuiltIn::Position) | (1ull << BuiltInPointSize) |
+	    Bitset(global_builtins.get_lower() & ((1ull << BuiltIn::Position) | (1ull << BuiltIn::PointSize) |
 	                                          (1ull << BuiltIn::ClipDistance) | (1ull << BuiltIn::CullDistance)));
 
 	// Try to collect all other declared builtins.
@@ -3538,9 +3538,9 @@ void CompilerGLSL::emit_declared_builtin_block(StorageClass storage, ExecutionMo
 	}
 
 	begin_scope();
-	if (emitted_builtins.get(BuiltIn::Position))
+	if (emitted_builtins.get(static_cast<uint32_t>(BuiltIn::Position)))
 	{
-		auto itr = builtin_xfb_offsets.find(BuiltIn::Position);
+		auto itr = builtin_xfb_offsets.find(static_cast<uint32_t>(BuiltIn::Position));
 		if (itr != end(builtin_xfb_offsets))
 			statement("layout(xfb_offset = ", itr->second, ") vec4 gl_Position;");
 		else if (position_invariant)
@@ -3549,16 +3549,16 @@ void CompilerGLSL::emit_declared_builtin_block(StorageClass storage, ExecutionMo
 			statement("vec4 gl_Position;");
 	}
 
-	if (emitted_builtins.get(BuiltInPointSize))
+	if (emitted_builtins.get(BuiltIn::PointSize))
 	{
-		auto itr = builtin_xfb_offsets.find(BuiltInPointSize);
+		auto itr = builtin_xfb_offsets.find(BuiltIn::PointSize);
 		if (itr != end(builtin_xfb_offsets))
 			statement("layout(xfb_offset = ", itr->second, ") float gl_PointSize;");
 		else
 			statement("float gl_PointSize;");
 	}
 
-	if (emitted_builtins.get(BuiltIn::ClipDistance))
+	if (emitted_builtins.get(static_cast<uint32_t>(BuiltIn::ClipDistance)))
 	{
 		auto itr = builtin_xfb_offsets.find(BuiltIn::ClipDistance);
 		if (itr != end(builtin_xfb_offsets))
@@ -19042,7 +19042,7 @@ void CompilerGLSL::unroll_array_from_complex_load(uint32_t target_id, uint32_t s
 
 	auto builtin = BuiltIn(get_decoration(var->self, Decoration::BuiltIn));
 	bool is_builtin = is_builtin_variable(*var) &&
-	                  (builtin == BuiltInPointSize ||
+	                  (builtin == BuiltIn::PointSize ||
 	                   builtin == BuiltIn::Position ||
 	                   builtin == BuiltInSampleMask);
 	bool is_tess = is_tessellation_shader();
