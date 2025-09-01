@@ -10731,7 +10731,7 @@ string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indice
 				append_index(index, is_literal);
 			}
 
-			if (var && has_decoration(var->self, static_cast<uint32_t>(Decoration::BuiltIn)) &&
+			if (var && has_decoration(var->self, Decoration::BuiltIn) &&
 			    get_decoration(var->self, Decoration::BuiltIn) == BuiltIn::Position &&
 			    get_execution_model() == ExecutionModel::MeshEXT)
 			{
@@ -10811,7 +10811,7 @@ string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indice
 				}
 			}
 
-			if (has_member_decoration(type->self, index, DecorationInvariant))
+			if (has_member_decoration(type->self, index, Decoration::Invariant))
 				is_invariant = true;
 			if (has_member_decoration(type->self, index, Decoration::RelaxedPrecision))
 				relaxed_precision = true;
@@ -11226,7 +11226,7 @@ std::string CompilerGLSL::flattened_access_chain_struct(uint32_t base, const uin
 		{
 			auto decorations = combined_decoration_for_member(target_type, i);
 			need_transpose = decorations.get(static_cast<uint32_t>(Decoration::RowMajor));
-			relaxed = decorations.get(Decoration::RelaxedPrecision);
+			relaxed = decorations.get(static_cast<uint32_t>(Decoration::RelaxedPrecision));
 			matrix_stride = type_struct_member_matrix_stride(target_type, i);
 		}
 
@@ -11869,7 +11869,7 @@ string CompilerGLSL::build_composite_combiner(uint32_t return_type, const uint32
 	// Can only merge swizzles for vectors.
 	auto &type = get<SPIRType>(return_type);
 	bool can_apply_swizzle_opt = type.basetype != SPIRType::Struct && type.array.empty() && type.columns == 1 &&
-	                             type.op != spv::OpTypeCooperativeMatrixKHR;
+	                             type.op != spv::Op::OpTypeCooperativeMatrixKHR;
 	bool swizzle_optimization = false;
 
 	for (uint32_t i = 0; i < length; i++)
@@ -12029,7 +12029,7 @@ void CompilerGLSL::emit_block_instructions(SPIRBlock &block)
 				// Explicitly, we don't want to inherit RelaxedPrecision state in this CopyObject,
 				// so it helps to have handle_instruction_precision() on the outside of emit_instruction().
 				EmbeddedInstruction inst;
-				inst.op = OpCopyObject;
+				inst.op = Op::OpCopyObject;
 				inst.length = 3;
 				inst.ops.push_back(expression_type_id(itr->first));
 				inst.ops.push_back(itr->second);
@@ -12048,7 +12048,7 @@ void CompilerGLSL::emit_block_instructions(SPIRBlock &block)
 			// Explicitly, we don't want to inherit RelaxedPrecision state in this CopyObject,
 			// so it helps to have handle_instruction_precision() on the outside of emit_instruction().
 			EmbeddedInstruction inst;
-			inst.op = OpCopyObject;
+			inst.op = Op::OpCopyObject;
 			inst.length = 3;
 			inst.ops.push_back(expression_type_id(temporary_copy.src_id));
 			inst.ops.push_back(temporary_copy.dst_id);
@@ -12090,7 +12090,7 @@ void CompilerGLSL::handle_store_to_invariant_variable(uint32_t store_id, uint32_
 	// expressions to be temporaries.
 	// It is uncertain if this is enough to support invariant in all possible cases, but it should be good enough
 	// for all reasonable uses of invariant.
-	if (!has_decoration(store_id, DecorationInvariant))
+	if (!has_decoration(store_id, Decoration::Invariant))
 		return;
 
 	auto *expr = maybe_get<SPIRExpression>(value_id);
@@ -12112,7 +12112,7 @@ void CompilerGLSL::emit_store_statement(uint32_t lhs_expression, uint32_t rhs_ex
 		if (!unroll_array_to_complex_store(lhs_expression, rhs_expression))
 		{
 			auto lhs = to_dereferenced_expression(lhs_expression);
-			if (has_decoration(lhs_expression, DecorationNonUniform))
+			if (has_decoration(lhs_expression, Decoration::NonUniform))
 				convert_non_uniform_expression(lhs, lhs_expression);
 
 			// We might need to cast in order to store to a builtin.
@@ -12138,24 +12138,24 @@ uint32_t CompilerGLSL::get_integer_width_for_instruction(const Instruction &inst
 
 	switch (instr.op)
 	{
-	case Op::OpSConvert:
-	case Op::OpConvertSToF:
-	case Op::OpUConvert:
-	case Op::OpConvertUToF:
-	case Op::OpIEqual:
-	case Op::OpINotEqual:
-	case Op::OpSLessThan:
-	case Op::OpSLessThanEqual:
-	case Op::OpSGreaterThan:
-	case Op::OpSGreaterThanEqual:
-	case Op::OpULessThan:
-	case Op::OpULessThanEqual:
-	case Op::OpUGreaterThan:
-	case Op::OpUGreaterThanEqual:
+	case static_cast<uint32_t>(Op::OpSConvert):
+	case static_cast<uint32_t>(Op::OpConvertSToF):
+	case static_cast<uint32_t>(Op::OpUConvert):
+	case static_cast<uint32_t>(Op::OpConvertUToF):
+	case static_cast<uint32_t>(Op::OpIEqual):
+	case static_cast<uint32_t>(Op::OpINotEqual):
+	case static_cast<uint32_t>(Op::OpSLessThan):
+	case static_cast<uint32_t>(Op::OpSLessThanEqual):
+	case static_cast<uint32_t>(Op::OpSGreaterThan):
+	case static_cast<uint32_t>(Op::OpSGreaterThanEqual):
+	case static_cast<uint32_t>(Op::OpULessThan):
+	case static_cast<uint32_t>(Op::OpULessThanEqual):
+	case static_cast<uint32_t>(Op::OpUGreaterThan):
+	case static_cast<uint32_t>(Op::OpUGreaterThanEqual):
 		return expression_type(ops[2]).width;
 
-	case Op::OpSMulExtended:
-	case Op::OpUMulExtended:
+	case static_cast<uint32_t>(Op::OpSMulExtended):
+	case static_cast<uint32_t>(Op::OpUMulExtended):
 		return get<SPIRType>(get<SPIRType>(ops[0]).member_types[0]).width;
 
 	default:
@@ -12408,7 +12408,7 @@ CompilerGLSL::TemporaryCopy CompilerGLSL::handle_instruction_precision(const Ins
 
 			if (opcode_is_precision_sensitive_operation(opcode))
 				analyze_precision_requirements(ops[0], ops[1], &ops[2], forwarding_length);
-			else if (opcode == OpExtInst && length >= 5 && get<SPIRExtension>(ops[2]).ext == SPIRExtension::GLSL)
+			else if (opcode == Op::OpExtInst && length >= 5 && get<SPIRExtension>(ops[2]).ext == SPIRExtension::GLSL)
 				analyze_precision_requirements(ops[0], ops[1], &ops[4], forwarding_length - 2);
 			else if (opcode_is_precision_forwarding_instruction(opcode, forwarding_length))
 				forward_relaxed_precision(ops[1], &ops[2], forwarding_length);
@@ -12566,7 +12566,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		// Also, loading from gl_SampleMask array needs special unroll.
 		unroll_array_from_complex_load(id, ptr, expr);
 
-		if (!type_is_opaque_value(type) && has_decoration(ptr, DecorationNonUniform))
+		if (!type_is_opaque_value(type) && has_decoration(ptr, Decoration::NonUniform))
 		{
 			// If we're loading something non-opaque, we need to handle non-uniform descriptor access.
 			convert_non_uniform_expression(expr, ptr);
@@ -12635,7 +12635,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		// If the base is immutable, the access chain pointer must also be.
 		// If an expression is mutable and forwardable, we speculate that it is immutable.
 		AccessChainMeta meta;
-		bool ptr_chain = opcode == OpPtrAccessChain;
+		bool ptr_chain = opcode == Op::OpPtrAccessChain;
 		auto &target_type = get<SPIRType>(ops[0]);
 		auto e = access_chain(ops[2], &ops[3], length - 3, target_type, &meta, ptr_chain);
 
@@ -12662,7 +12662,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		if (meta.storage_physical_type != 0)
 			set_extended_decoration(ops[1], SPIRVCrossDecorationPhysicalTypeID, meta.storage_physical_type);
 		if (meta.storage_is_invariant)
-			set_decoration(ops[1], DecorationInvariant);
+			set_decoration(ops[1], Decoration::Invariant);
 		if (meta.flattened_struct)
 			flattened_structs[ops[1]] = true;
 		if (meta.relaxed_precision && backend.requires_relaxed_precision_analysis)
