@@ -10380,7 +10380,7 @@ string CompilerGLSL::builtin_to_glsl(BuiltIn builtin, StorageClass storage)
 	}
 
 	default:
-		return join("gl_BuiltIn_", convert_to_string(builtin));
+		return join("gl_BuiltIn_", convert_to_string(static_cast<uint32_t>(builtin)));
 	}
 }
 
