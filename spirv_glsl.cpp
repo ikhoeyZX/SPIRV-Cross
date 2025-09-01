@@ -15728,7 +15728,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		// values every time it's evaluated. Block any forwarding attempt.
 		// We also might want to invalidate all expressions to function as a sort of optimization
 		// barrier, but might be overkill for now.
-		if (scope == ScopeDevice)
+		if (scope == static_cast<uint32_t>(Scope::Device))
 		{
 			require_extension_internal("GL_EXT_shader_realtime_clock");
 			if (type.basetype == SPIRType::BaseType::UInt64)
@@ -15738,7 +15738,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			else
 				SPIRV_CROSS_THROW("Unsupported result type for OpReadClockKHR opcode.");
 		}
-		else if (scope == ScopeSubgroup)
+		else if (scope == static_cast<uint32_t>(Scope::Subgroup))
 		{
 			require_extension_internal("GL_ARB_shader_clock");
 			if (type.basetype == SPIRType::BaseType::UInt64)
@@ -15831,13 +15831,13 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		for (uint32_t i = 1; i < length; i++)
 		{
 			// arguments 3, 6 and in case of MulAddNv also 9 use component type int constants
-			if (i == 3 || i == 6 || (i == 9 && opcode == OpCooperativeVectorMatrixMulAddNV))
+			if (i == 3 || i == 6 || (i == 9 && opcode == Op::OpCooperativeVectorMatrixMulAddNV))
 			{
 				stmt += to_pretty_expression_if_int_constant(
 						ops[i], std::begin(CoopVecComponentTypeNames), std::end(CoopVecComponentTypeNames));
 			}
-			else if ((i == 12 && opcode == OpCooperativeVectorMatrixMulAddNV) ||
-			         (i == 9 && opcode == OpCooperativeVectorMatrixMulNV))
+			else if ((i == 12 && opcode == Op::OpCooperativeVectorMatrixMulAddNV) ||
+			         (i == 9 && opcode == Op::OpCooperativeVectorMatrixMulNV))
 			{
 				stmt += to_pretty_expression_if_int_constant(
 						ops[i], std::begin(CoopVecMatrixLayoutNames), std::end(CoopVecMatrixLayoutNames));
@@ -16019,7 +16019,7 @@ void CompilerGLSL::append_global_func_args(const SPIRFunction &func, uint32_t in
 string CompilerGLSL::to_member_name(const SPIRType &type, uint32_t index)
 {
 	if (type.type_alias != TypeID(0) &&
-	    !has_extended_decoration(type.type_alias, SPIRVCrossDecoration::BufferBlockRepacked))
+	    !has_extended_decoration(type.type_alias, SPIRVCrossDecorationBufferBlockRepacked))
 	{
 		return to_member_name(get<SPIRType>(type.type_alias), index);
 	}
@@ -16074,7 +16074,7 @@ bool CompilerGLSL::is_non_native_row_major_matrix(uint32_t id)
 	if (e)
 		return e->need_transpose;
 	else
-		return has_decoration(id, DecorationRowMajor);
+		return has_decoration(id, Decoration::RowMajor);
 }
 
 // Checks whether the member is a row_major matrix that requires conversion before use
@@ -16085,7 +16085,7 @@ bool CompilerGLSL::member_is_non_native_row_major_matrix(const SPIRType &type, u
 		return false;
 
 	// Non-matrix or column-major matrix types do not need to be converted.
-	if (!has_member_decoration(type.self, index, DecorationRowMajor))
+	if (!has_member_decoration(type.self, index, Decoration::RowMajor))
 		return false;
 
 	// Only square row-major matrices can be converted at this time.
@@ -16211,13 +16211,13 @@ void CompilerGLSL::emit_struct_padding_target(const SPIRType &)
 string CompilerGLSL::flags_to_qualifiers_glsl(const SPIRType &type, uint32_t id, const Bitset &flags)
 {
 	// GL_EXT_buffer_reference variables can be marked as restrict.
-	if (flags.get(Decoration::RestrictPointerEXT))
+	if (flags.get(static_cast<uint32_t>(Decoration::RestrictPointerEXT)))
 		return "restrict ";
 
 	string qual;
 
 	if (type_is_floating_point(type) &&
-	    (flags.get(Decoration::NoContraction) || (type.self && has_legacy_nocontract(type.self, id))) &&
+	    (flags.get(static_cast<uint32_t>(Decoration::NoContraction)) || (type.self && has_legacy_nocontract(type.self, id))) &&
 	    backend.support_precise_qualifier)
 	{
 		qual = "precise ";
@@ -16241,7 +16241,7 @@ string CompilerGLSL::flags_to_qualifiers_glsl(const SPIRType &type, uint32_t id,
 			// HACK: This is a bool. See comment in type_to_glsl().
 			qual += "lowp ";
 		}
-		else if (flags.get(Decoration::RelaxedPrecision))
+		else if (flags.get(static_cast<uint32_t>(Decoration::RelaxedPrecision)))
 		{
 			bool implied_fmediump = type.basetype == SPIRType::Float &&
 			                        options.fragment.default_float_precision == Options::Mediump &&
@@ -16272,7 +16272,7 @@ string CompilerGLSL::flags_to_qualifiers_glsl(const SPIRType &type, uint32_t id,
 	{
 		// Vulkan GLSL supports precision qualifiers, even in desktop profiles, which is convenient.
 		// The default is highp however, so only emit mediump in the rare case that a shader has these.
-		if (flags.get(Decoration::RelaxedPrecision))
+		if (flags.get(static_cast<uint32_t>(Decoration::RelaxedPrecision)))
 			qual += "mediump ";
 	}
 
@@ -16338,9 +16338,9 @@ string CompilerGLSL::to_qualifiers_glsl(uint32_t id)
 
 	auto *var = maybe_get<SPIRVariable>(id);
 
-	if (var && var->storage == StorageClassWorkgroup && !backend.shared_is_implied)
+	if (var && var->storage == StorageClass::Workgroup && !backend.shared_is_implied)
 		res += "shared ";
-	else if (var && var->storage == StorageClassTaskPayloadWorkgroupEXT && !backend.shared_is_implied)
+	else if (var && var->storage == StorageClass::TaskPayloadWorkgroupEXT && !backend.shared_is_implied)
 		res += "taskPayloadSharedEXT ";
 
 	res += to_interpolation_qualifiers(flags);
@@ -16358,7 +16358,7 @@ string CompilerGLSL::to_qualifiers_glsl(uint32_t id)
 		if (flags.get(static_cast<uint32_t>(Decoration::NonWritable)))
 			res += "readonly ";
 
-		bool formatted_load = type.image.format == ImageFormatUnknown;
+		bool formatted_load = type.image.format == ImageFormat::Unknown;
 		if (flags.get(static_cast<uint32_t>(Decoration::NonReadable)))
 		{
 			res += "writeonly ";
@@ -16471,7 +16471,7 @@ string CompilerGLSL::variable_decl(const SPIRVariable &variable)
 	}
 	else if (variable.initializer)
 	{
-		if (!variable_decl_is_remapped_storage(variable, StorageClassWorkgroup))
+		if (!variable_decl_is_remapped_storage(variable, StorageClass::Workgroup))
 		{
 			uint32_t expr = variable.initializer;
 			if (ir.ids[expr].get_type() != TypeUndef)
@@ -16495,7 +16495,7 @@ string CompilerGLSL::variable_decl(const SPIRVariable &variable)
 const char *CompilerGLSL::to_pls_qualifiers_glsl(const SPIRVariable &variable)
 {
 	auto &flags = get_decoration_bitset(variable.self);
-	if (flags.get(Decoration::RelaxedPrecision))
+	if (flags.get(static_cast<uint32_t>(Decoration::RelaxedPrecision)))
 		return "mediump ";
 	else
 		return "highp ";
@@ -16512,7 +16512,7 @@ string CompilerGLSL::pls_decl(const PlsRemap &var)
 	auto vecsize = pls_format_to_components(var.format);
 	if (vecsize > 1)
 	{
-		type.op = OpTypeVector;
+		type.op = Op::OpTypeVector;
 		type.vecsize = vecsize;
 	}
 
@@ -16721,7 +16721,7 @@ string CompilerGLSL::image_type_glsl(const SPIRType &type, uint32_t id, bool /*m
 	{
 		res += "Shadow";
 
-		if (type.image.dim == DimCube && is_legacy())
+		if (type.image.dim == Dim::Cube && is_legacy())
 		{
 			if (!options.es)
 				require_extension_internal("GL_EXT_gpu_shader4");
@@ -16875,15 +16875,15 @@ string CompilerGLSL::type_to_glsl(const SPIRType &type, uint32_t id)
 		const char *use = nullptr;
 		switch (use_type)
 		{
-		case CooperativeMatrixUseMatrixAKHR:
+		case CooperativeMatrixUse::MatrixAKHR:
 			use = "gl_MatrixUseA";
 			break;
 
-		case CooperativeMatrixUseMatrixBKHR:
+		case CooperativeMatrixUse::MatrixBKHR:
 			use = "gl_MatrixUseB";
 			break;
 
-		case CooperativeMatrixUseMatrixAccumulatorKHR:
+		case CooperativeMatrixUse::MatrixAccumulatorKHR:
 			use = "gl_MatrixUseAccumulator";
 			break;
 
@@ -16897,9 +16897,9 @@ string CompilerGLSL::type_to_glsl(const SPIRType &type, uint32_t id)
 			if (!scope->specialization)
 			{
 				require_extension_internal("GL_KHR_memory_scope_semantics");
-				if (scope->scalar() == spv::ScopeSubgroup)
+				if (scope->scalar() == spv::Scope::Subgroup)
 					scope_expr = "gl_ScopeSubgroup";
-				else if (scope->scalar() == spv::ScopeWorkgroup)
+				else if (scope->scalar() == spv::Scope::Workgroup)
 					scope_expr = "gl_ScopeWorkgroup";
 				else
 					SPIRV_CROSS_THROW("Invalid scope for cooperative matrix.");
