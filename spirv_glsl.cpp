@@ -18973,9 +18973,9 @@ const Instruction *CompilerGLSL::get_next_instruction_in_block(const Instruction
 
 uint32_t CompilerGLSL::mask_relevant_memory_semantics(uint32_t semantics)
 {
-	return semantics & (MemorySemanticsMask::AtomicCounterMemory | MemorySemanticsMask::ImageMemory |
+	return semantics & static_cast<uint32_t>((MemorySemanticsMask::AtomicCounterMemory | MemorySemanticsMask::ImageMemory |
 	                    MemorySemanticsMask::WorkgroupMemory | MemorySemanticsMask::UniformMemory |
-	                    MemorySemanticsMask::CrossWorkgroupMemory | MemorySemanticsMask::SubgroupMemory);
+	                    MemorySemanticsMask::CrossWorkgroupMemory | MemorySemanticsMask::SubgroupMemory));
 }
 
 bool CompilerGLSL::emit_array_copy(const char *expr, uint32_t lhs_id, uint32_t rhs_id, StorageClass, StorageClass)
@@ -20045,7 +20045,7 @@ StorageClass CompilerGLSL::get_expression_effective_storage_class(uint32_t ptr)
 
 	if (var && !forced_temporary)
 	{
-		if (variable_decl_is_remapped_storage(*var, StorageClassWorkgroup))
+		if (variable_decl_is_remapped_storage(*var, StorageClass::Workgroup))
 			return StorageClassWorkgroup;
 		if (variable_decl_is_remapped_storage(*var, StorageClass::StorageBuffer))
 			return StorageClass::StorageBuffer;
@@ -20128,8 +20128,8 @@ uint32_t CompilerGLSL::get_fp_fast_math_flags_for_op(uint32_t result_type, uint3
 	auto &ep = get_entry_point();
 
 	// Per-operation flag supersedes all defaults.
-	if (id != 0 && has_decoration(id, DecorationFPFastMathMode))
-		return get_decoration(id, DecorationFPFastMathMode);
+	if (id != 0 && has_decoration(id, Decoration::FPFastMathMode))
+		return get_decoration(id, Decoration::FPFastMathMode);
 
 	// Handle float_controls1 execution modes.
 	uint32_t width = get<SPIRType>(result_type).width;
@@ -20159,11 +20159,11 @@ uint32_t CompilerGLSL::get_fp_fast_math_flags_for_op(uint32_t result_type, uint3
 	}
 
 	if (szinp)
-		fp_flags &= ~(FPFastMathModeNSZMask | FPFastMathModeNotInfMask | FPFastMathModeMask::NotNaN);
+		fp_flags &= ~(FPFastMathModeMask::NSZM | FPFastMathModeMask::NotInf | FPFastMathModeMask::NotNaN);
 
 	// Legacy NoContraction deals with any kind of transform to the expression.
 	if (id != 0 && has_decoration(id, Decoration::NoContraction))
-		fp_flags &= ~(FPFastMathModeAllowContractMask | FPFastMathModeAllowTransformMask | FPFastMathModeAllowReassocMask);
+		fp_flags &= ~(FPFastMathModeMask::AllowContract | FPFastMathModeMask::AllowTransform | FPFastMathModeMask::AllowReassoc);
 
 	// Handle float_controls2 execution modes.
 	bool found_default = false;
@@ -20189,8 +20189,8 @@ uint32_t CompilerGLSL::get_fp_fast_math_flags_for_op(uint32_t result_type, uint3
 
 bool CompilerGLSL::has_legacy_nocontract(uint32_t result_type, uint32_t id) const
 {
-	const auto fp_flags = FPFastMathModeAllowContractMask |
-	                      FPFastMathModeAllowTransformMask |
-	                      FPFastMathModeAllowReassocMask;
+	const auto fp_flags = FPFastMathModeMask::AllowContract |
+	                      FPFastMathModeMask::AllowTransform |
+	                      FPFastMathModeMask::AllowReassoc;
 	return (get_fp_fast_math_flags_for_op(result_type, id) & fp_flags) != fp_flags;
 }
