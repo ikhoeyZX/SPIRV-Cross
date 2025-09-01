@@ -4104,7 +4104,7 @@ void CompilerGLSL::emit_output_variable_initializer(const SPIRVariable &var)
 					{
 						uint32_t indices[2] = { invocation_id, member_index_id };
 						auto chain = access_chain_internal(var.self, indices, 2, 0, &meta);
-						statement(chain, " = ", lut_name, "[", builtin_to_glsl(BuiltInInvocationId, StorageClass::Input), "];");
+						statement(chain, " = ", lut_name, "[", builtin_to_glsl(BuiltIn::InvocationId, StorageClass::Input), "];");
 					}
 					else
 					{
@@ -5902,7 +5902,7 @@ string CompilerGLSL::constant_op_expression(const SPIRConstantOp &cop)
 	}
 
 	uint32_t bit_width = 0;
-	if (unary || binary || cop.opcode == OpSConvert || cop.opcode == OpUConvert)
+	if (unary || binary || cop.opcode == Op::OpSConvert || cop.opcode == Op::OpUConvert)
 		bit_width = expression_type(cop.arguments[0]).width;
 
 	SPIRType::BaseType input_type;
@@ -5976,7 +5976,7 @@ string CompilerGLSL::constant_op_expression(const SPIRConstantOp &cop)
 		// Works around various casting scenarios in glslang as there is no OpBitcast for specialization constants.
 		return join("(", op, bitcast_glsl(type, cop.arguments[0]), ")");
 	}
-	else if (cop.opcode == OpSConvert || cop.opcode == OpUConvert)
+	else if (cop.opcode == Op::OpSConvert || cop.opcode == Op::OpUConvert)
 	{
 		if (cop.arguments.size() < 1)
 			SPIRV_CROSS_THROW("Not enough arguments to OpSpecConstantOp.");
@@ -6014,7 +6014,7 @@ string CompilerGLSL::constant_expression(const SPIRConstant &c,
 		require_extension_internal("GL_EXT_null_initializer");
 		return backend.constant_null_initializer;
 	}
-	else if (c.replicated && type.op != spv::OpTypeArray)
+	else if (c.replicated && type.op != spv::Op::OpTypeArray)
 	{
 		if (type.op == spv::Op::OpTypeMatrix)
 		{
@@ -6063,7 +6063,7 @@ string CompilerGLSL::constant_expression(const SPIRConstant &c,
 		         is_array(type) && !array_type_decays)
 		{
 			const auto *p_type = &type;
-			SPIRType tmp_type { OpNop };
+			SPIRType tmp_type { Op::OpNop };
 
 			if (inside_struct_scope &&
 			    backend.boolean_in_struct_remapped_type != SPIRType::Boolean &&
@@ -6151,7 +6151,7 @@ string CompilerGLSL::constant_expression(const SPIRConstant &c,
 		else
 			return join(type_to_glsl(type), "(0)");
 	}
-	else if (c.columns() == 1 && type.op != spv::OpTypeCooperativeMatrixKHR)
+	else if (c.columns() == 1 && type.op != spv::Op::OpTypeCooperativeMatrixKHR)
 	{
 		auto res = constant_expression_vector(c, 0);
 
@@ -6209,7 +6209,7 @@ string CompilerGLSL::convert_floate4m3_to_string(const SPIRConstant &c, uint32_t
 	// There is no infinity in e4m3.
 	if (std::isnan(float_value))
 	{
-		SPIRType type { OpTypeFloat };
+		SPIRType type { Op::OpTypeFloat };
 		type.basetype = SPIRType::Half;
 		type.vecsize = 1;
 		type.columns = 1;
@@ -6217,7 +6217,7 @@ string CompilerGLSL::convert_floate4m3_to_string(const SPIRConstant &c, uint32_t
 	}
 	else
 	{
-		SPIRType type { OpTypeFloat };
+		SPIRType type { Op::OpTypeFloat };
 		type.basetype = SPIRType::FloatE4M3;
 		type.vecsize = 1;
 		type.columns = 1;
@@ -6237,7 +6237,7 @@ string CompilerGLSL::convert_half_to_string(const SPIRConstant &c, uint32_t col,
 	// of complicated workarounds, just value-cast to the half type always.
 	if (std::isnan(float_value) || std::isinf(float_value))
 	{
-		SPIRType type { OpTypeFloat };
+		SPIRType type { Op::OpTypeFloat };
 		type.basetype = is_bfloat8 ? SPIRType::FloatE5M2 : SPIRType::Half;
 		type.vecsize = 1;
 		type.columns = 1;
@@ -6253,7 +6253,7 @@ string CompilerGLSL::convert_half_to_string(const SPIRConstant &c, uint32_t col,
 	}
 	else
 	{
-		SPIRType type { OpTypeFloat };
+		SPIRType type { Op::OpTypeFloat };
 		type.basetype = is_bfloat8 ? SPIRType::FloatE5M2 : SPIRType::Half;
 		type.vecsize = 1;
 		type.columns = 1;
@@ -6275,8 +6275,8 @@ string CompilerGLSL::convert_float_to_string(const SPIRConstant &c, uint32_t col
 		// Use special representation.
 		if (!is_legacy())
 		{
-			SPIRType out_type { OpTypeFloat };
-			SPIRType in_type { OpTypeInt };
+			SPIRType out_type { Op::OpTypeFloat };
+			SPIRType in_type { Op::OpTypeInt };
 			out_type.basetype = SPIRType::Float;
 			in_type.basetype = SPIRType::UInt;
 			out_type.vecsize = 1;
@@ -6348,8 +6348,8 @@ std::string CompilerGLSL::convert_double_to_string(const SPIRConstant &c, uint32
 		// Use special representation.
 		if (!is_legacy())
 		{
-			SPIRType out_type { OpTypeFloat };
-			SPIRType in_type { OpTypeInt };
+			SPIRType out_type { Op::OpTypeFloat };
+			SPIRType in_type { Op::OpTypeInt };
 			out_type.basetype = SPIRType::Double;
 			in_type.basetype = SPIRType::UInt64;
 			out_type.vecsize = 1;
