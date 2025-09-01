@@ -15026,7 +15026,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 
 			const uint32_t all_barriers = static_cast<uint32_t>(tmp);
 			
-			if (static_cast<spv::MemorySemanticsMask>(semantics) & (MemorySemanticsMask::CrossWorkgroupMemory | MemorySemanticsMask::SubgroupMemory))
+			if (semantics & static_cast<uint32_t>((MemorySemanticsMask::CrossWorkgroupMemory | MemorySemanticsMask::SubgroupMemory)))
 			{
 				// These are not relevant for GLSL, but assume it means memoryBarrier().
 				// memoryBarrier() does everything, so no need to test anything else.
@@ -15054,7 +15054,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			    MemorySemanticsMask::WorkgroupMemory | MemorySemanticsMask::UniformMemory | MemorySemanticsMask::ImageMemory;
 			const uint32_t all_barriers = static_cast<uint32_t>(tmp);
 
-			if (static_cast<spv::MemorySemanticsMask>(semantics) & (MemorySemanticsMask::CrossWorkgroupMemory | MemorySemanticsMask::SubgroupMemory))
+			if (semantics & static_cast<uint32_t>((MemorySemanticsMask::CrossWorkgroupMemory | MemorySemanticsMask::SubgroupMemory)))
 			{
 				// These are not relevant for GLSL, but assume it means memoryBarrier().
 				// memoryBarrier() does everything, so no need to test anything else.
@@ -15079,7 +15079,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 
 		if (opcode == Op::OpControlBarrier)
 		{
-			if (execution_scope == Scope::Subgroup)
+			if (execution_scope == static_cast<uint32_t>(Scope::Subgroup))
 				statement("subgroupBarrier();");
 			else
 				statement("barrier();");
@@ -15559,21 +15559,21 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			std::string tensor_operands;
 			if (ops[4] == 0)
 				tensor_operands = "0x0u";
-			else if (ops[4] == spv::TensorOperandsNontemporalARMMask)
+			else if (ops[4] == spv::TensorOperandsMask::NontemporalARM)
 				tensor_operands = "gl_TensorOperandsNonTemporalARM";
-			else if (ops[4] == spv::TensorOperandsOutOfBoundsValueARMMask)
+			else if (ops[4] == spv::TensorOperandsMask::OutOfBoundsValueARM)
 				tensor_operands = "gl_TensorOperandsOutOfBoundsValueARM";
-			else if (ops[4] == (spv::TensorOperandsNontemporalARMMask | spv::TensorOperandsOutOfBoundsValueARMMask))
+			else if (ops[4] == (spv::TensorOperandsMask::NontemporalARM | spv::TensorOperandsMask::OutOfBoundsValueARM))
 				tensor_operands = "gl_TensorOperandsNonTemporalARM | gl_TensorOperandsOutOfBoundsValueARM";
 			else
 				SPIRV_CROSS_THROW("Invalid tensorOperands for tensorReadARM.");
-			if ((ops[4] & spv::TensorOperandsOutOfBoundsValueARMMask) && length != 6)
+			if ((ops[4] & spv::TensorOperandsMask::OutOfBoundsValueARM) && length != 6)
 				SPIRV_CROSS_THROW("gl_TensorOperandsOutOfBoundsValueARM requires an outOfBoundsValue argument.");
 			args.push_back(tensor_operands); // tensorOperands
 		}
 		if (length >= 6)
 		{
-			if ((length > 6) || (ops[4] & spv::TensorOperandsOutOfBoundsValueARMMask) == 0)
+			if ((length > 6) || (ops[4] & spv::TensorOperandsMask::OutOfBoundsValueARM) == 0)
 				SPIRV_CROSS_THROW("Too many arguments to tensorReadARM.");
 			args.push_back(to_expression(ops[5])); // outOfBoundsValue
 		}
@@ -15597,7 +15597,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			std::string tensor_operands;
 			if (ops[3] == 0)
 				tensor_operands = "0x0u";
-			else if (ops[3] == spv::TensorOperandsNontemporalARMMask)
+			else if (ops[3] == spv::TensorOperandsMask::NontemporalARM)
 				tensor_operands = "gl_TensorOperandsNonTemporalARM";
 			else
 				SPIRV_CROSS_THROW("Invalid tensorOperands for tensorWriteARM.");
