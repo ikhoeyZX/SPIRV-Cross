@@ -3445,7 +3445,7 @@ void CompilerGLSL::emit_declared_builtin_block(StorageClass storage, ExecutionMo
 				    m.decoration_flags.get(static_cast<uint32_t>(Decoration::XfbBuffer)) && m.decoration_flags.get(static_cast<uint32_t>(Decoration::Offset)))
 				{
 					have_any_xfb_offset = true;
-					builtin_xfb_offsets[m.builtin_type] = static_cast<uint32_t>(m.offset);
+					builtin_xfb_offsets[static_cast<uint32_t>(m.builtin_type)] = static_cast<uint32_t>(m.offset);
 					uint32_t buffer_index = m.xfb_buffer;
 					uint32_t stride = m.xfb_stride;
 					if (have_xfb_buffer_stride && buffer_index != xfb_buffer)
@@ -4129,7 +4129,7 @@ void CompilerGLSL::emit_output_variable_initializer(const SPIRVariable &var)
 		});
 	}
 	else if (has_decoration(var.self, Decoration::BuiltIn) &&
-	         BuiltIn(get_decoration(var.self, Decoration::BuiltIn)) == static_cast<uint32_t>(BuiltIn::SampleMask))
+	         static_cast<spv::BuiltIn>(get_decoration(var.self, Decoration::BuiltIn)) == spv::BuiltIn::SampleMask)
 	{
 		// We cannot copy the array since gl_SampleMask is unsized in GLSL. Unroll time! <_<
 		entry_func.fixup_hooks_in.push_back([&] {
@@ -5566,7 +5566,7 @@ string CompilerGLSL::to_expression(uint32_t id, bool register_expression_read)
 				int wg_index = get_constant_mapping_to_workgroup_component(c);
 				if (wg_index >= 0)
 				{
-					auto wg_size = join(builtin_to_glsl(BuiltInWorkgroupSize, StorageClass::Input), vector_swizzle(1, wg_index));
+					auto wg_size = join(builtin_to_glsl(BuiltIn::WorkgroupSize, StorageClass::Input), vector_swizzle(1, wg_index));
 					if (type.basetype != SPIRType::UInt)
 						wg_size = bitcast_expression(type, SPIRType::UInt, wg_size);
 					return wg_size;
