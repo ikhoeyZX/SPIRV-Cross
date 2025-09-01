@@ -20159,7 +20159,7 @@ uint32_t CompilerGLSL::get_fp_fast_math_flags_for_op(uint32_t result_type, uint3
 	}
 
 	if (szinp)
-		fp_flags &= ~(FPFastMathModeMask::NSZ | FPFastMathModeMask::NotInf | FPFastMathModeMask::NotNaN);
+		fp_flags &= ~(static_cast<uint32_t>(FPFastMathModeMask::NSZ | FPFastMathModeMask::NotInf | FPFastMathModeMask::NotNaN));
 
 	// Legacy NoContraction deals with any kind of transform to the expression.
 	if (id != 0 && has_decoration(id, Decoration::NoContraction))
