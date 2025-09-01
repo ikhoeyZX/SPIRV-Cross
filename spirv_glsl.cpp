@@ -15559,21 +15559,21 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			std::string tensor_operands;
 			if (ops[4] == 0)
 				tensor_operands = "0x0u";
-			else if (ops[4] == spv::TensorOperandsMask::NontemporalARM)
+			else if (ops[4] == static_cast<uint32_t>(spv::TensorOperandsMask::NontemporalARM))
 				tensor_operands = "gl_TensorOperandsNonTemporalARM";
-			else if (ops[4] == spv::TensorOperandsMask::OutOfBoundsValueARM)
+			else if (ops[4] == static_cast<uint32_t>(spv::TensorOperandsMask::OutOfBoundsValueARM))
 				tensor_operands = "gl_TensorOperandsOutOfBoundsValueARM";
-			else if (ops[4] == (spv::TensorOperandsMask::NontemporalARM | spv::TensorOperandsMask::OutOfBoundsValueARM))
+			else if (ops[4] == static_cast<uint32_t>((spv::TensorOperandsMask::NontemporalARM | spv::TensorOperandsMask::OutOfBoundsValueARM)))
 				tensor_operands = "gl_TensorOperandsNonTemporalARM | gl_TensorOperandsOutOfBoundsValueARM";
 			else
 				SPIRV_CROSS_THROW("Invalid tensorOperands for tensorReadARM.");
-			if ((ops[4] & spv::TensorOperandsMask::OutOfBoundsValueARM) && length != 6)
+			if ((ops[4] & static_cast<uint32_t>(spv::TensorOperandsMask::OutOfBoundsValueARM)) && length != 6)
 				SPIRV_CROSS_THROW("gl_TensorOperandsOutOfBoundsValueARM requires an outOfBoundsValue argument.");
 			args.push_back(tensor_operands); // tensorOperands
 		}
 		if (length >= 6)
 		{
-			if ((length > 6) || (ops[4] & spv::TensorOperandsMask::OutOfBoundsValueARM) == 0)
+			if ((length > 6) || (ops[4] & static_cast<uint32_t>(spv::TensorOperandsMask::OutOfBoundsValueARM)) == 0)
 				SPIRV_CROSS_THROW("Too many arguments to tensorReadARM.");
 			args.push_back(to_expression(ops[5])); // outOfBoundsValue
 		}
@@ -15597,7 +15597,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			std::string tensor_operands;
 			if (ops[3] == 0)
 				tensor_operands = "0x0u";
-			else if (ops[3] == spv::TensorOperandsMask::NontemporalARM)
+			else if (ops[3] == static_cast<uint32_t>(spv::TensorOperandsMask::NontemporalARM))
 				tensor_operands = "gl_TensorOperandsNonTemporalARM";
 			else
 				SPIRV_CROSS_THROW("Invalid tensorOperands for tensorWriteARM.");
