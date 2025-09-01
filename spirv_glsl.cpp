@@ -19928,7 +19928,7 @@ void CompilerGLSL::mask_stage_output_by_location(uint32_t location, uint32_t com
 
 void CompilerGLSL::mask_stage_output_by_builtin(BuiltIn builtin)
 {
-	masked_output_builtins.insert(builtin);
+	masked_output_builtins.insert(static_cast<uint32_t>(builtin));
 }
 
 bool CompilerGLSL::is_stage_output_variable_masked(const SPIRVariable &var) const
