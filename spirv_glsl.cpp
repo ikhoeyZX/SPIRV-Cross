@@ -8118,15 +8118,16 @@ std::string CompilerGLSL::to_texture_op(const Instruction &i, bool sparse, bool 
 		}
 	};
 
-	test(bias, ImageOperandsMask::Bias);
-	test(lod, ImageOperandsMask::Lod);
-	test(grad_x, ImageOperandsMask::Grad);
-	test(grad_y, ImageOperandsMask::Grad);
-	test(coffset, ImageOperandsMask::ConstOffset);
-	test(offset, ImageOperandsMask::Offset);
-	test(coffsets, ImageOperandsMask::ConstOffsets);
-	test(sample, ImageOperandsMask::Sample);
-	test(minlod, ImageOperandsMask::MinLod);
+
+	test(bias, static_cast<uint32_t>(ImageOperandsMask::Bias));
+	test(lod, static_cast<uint32_t>(ImageOperandsMask::Lod));
+	test(grad_x, static_cast<uint32_t>(ImageOperandsMask::Grad));
+	test(grad_y, static_cast<uint32_t>(ImageOperandsMask::Grad));
+	test(coffset, static_cast<uint32_t>(ImageOperandsMask::ConstOffset));
+	test(offset, static_cast<uint32_t>(ImageOperandsMask::Offset));
+	test(coffsets, static_cast<uint32_t>(ImageOperandsMask::ConstOffsets));
+	test(sample, static_cast<uint32_t>(ImageOperandsMask::Sample));
+	test(minlod, static_cast<uint32_t>(ImageOperandsMask::MinLod));
 
 	TextureFunctionBaseArguments base_args = {};
 	base_args.img = img;
@@ -8491,7 +8492,7 @@ string CompilerGLSL::to_function_args(const TextureFunctionArguments &args, bool
 	}
 	else
 	{
-		if (imgtype.image.dim == Dim1D && options.es)
+		if (imgtype.image.dim == Dim::Dim1D && options.es)
 		{
 			// Have to fake a second coordinate.
 			if (type_is_floating_point(coord_type))
@@ -8538,9 +8539,9 @@ string CompilerGLSL::to_function_args(const TextureFunctionArguments &args, bool
 		{
 			// Implement textureGrad() instead. LOD == 0.0 is implemented as gradient of 0.0.
 			// Implementing this as plain texture() is not safe on some implementations.
-			if (imgtype.image.dim == Dim2D)
+			if (imgtype.image.dim == Dim::Dim2D)
 				farg_str += ", vec2(0.0), vec2(0.0)";
-			else if (imgtype.image.dim == DimCube)
+			else if (imgtype.image.dim == Dim::Cube)
 				farg_str += ", vec3(0.0), vec3(0.0)";
 		}
 		else
@@ -9658,7 +9659,7 @@ void CompilerGLSL::emit_subgroup_op(const Instruction &i)
 	if (op != Op::OpGroupNonUniformQuadAllKHR && op != Op::OpGroupNonUniformQuadAnyKHR)
 	{
 		auto scope = static_cast<Scope>(evaluate_constant_u32(ops[2]));
-		if (scope != ScopeSubgroup)
+		if (scope != Scope::Subgroup)
 			SPIRV_CROSS_THROW("Only subgroup scope is supported.");
 	}
 
@@ -10484,7 +10485,7 @@ string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indice
 	bool row_major_matrix_needs_conversion = is_non_native_row_major_matrix(base);
 	bool is_packed = has_extended_decoration(base, SPIRVCrossDecorationPhysicalTypePacked);
 	uint32_t physical_type = get_extended_decoration(base, SPIRVCrossDecorationPhysicalTypeID);
-	bool is_invariant = has_decoration(base, DecorationInvariant);
+	bool is_invariant = has_decoration(base, Decoration::Invariant);
 	bool relaxed_precision = has_decoration(base, Decoration::RelaxedPrecision);
 	bool pending_array_enclose = false;
 	bool dimension_flatten = false;
@@ -10573,7 +10574,7 @@ string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indice
 			{
 				if (flags & ACCESS_CHAIN_PTR_CHAIN_POINTER_ARITH_BIT)
 				{
-					SPIRType tmp_type(OpTypeInt);
+					SPIRType tmp_type(Op::OpTypeInt);
 					tmp_type.basetype = SPIRType::UInt64;
 					tmp_type.width = 64;
 					tmp_type.vecsize = 1;
@@ -10730,7 +10731,7 @@ string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indice
 				append_index(index, is_literal);
 			}
 
-			if (var && has_decoration(var->self, Decoration::BuiltIn) &&
+			if (var && has_decoration(var->self, static_cast<uint32_t>(Decoration::BuiltIn)) &&
 			    get_decoration(var->self, Decoration::BuiltIn) == BuiltIn::Position &&
 			    get_execution_model() == ExecutionModel::MeshEXT)
 			{
@@ -10914,9 +10915,9 @@ string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indice
 
 			if (is_literal)
 			{
-				bool out_of_bounds = index >= type->vecsize && type->op != OpTypeCooperativeMatrixKHR;
+				bool out_of_bounds = index >= type->vecsize && type->op != Op::OpTypeCooperativeMatrixKHR;
 
-				if (!is_packed && !row_major_matrix_needs_conversion && type->op != OpTypeCooperativeMatrixKHR)
+				if (!is_packed && !row_major_matrix_needs_conversion && type->op != Op::OpTypeCooperativeMatrixKHR)
 				{
 					expr += ".";
 					expr += index_to_swizzle(out_of_bounds ? 0 : index);
