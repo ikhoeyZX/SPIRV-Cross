@@ -10732,7 +10732,7 @@ string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indice
 			}
 
 			if (var && has_decoration(var->self, Decoration::BuiltIn) &&
-			    static_cast<spv::BuiltIn>(get_decoration(var->self, Decoration::BuiltIn) == BuiltIn::Position) &&
+			    static_cast<spv::BuiltIn>(get_decoration(var->self, Decoration::BuiltIn)) == BuiltIn::Position &&
 			    get_execution_model() == ExecutionModel::MeshEXT)
 			{
 				access_meshlet_position_y = true;
@@ -13153,13 +13153,13 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			uint32_t tmp_type_id = expression_type(rhs).parent_type;
 
 			EmbeddedInstruction fake_load, fake_store;
-			fake_load.op = Op::OpLoad;
+			fake_load.op = static_cast<uint16_t>(Op::OpLoad);
 			fake_load.length = 3;
 			fake_load.ops.push_back(tmp_type_id);
 			fake_load.ops.push_back(tmp_id);
 			fake_load.ops.push_back(rhs);
 
-			fake_store.op = Op::OpStore;
+			fake_store.op = static_cast<uint16_t>(Op::OpStore);
 			fake_store.length = 2;
 			fake_store.ops.push_back(lhs);
 			fake_store.ops.push_back(tmp_id);
@@ -13425,7 +13425,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			e->need_transpose = false;
 			string expr;
 
-			if (opcode == OpMatrixTimesVector)
+			if (opcode == Op::OpMatrixTimesVector)
 				expr = join(to_enclosed_unpacked_expression(ops[3]), " * ",
 				            enclose_expression(to_unpacked_row_major_matrix_expression(ops[2])));
 			else
@@ -13954,7 +13954,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 
 		auto &type = get<SPIRType>(result_type);
 
-		if (type.op == Op::OpTypeCooperativeMatrixKHR && opcode == OpFConvert)
+		if (type.op == Op::OpTypeCooperativeMatrixKHR && opcode == Op::OpFConvert)
 		{
 			auto &expr_type = expression_type(ops[2]);
 			if (get<SPIRConstant>(type.ext.cooperative.use_id).scalar() !=
@@ -14430,7 +14430,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			op = "textureQueryLod";
 
 		auto sampler_expr = to_expression(ops[2]);
-		if (has_decoration(ops[2], DecorationNonUniform))
+		if (has_decoration(ops[2], Decoration::NonUniform))
 		{
 			if (maybe_get_backing_variable(ops[2]))
 				convert_non_uniform_expression(sampler_expr, ops[2]);
@@ -14518,7 +14518,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		                 bitcast_expression(SPIRType::Int, ops[3]), ")");
 
 		// ES needs to emulate 1D images as 2D.
-		if (type.image.dim == Dim1D && options.es)
+		if (type.image.dim == Dim::Dim1D && options.es)
 			expr = join(expr, ".x");
 
 		auto &restype = get<SPIRType>(ops[0]);
@@ -14589,7 +14589,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 				if (type.image.ms)
 				{
 					uint32_t operands = ops[4];
-					if (operands != ImageOperandsSampleMask || length != 6)
+					if (operands != ImageOperands::SampleMask || length != 6)
 						SPIRV_CROSS_THROW("Multisampled image used in OpImageRead, but unexpected "
 						                  "operand mask was used.");
 
@@ -14604,7 +14604,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 				if (type.image.ms)
 				{
 					uint32_t operands = ops[4];
-					if (operands != ImageOperandsSampleMask || length != 6)
+					if (operands != ImageOperands::SampleMask || length != 6)
 						SPIRV_CROSS_THROW("Multisampled image used in OpImageRead, but unexpected "
 						                  "operand mask was used.");
 
@@ -14623,7 +14623,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		}
 		else
 		{
-			bool sparse = opcode == OpImageSparseRead;
+			bool sparse = opcode == Op::OpImageSparseRead;
 			uint32_t sparse_code_id = 0;
 			uint32_t sparse_texel_id = 0;
 			if (sparse)
@@ -14636,7 +14636,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			coord_expr = bitcast_expression(target_coord_type, expression_type(ops[3]).basetype, coord_expr);
 
 			// ES needs to emulate 1D images as 2D.
-			if (type.image.dim == Dim1D && options.es)
+			if (type.image.dim == Dim::Dim1D && options.es)
 				coord_expr = join("ivec2(", coord_expr, ", 0)");
 
 			// Plain image load/store.
@@ -14645,7 +14645,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 				if (type.image.ms)
 				{
 					uint32_t operands = ops[4];
-					if (operands != ImageOperandsSampleMask || length != 6)
+					if (operands != ImageOperands::SampleMask || length != 6)
 						SPIRV_CROSS_THROW("Multisampled image used in OpImageRead, but unexpected "
 						                  "operand mask was used.");
 
@@ -14666,7 +14666,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 				if (type.image.ms)
 				{
 					uint32_t operands = ops[4];
-					if (operands != ImageOperandsSampleMask || length != 6)
+					if (operands != ImageOperands::SampleMask || length != 6)
 						SPIRV_CROSS_THROW("Multisampled image used in OpImageRead, but unexpected "
 						                  "operand mask was used.");
 
@@ -14752,13 +14752,13 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		coord_expr = bitcast_expression(target_coord_type, expression_type(ops[1]).basetype, coord_expr);
 
 		// ES needs to emulate 1D images as 2D.
-		if (type.image.dim == Dim1D && options.es)
+		if (type.image.dim == Dim::Dim1D && options.es)
 			coord_expr = join("ivec2(", coord_expr, ", 0)");
 
 		if (type.image.ms)
 		{
 			uint32_t operands = ops[3];
-			if (operands != ImageOperandsSampleMask || length != 5)
+			if (operands != ImageOperands::SampleMask || length != 5)
 				SPIRV_CROSS_THROW("Multisampled image used in OpImageWrite, but unexpected operand mask was used.");
 			uint32_t samples = ops[4];
 			statement("imageStore(", to_non_uniform_aware_expression(ops[0]), ", ", coord_expr, ", ", to_expression(samples), ", ",
@@ -14867,7 +14867,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		emit_op(result_type_id, id, expr, forward);
 
 		inherit_expression_dependencies(id, ops[3]);
-		if (opcode == OpImageBlockMatchSSDQCOM || opcode == OpImageBlockMatchSADQCOM)
+		if (opcode == Op::OpImageBlockMatchSSDQCOM || opcode == Op::OpImageBlockMatchSADQCOM)
 			inherit_expression_dependencies(id, ops[5]);
 
 		break;
@@ -14925,7 +14925,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		uint32_t memory;
 		uint32_t semantics;
 
-		if (opcode == OpMemoryBarrier)
+		if (opcode == Op::OpMemoryBarrier)
 		{
 			memory = evaluate_constant_u32(ops[0]);
 			semantics = evaluate_constant_u32(ops[1]);
@@ -14937,10 +14937,10 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			semantics = evaluate_constant_u32(ops[2]);
 		}
 
-		if (execution_scope == ScopeSubgroup || memory == ScopeSubgroup)
+		if (execution_scope == Scope::Subgroup || memory == Scope::Subgroup)
 		{
 			// OpControlBarrier with ScopeSubgroup is subgroupBarrier()
-			if (opcode != OpControlBarrier)
+			if (opcode != Op::OpControlBarrier)
 			{
 				request_subgroup_feature(ShaderSubgroupSupportHelper::SubgroupMemBarrier);
 			}
@@ -14950,10 +14950,10 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			}
 		}
 
-		if (execution_scope != ScopeSubgroup && get_entry_point().model == ExecutionModel::TessellationControl)
+		if (execution_scope != Scope::Subgroup && get_entry_point().model == ExecutionModel::TessellationControl)
 		{
 			// Control shaders only have barriers, and it implies memory barriers.
-			if (opcode == OpControlBarrier)
+			if (opcode == Op::OpControlBarrier)
 				statement("barrier();");
 			break;
 		}
@@ -14961,12 +14961,12 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		// We only care about these flags, acquire/release and friends are not relevant to GLSL.
 		semantics = mask_relevant_memory_semantics(semantics);
 
-		if (opcode == OpMemoryBarrier)
+		if (opcode == Op::OpMemoryBarrier)
 		{
 			// If we are a memory barrier, and the next instruction is a control barrier, check if that memory barrier
 			// does what we need, so we avoid redundant barriers.
 			const Instruction *next = get_next_instruction_in_block(instruction);
-			if (next && next->op == OpControlBarrier)
+			if (next && next->op == Op::OpControlBarrier)
 			{
 				auto *next_ops = stream(*next);
 				uint32_t next_memory = evaluate_constant_u32(next_ops[1]);
@@ -14980,13 +14980,13 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 				{
 					// If we only care about workgroup memory, either Device or Workgroup scope is fine,
 					// scope does not have to match.
-					if ((next_memory == ScopeDevice || next_memory == ScopeWorkgroup) &&
-					    (memory == ScopeDevice || memory == ScopeWorkgroup))
+					if ((next_memory == Scope::Device || next_memory == Scope::Workgroup) &&
+					    (memory == Scope::Device || memory == Scope::Workgroup))
 					{
 						memory_scope_covered = true;
 					}
 				}
-				else if (memory == ScopeWorkgroup && next_memory == ScopeDevice)
+				else if (memory == Scope::Workgroup && next_memory == Scope::Device)
 				{
 					// The control barrier has device scope, but the memory barrier just has workgroup scope.
 					memory_scope_covered = true;
@@ -15000,31 +15000,31 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 
 		// We are synchronizing some memory or syncing execution,
 		// so we cannot forward any loads beyond the memory barrier.
-		if (semantics || opcode == OpControlBarrier)
+		if (semantics || opcode == Op::OpControlBarrier)
 		{
 			assert(current_emitting_block);
 			flush_control_dependent_expressions(current_emitting_block->self);
 			flush_all_active_variables();
 		}
 
-		if (memory == ScopeWorkgroup) // Only need to consider memory within a group
+		if (memory == Scope::Workgroup) // Only need to consider memory within a group
 		{
-			if (semantics == MemorySemanticsWorkgroupMemoryMask)
+			if (semantics == MemorySemanticsMask::WorkgroupMemory)
 			{
 				// OpControlBarrier implies a memory barrier for shared memory as well.
-				bool implies_shared_barrier = opcode == OpControlBarrier && execution_scope == ScopeWorkgroup;
+				bool implies_shared_barrier = opcode == Op::OpControlBarrier && execution_scope == Scope::Workgroup;
 				if (!implies_shared_barrier)
 					statement("memoryBarrierShared();");
 			}
 			else if (semantics != 0)
 				statement("groupMemoryBarrier();");
 		}
-		else if (memory == ScopeSubgroup)
+		else if (memory == Scope::Subgroup)
 		{
 			const uint32_t all_barriers =
-			    MemorySemanticsWorkgroupMemoryMask | MemorySemanticsUniformMemoryMask | MemorySemanticsImageMemoryMask;
+			    MemorySemanticsMask::WorkgroupMemory | MemorySemanticsMask::UniformMemory | MemorySemanticsMask::ImageMemory;
 
-			if (semantics & (MemorySemanticsCrossWorkgroupMemoryMask | MemorySemanticsSubgroupMemoryMask))
+			if (semantics & (MemorySemanticsMask::CrossWorkgroupMemory | MemorySemanticsMask::SubgroupMemory))
 			{
 				// These are not relevant for GLSL, but assume it means memoryBarrier().
 				// memoryBarrier() does everything, so no need to test anything else.
@@ -15038,20 +15038,20 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			else
 			{
 				// Pick out individual barriers.
-				if (semantics & MemorySemanticsWorkgroupMemoryMask)
+				if (semantics & MemorySemanticsMask::WorkgroupMemory)
 					statement("subgroupMemoryBarrierShared();");
-				if (semantics & MemorySemanticsUniformMemoryMask)
+				if (semantics & MemorySemanticsMask::UniformMemory)
 					statement("subgroupMemoryBarrierBuffer();");
-				if (semantics & MemorySemanticsImageMemoryMask)
+				if (semantics & MemorySemanticsMask::ImageMemory)
 					statement("subgroupMemoryBarrierImage();");
 			}
 		}
 		else
 		{
 			const uint32_t all_barriers =
-			    MemorySemanticsWorkgroupMemoryMask | MemorySemanticsUniformMemoryMask | MemorySemanticsImageMemoryMask;
+			    MemorySemanticsMask::WorkgroupMemory | MemorySemanticsMask::UniformMemory | MemorySemanticsMask::ImageMemory;
 
-			if (semantics & (MemorySemanticsCrossWorkgroupMemoryMask | MemorySemanticsSubgroupMemoryMask))
+			if (semantics & (MemorySemanticsMask::CrossWorkgroupMemory | MemorySemanticsMask::SubgroupMemory))
 			{
 				// These are not relevant for GLSL, but assume it means memoryBarrier().
 				// memoryBarrier() does everything, so no need to test anything else.
@@ -15065,18 +15065,18 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			else
 			{
 				// Pick out individual barriers.
-				if (semantics & MemorySemanticsWorkgroupMemoryMask)
+				if (semantics & MemorySemanticsMask::WorkgroupMemory)
 					statement("memoryBarrierShared();");
-				if (semantics & MemorySemanticsUniformMemoryMask)
+				if (semantics & MemorySemanticsMask::UniformMemory)
 					statement("memoryBarrierBuffer();");
-				if (semantics & MemorySemanticsImageMemoryMask)
+				if (semantics & MemorySemanticsMask::ImageMemory)
 					statement("memoryBarrierImage();");
 			}
 		}
 
-		if (opcode == OpControlBarrier)
+		if (opcode == Op::OpControlBarrier)
 		{
-			if (execution_scope == ScopeSubgroup)
+			if (execution_scope == Scope::Subgroup)
 				statement("subgroupBarrier();");
 			else
 				statement("barrier();");
