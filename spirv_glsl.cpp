@@ -3389,7 +3389,7 @@ void CompilerGLSL::emit_declared_builtin_block(StorageClass storage, ExecutionMo
 					if (is_block_builtin(m.builtin_type) && m.decoration_flags.get(static_cast<uint32_t>(Decoration::Offset)))
 					{
 						have_any_xfb_offset = true;
-						builtin_xfb_offsets[m.builtin_type] = static_cast<uint32_t>(m.offset);
+						builtin_xfb_offsets[static_cast<uint32_t>(m.builtin_type)] = m.offset;
 					}
 
 					if (is_block_builtin(m.builtin_type) && m.decoration_flags.get(static_cast<uint32_t>(Decoration::Stream)))
@@ -3946,7 +3946,7 @@ void CompilerGLSL::emit_resources()
 			if (!options.vulkan_semantics)
 			{
 				if (!emitted_base_instance &&
-				    ((options.vertex.support_nonzero_base_instance && builtin == BuiltInInstanceIndex) ||
+				    ((options.vertex.support_nonzero_base_instance && builtin == BuiltIn::InstanceIndex) ||
 				     (builtin == BuiltIn::BaseInstance)))
 				{
 					statement("#ifdef GL_ARB_shader_draw_parameters");
@@ -4036,11 +4036,11 @@ void CompilerGLSL::emit_output_variable_initializer(const SPIRVariable &var)
 			// These outputs might not have been properly declared, so don't initialize them in that case.
 			if (has_member_decoration(type.self, i, Decoration::BuiltIn))
 			{
-				if (get_member_decoration(type.self, i, Decoration::BuiltIn) == BuiltIn::CullDistance &&
+				if (get_member_decoration(type.self, i, Decoration::BuiltIn) == static_cast<uint32_t>(BuiltIn::CullDistance) &&
 				    !cull_distance_count)
 					continue;
 
-				if (get_member_decoration(type.self, i, static_cast<uint32_t>(Decoration::BuiltIn)) == static_cast<uint32_t>(BuiltIn::ClipDistance) &&
+				if (get_member_decoration(type.self, i, Decoration::BuiltIn) == static_cast<uint32_t>(BuiltIn::ClipDistance) &&
 				    !clip_distance_count)
 					continue;
 			}
@@ -4079,10 +4079,10 @@ void CompilerGLSL::emit_output_variable_initializer(const SPIRVariable &var)
 					if (is_control_point)
 					{
 						uint32_t ids = ir.increase_bound_by(3);
-						auto &uint_type = set<SPIRType>(ids, OpTypeInt);
+						auto &uint_type = set<SPIRType>(ids, Op::OpTypeInt);
 						uint_type.basetype = SPIRType::UInt;
 						uint_type.width = 32;
-						set<SPIRExpression>(ids + 1, builtin_to_glsl(BuiltInInvocationId, StorageClass::Input), ids, true);
+						set<SPIRExpression>(ids + 1, builtin_to_glsl(BuiltIn::InvocationId, StorageClass::Input), ids, true);
 						set<SPIRConstant>(ids + 2, ids, i, false);
 						invocation_id = ids + 1;
 						member_index_id = ids + 2;
@@ -4129,7 +4129,7 @@ void CompilerGLSL::emit_output_variable_initializer(const SPIRVariable &var)
 		});
 	}
 	else if (has_decoration(var.self, Decoration::BuiltIn) &&
-	         BuiltIn(get_decoration(var.self, Decoration::BuiltIn)) == BuiltInSampleMask)
+	         BuiltIn(get_decoration(var.self, Decoration::BuiltIn)) == static_cast<uint32_t>(BuiltIn::SampleMask))
 	{
 		// We cannot copy the array since gl_SampleMask is unsized in GLSL. Unroll time! <_<
 		entry_func.fixup_hooks_in.push_back([&] {
@@ -4248,8 +4248,8 @@ void CompilerGLSL::emit_subgroup_arithmetic_workaround(const std::string &func, 
 		SPIRV_CROSS_THROW("Unsupported workaround for arithmetic group operation");
 	}
 
-	const bool op_is_addition = op == OpGroupNonUniformIAdd || op == OpGroupNonUniformFAdd;
-	const bool op_is_multiplication = op == OpGroupNonUniformIMul || op == OpGroupNonUniformFMul;
+	const bool op_is_addition = op == Op::OpGroupNonUniformIAdd || op == Op::OpGroupNonUniformFAdd;
+	const bool op_is_multiplication = op == Op::OpGroupNonUniformIMul || op == Op::OpGroupNonUniformFMul;
 	std::string op_symbol;
 	if (op_is_addition)
 	{
@@ -4753,31 +4753,31 @@ void CompilerGLSL::emit_extension_workarounds(spv::ExecutionModel model)
 			}
 		};
 
-		arithmetic_feature_helper(Supp::SubgroupArithmeticIAddReduce, "subgroupAdd", OpGroupNonUniformIAdd,
+		arithmetic_feature_helper(Supp::SubgroupArithmeticIAddReduce, "subgroupAdd", Op::OpGroupNonUniformIAdd,
 		                          GroupOperation::Reduce);
 		arithmetic_feature_helper(Supp::SubgroupArithmeticIAddExclusiveScan, "subgroupExclusiveAdd",
-		                          OpGroupNonUniformIAdd, GroupOperation::ExclusiveScan);
+		                          Op::OpGroupNonUniformIAdd, GroupOperation::ExclusiveScan);
 		arithmetic_feature_helper(Supp::SubgroupArithmeticIAddInclusiveScan, "subgroupInclusiveAdd",
-		                          OpGroupNonUniformIAdd, GroupOperation::InclusiveScan);
-		arithmetic_feature_helper(Supp::SubgroupArithmeticFAddReduce, "subgroupAdd", OpGroupNonUniformFAdd,
+		                          Op::OpGroupNonUniformIAdd, GroupOperation::InclusiveScan);
+		arithmetic_feature_helper(Supp::SubgroupArithmeticFAddReduce, "subgroupAdd", Op::OpGroupNonUniformFAdd,
 		                          GroupOperation::Reduce);
 		arithmetic_feature_helper(Supp::SubgroupArithmeticFAddExclusiveScan, "subgroupExclusiveAdd",
-		                          OpGroupNonUniformFAdd, GroupOperation::ExclusiveScan);
+		                          Op::OpGroupNonUniformFAdd, GroupOperation::ExclusiveScan);
 		arithmetic_feature_helper(Supp::SubgroupArithmeticFAddInclusiveScan, "subgroupInclusiveAdd",
-		                          OpGroupNonUniformFAdd, GroupOperation::InclusiveScan);
+		                          Op::OpGroupNonUniformFAdd, GroupOperation::InclusiveScan);
 
-		arithmetic_feature_helper(Supp::SubgroupArithmeticIMulReduce, "subgroupMul", OpGroupNonUniformIMul,
+		arithmetic_feature_helper(Supp::SubgroupArithmeticIMulReduce, "subgroupMul", Op::OpGroupNonUniformIMul,
 		                          GroupOperation::Reduce);
 		arithmetic_feature_helper(Supp::SubgroupArithmeticIMulExclusiveScan, "subgroupExclusiveMul",
-		                          OpGroupNonUniformIMul, GroupOperation::ExclusiveScan);
+		                          Op::OpGroupNonUniformIMul, GroupOperation::ExclusiveScan);
 		arithmetic_feature_helper(Supp::SubgroupArithmeticIMulInclusiveScan, "subgroupInclusiveMul",
-		                          OpGroupNonUniformIMul, GroupOperation::InclusiveScan);
-		arithmetic_feature_helper(Supp::SubgroupArithmeticFMulReduce, "subgroupMul", OpGroupNonUniformFMul,
+		                          Op::OpGroupNonUniformIMul, GroupOperation::InclusiveScan);
+		arithmetic_feature_helper(Supp::SubgroupArithmeticFMulReduce, "subgroupMul", Op::OpGroupNonUniformFMul,
 		                          GroupOperation::Reduce);
 		arithmetic_feature_helper(Supp::SubgroupArithmeticFMulExclusiveScan, "subgroupExclusiveMul",
-		                          OpGroupNonUniformFMul, GroupOperation::ExclusiveScan);
+		                          Op::OpGroupNonUniformFMul, GroupOperation::ExclusiveScan);
 		arithmetic_feature_helper(Supp::SubgroupArithmeticFMulInclusiveScan, "subgroupInclusiveMul",
-		                          OpGroupNonUniformFMul, GroupOperation::InclusiveScan);
+		                          Op::OpGroupNonUniformFMul, GroupOperation::InclusiveScan);
 	}
 
 	if (!workaround_ubo_load_overload_types.empty())
@@ -5382,7 +5382,7 @@ string CompilerGLSL::to_rerolled_array_expression(const SPIRType &parent_type,
 	                        type.basetype == SPIRType::Boolean &&
 	                        backend.boolean_in_struct_remapped_type != SPIRType::Boolean;
 
-	SPIRType tmp_type { OpNop };
+	SPIRType tmp_type { Op::OpNop };
 	if (remapped_boolean)
 	{
 		tmp_type = get<SPIRType>(type.parent_type);
@@ -5473,7 +5473,7 @@ string CompilerGLSL::to_non_uniform_aware_expression(uint32_t id)
 {
 	string expr = to_expression(id);
 
-	if (has_decoration(id, DecorationNonUniform))
+	if (has_decoration(id, Decoration::NonUniform))
 		convert_non_uniform_expression(expr, id);
 
 	return expr;
