@@ -201,7 +201,7 @@ void CompilerCPP::emit_resources()
 			auto &var = id.get<SPIRVariable>();
 			auto &type = get<SPIRType>(var.basetype);
 
-			if (var.storage != StorageClassFunction && type.pointer && type.storage == StorageClass::Uniform &&
+			if (var.storage != StorageClass::Function && type.pointer && type.storage == StorageClass::Uniform &&
 			    !is_hidden_variable(var) &&
 			    (ir.meta[type.self].decoration.decoration_flags.get(static_cast<uint32_t>(Decoration::Block)) ||
 			     ir.meta[type.self].decoration.decoration_flags.get(static_cast<uint32_t>(Decoration::BufferBlock))))
