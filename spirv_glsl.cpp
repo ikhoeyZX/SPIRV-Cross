@@ -14589,7 +14589,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 				if (type.image.ms)
 				{
 					uint32_t operands = ops[4];
-					if (operands != ImageOperands::SampleMask || length != 6)
+					if (operands != ImageOperandsMask::Sample || length != 6)
 						SPIRV_CROSS_THROW("Multisampled image used in OpImageRead, but unexpected "
 						                  "operand mask was used.");
 
@@ -14604,7 +14604,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 				if (type.image.ms)
 				{
 					uint32_t operands = ops[4];
-					if (operands != ImageOperands::SampleMask || length != 6)
+					if (operands != ImageOperandsMask::Sample || length != 6)
 						SPIRV_CROSS_THROW("Multisampled image used in OpImageRead, but unexpected "
 						                  "operand mask was used.");
 
@@ -14645,7 +14645,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 				if (type.image.ms)
 				{
 					uint32_t operands = ops[4];
-					if (operands != ImageOperands::SampleMask || length != 6)
+					if (operands != ImageOperandsMask::Sample || length != 6)
 						SPIRV_CROSS_THROW("Multisampled image used in OpImageRead, but unexpected "
 						                  "operand mask was used.");
 
@@ -14666,7 +14666,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 				if (type.image.ms)
 				{
 					uint32_t operands = ops[4];
-					if (operands != ImageOperands::SampleMask || length != 6)
+					if (operands != ImageOperandsMask::Sample || length != 6)
 						SPIRV_CROSS_THROW("Multisampled image used in OpImageRead, but unexpected "
 						                  "operand mask was used.");
 
@@ -14758,7 +14758,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		if (type.image.ms)
 		{
 			uint32_t operands = ops[3];
-			if (operands != ImageOperands::SampleMask || length != 5)
+			if (operands != ImageOperandsMask::Sample || length != 5)
 				SPIRV_CROSS_THROW("Multisampled image used in OpImageWrite, but unexpected operand mask was used.");
 			uint32_t samples = ops[4];
 			statement("imageStore(", to_non_uniform_aware_expression(ops[0]), ", ", coord_expr, ", ", to_expression(samples), ", ",
@@ -14937,7 +14937,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			semantics = evaluate_constant_u32(ops[2]);
 		}
 
-		if (execution_scope == Scope::Subgroup || memory == Scope::Subgroup)
+		if (execution_scope == static_cast<uint32_t>(Scope::Subgroup) || memory == static_cast<uint32_t>(Scope::Subgroup))
 		{
 			// OpControlBarrier with ScopeSubgroup is subgroupBarrier()
 			if (opcode != Op::OpControlBarrier)
@@ -14950,7 +14950,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			}
 		}
 
-		if (execution_scope != Scope::Subgroup && get_entry_point().model == ExecutionModel::TessellationControl)
+		if (execution_scope != static_cast<uint32_t>(Scope::Subgroup) && get_entry_point().model == ExecutionModel::TessellationControl)
 		{
 			// Control shaders only have barriers, and it implies memory barriers.
 			if (opcode == Op::OpControlBarrier)
@@ -14966,7 +14966,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			// If we are a memory barrier, and the next instruction is a control barrier, check if that memory barrier
 			// does what we need, so we avoid redundant barriers.
 			const Instruction *next = get_next_instruction_in_block(instruction);
-			if (next && next->op == Op::OpControlBarrier)
+			if (next && next->op == static_cast<uint16_t>(Op::OpControlBarrier))
 			{
 				auto *next_ops = stream(*next);
 				uint32_t next_memory = evaluate_constant_u32(next_ops[1]);
@@ -14976,17 +14976,17 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 				bool memory_scope_covered = false;
 				if (next_memory == memory)
 					memory_scope_covered = true;
-				else if (next_semantics == MemorySemanticsWorkgroupMemoryMask)
+				else if (next_semantics == MemorySemanticsMask::WorkgroupMemory)
 				{
 					// If we only care about workgroup memory, either Device or Workgroup scope is fine,
 					// scope does not have to match.
-					if ((next_memory == Scope::Device || next_memory == Scope::Workgroup) &&
-					    (memory == Scope::Device || memory == Scope::Workgroup))
+					if ((next_memory == static_cast<uint32_t>(Scope::Device) || next_memory == static_cast<uint32_t>(Scope::Workgroup)) &&
+					    (memory == static_cast<uint32_t>(Scope::Device) || memory == static_cast<uint32_t>(Scope::Workgroup)))
 					{
 						memory_scope_covered = true;
 					}
 				}
-				else if (memory == Scope::Workgroup && next_memory == Scope::Device)
+				else if (memory == static_cast<uint32_t>(Scope::Workgroup) && next_memory == static_cast<uint32_t>(Scope::Device))
 				{
 					// The control barrier has device scope, but the memory barrier just has workgroup scope.
 					memory_scope_covered = true;
@@ -15007,7 +15007,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			flush_all_active_variables();
 		}
 
-		if (memory == Scope::Workgroup) // Only need to consider memory within a group
+		if (memory == static_cast<uint32_t>(Scope::Workgroup)) // Only need to consider memory within a group
 		{
 			if (semantics == MemorySemanticsMask::WorkgroupMemory)
 			{
