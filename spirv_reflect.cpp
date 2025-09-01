@@ -437,7 +437,7 @@ void CompilerReflection::emit_type_member_qualifiers(const SPIRType &type, uint3
 		// Array stride is a property of the array type, not the struct.
 		if (has_decoration(type.member_types[index], Decoration::ArrayStride))
 			json_stream->emit_json_key_value("array_stride",
-			                                 get_decoration(type.member_types[index], DecorationArrayStride));
+			                                 get_decoration(type.member_types[index], Decoration::ArrayStride));
 
 		if (dec.decoration_flags.get(static_cast<uint32_t>(Decoration::MatrixStride)))
 			json_stream->emit_json_key_value("matrix_stride", dec.matrix_stride);
@@ -640,7 +640,7 @@ void CompilerReflection::emit_resources(const char *tag, const SmallVector<Resou
 		if (mask.get(static_cast<uint32_t>(Decoration::InputAttachmentIndex)))
 			json_stream->emit_json_key_value("input_attachment_index",
 			                                 get_decoration(res.id, Decoration::InputAttachmentIndex));
-		if (mask.get(static_cast<uint32_t>(DecorationOffset))
+		if (mask.get(static_cast<uint32_t>(Decoration::Offset)))
 			json_stream->emit_json_key_value("offset", get_decoration(res.id, Decoration::Offset));
 		if (mask.get(static_cast<uint32_t>(Decoration::WeightTextureQCOM)))
 			json_stream->emit_json_key_value("WeightTextureQCOM", get_decoration(res.id, Decoration::WeightTextureQCOM));
