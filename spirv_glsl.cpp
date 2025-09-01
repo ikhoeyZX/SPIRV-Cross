@@ -7439,7 +7439,7 @@ void CompilerGLSL::emit_bitfield_insert_op(uint32_t result_type, uint32_t result
 	auto op3_expr = to_unpacked_expression(op3);
 
 	assert(offset_count_type == SPIRType::UInt || offset_count_type == SPIRType::Int);
-	SPIRType target_type { OpTypeInt };
+	SPIRType target_type { Op::OpTypeInt };
 	target_type.width = 32;
 	target_type.vecsize = 1;
 	target_type.basetype = offset_count_type;
@@ -7470,23 +7470,23 @@ string CompilerGLSL::legacy_tex_op(const std::string &op, const SPIRType &imgtyp
 	const char *type;
 	switch (imgtype.image.dim)
 	{
-	case spv::Dim1D:
+	case spv::Dim::Dim1D:
 		// Force 2D path for ES.
 		if (options.es)
 			type = (imgtype.image.arrayed && !options.es) ? "2DArray" : "2D";
 		else
 			type = (imgtype.image.arrayed && !options.es) ? "1DArray" : "1D";
 		break;
-	case spv::Dim2D:
+	case spv::Dim::Dim2D:
 		type = (imgtype.image.arrayed && !options.es) ? "2DArray" : "2D";
 		break;
-	case spv::Dim3D:
+	case spv::Dim::Dim3D:
 		type = "3D";
 		break;
-	case spv::DimCube:
+	case spv::Dim::Cube:
 		type = "Cube";
 		break;
-	case spv::DimRect:
+	case spv::Dim::Rect:
 		type = "2DRect";
 		break;
 	case spv::Dim::Buffer:
@@ -8118,15 +8118,15 @@ std::string CompilerGLSL::to_texture_op(const Instruction &i, bool sparse, bool 
 		}
 	};
 
-	test(bias, ImageOperandsBiasMask);
-	test(lod, ImageOperandsLodMask);
-	test(grad_x, ImageOperandsGradMask);
-	test(grad_y, ImageOperandsGradMask);
-	test(coffset, ImageOperandsConstOffsetMask);
-	test(offset, ImageOperandsOffsetMask);
-	test(coffsets, ImageOperandsConstOffsetsMask);
-	test(sample, ImageOperandsSampleMask);
-	test(minlod, ImageOperandsMinLodMask);
+	test(bias, ImageOperands::BiasMask);
+	test(lod, ImageOperands::LodMask);
+	test(grad_x, ImageOperands::GradMask);
+	test(grad_y, ImageOperands::GradMask);
+	test(coffset, ImageOperands::ConstOffsetMask);
+	test(offset, ImageOperands::OffsetMask);
+	test(coffsets, ImageOperands::ConstOffsetsMask);
+	test(sample, ImageOperands::SampleMask);
+	test(minlod, ImageOperands::MinLodMask);
 
 	TextureFunctionBaseArguments base_args = {};
 	base_args.img = img;
@@ -8267,7 +8267,7 @@ string CompilerGLSL::to_function_name(const TextureFunctionNameArguments &args)
 	// The workaround will assert that the LOD is in fact constant 0, or we cannot emit correct code.
 	// This happens for HLSL SampleCmpLevelZero on Texture2DArray and TextureCube.
 	bool workaround_lod_array_shadow_as_grad = false;
-	if (((imgtype.image.arrayed && imgtype.image.dim == Dim2D) || imgtype.image.dim == DimCube) &&
+	if (((imgtype.image.arrayed && imgtype.image.dim == Dim::Dim2D) || imgtype.image.dim == Dim::Cube) &&
 	    is_depth_image(imgtype, tex) && args.lod && !args.base.is_fetch)
 	{
 		if (!expression_is_constant_null(args.lod))
@@ -8461,13 +8461,13 @@ string CompilerGLSL::to_function_args(const TextureFunctionArguments &args, bool
 			// Create a composite which merges coord/dref into a single vector.
 			auto type = expression_type(args.coord);
 			type.vecsize = args.coord_components + 1;
-			if (imgtype.image.dim == Dim1D && options.es)
+			if (imgtype.image.dim == Dim::Dim1D && options.es)
 				type.vecsize++;
 			farg_str += ", ";
 			farg_str += type_to_glsl_constructor(type);
 			farg_str += "(";
 
-			if (imgtype.image.dim == Dim1D && options.es)
+			if (imgtype.image.dim == Dim::Dim1D && options.es)
 			{
 				if (imgtype.image.arrayed)
 				{
@@ -8613,22 +8613,22 @@ Op CompilerGLSL::get_remapped_spirv_op(Op op) const
 		switch (op)
 		{
 		case Op::OpFUnordLessThan:
-			op = OpFOrdLessThan;
+			op = Op::OpFOrdLessThan;
 			break;
 		case Op::OpFUnordLessThanEqual:
-			op = OpFOrdLessThanEqual;
+			op = Op::OpFOrdLessThanEqual;
 			break;
 		case Op::OpFUnordGreaterThan:
-			op = OpFOrdGreaterThan;
+			op = Op::OpFOrdGreaterThan;
 			break;
 		case Op::OpFUnordGreaterThanEqual:
-			op = OpFOrdGreaterThanEqual;
+			op = Op::OpFOrdGreaterThanEqual;
 			break;
 		case Op::OpFUnordEqual:
-			op = OpFOrdEqual;
+			op = Op::OpFOrdEqual;
 			break;
 		case Op::OpFOrdNotEqual:
-			op = OpFUnordNotEqual;
+			op = Op::OpFUnordNotEqual;
 			break;
 
 		default:
@@ -9655,7 +9655,7 @@ void CompilerGLSL::emit_subgroup_op(const Instruction &i)
 	uint32_t id = ops[1];
 
 	// These quad ops do not have a scope parameter.
-	if (op != OpGroupNonUniformQuadAllKHR && op != OpGroupNonUniformQuadAnyKHR)
+	if (op != Op::OpGroupNonUniformQuadAllKHR && op != Op::OpGroupNonUniformQuadAnyKHR)
 	{
 		auto scope = static_cast<Scope>(evaluate_constant_u32(ops[2]));
 		if (scope != ScopeSubgroup)
@@ -10036,9 +10036,9 @@ string CompilerGLSL::builtin_to_glsl(BuiltIn builtin, StorageClass storage)
 			auto model = get_entry_point().model;
 			switch (model)
 			{
-			case spv::ExecutionModelIntersectionKHR:
-			case spv::ExecutionModelAnyHitKHR:
-			case spv::ExecutionModelClosestHitKHR:
+			case spv::ExecutionModel::IntersectionKHR:
+			case spv::ExecutionModel::AnyHitKHR:
+			case spv::ExecutionModel::ClosestHitKHR:
 				// gl_InstanceID is allowed in these shaders.
 				break;
 
