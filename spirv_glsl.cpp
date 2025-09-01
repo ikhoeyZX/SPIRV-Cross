@@ -7535,7 +7535,7 @@ string CompilerGLSL::legacy_tex_op(const std::string &op, const SPIRType &imgtyp
 		else
 			SPIRV_CROSS_THROW(join(op, " not allowed on depth samplers in legacy ES"));
 
-		if (imgtype.image.dim == spv::DimCube)
+		if (imgtype.image.dim == spv::Dim::Cube)
 			return "shadowCubeNV";
 	}
 
@@ -7826,7 +7826,7 @@ bool CompilerGLSL::is_supported_subgroup_op_in_opengl(spv::Op op, const uint32_t
 	case Op::OpGroupNonUniformIMul:
 	case Op::OpGroupNonUniformFMul:
 	{
-		const GroupOperation:: operation = static_cast<GroupOperation>(ops[3]);
+		const GroupOperation operation = static_cast<GroupOperation>(ops[3]);
 		if (operation == GroupOperation::Reduce || operation == GroupOperation::InclusiveScan ||
 		    operation == GroupOperation::ExclusiveScan)
 		{
@@ -7982,7 +7982,7 @@ std::string CompilerGLSL::to_texture_op(const Instruction &i, bool sparse, bool 
 	auto &result_type = get<SPIRType>(result_type_id);
 
 	inherited_expressions.push_back(coord);
-	if (has_decoration(img, DecorationNonUniform) && !maybe_get_backing_variable(img))
+	if (has_decoration(img, Decoration::NonUniform) && !maybe_get_backing_variable(img))
 		nonuniform_expression = true;
 
 	switch (op)
@@ -8064,16 +8064,16 @@ std::string CompilerGLSL::to_texture_op(const Instruction &i, bool sparse, bool 
 	uint32_t coord_components = 0;
 	switch (imgtype.image.dim)
 	{
-	case spv::Dim1D:
+	case spv::Dim::Dim1D:
 		coord_components = 1;
 		break;
-	case spv::Dim2D:
+	case spv::Dim::Dim2D:
 		coord_components = 2;
 		break;
-	case spv::Dim3D:
+	case spv::Dim::Dim3D:
 		coord_components = 3;
 		break;
-	case spv::DimCube:
+	case spv::Dim::Cube:
 		coord_components = 3;
 		break;
 	case spv::Dim::Buffer:
@@ -8118,15 +8118,15 @@ std::string CompilerGLSL::to_texture_op(const Instruction &i, bool sparse, bool 
 		}
 	};
 
-	test(bias, ImageOperands::BiasMask);
-	test(lod, ImageOperands::LodMask);
-	test(grad_x, ImageOperands::GradMask);
-	test(grad_y, ImageOperands::GradMask);
-	test(coffset, ImageOperands::ConstOffsetMask);
-	test(offset, ImageOperands::OffsetMask);
-	test(coffsets, ImageOperands::ConstOffsetsMask);
-	test(sample, ImageOperands::SampleMask);
-	test(minlod, ImageOperands::MinLodMask);
+	test(bias, ImageOperandsMask::Bias);
+	test(lod, ImageOperandsMask::Lod);
+	test(grad_x, ImageOperandsMask::Grad);
+	test(grad_y, ImageOperandsMask::Grad);
+	test(coffset, ImageOperandsMask::ConstOffset);
+	test(offset, ImageOperandsMask::Offset);
+	test(coffsets, ImageOperandsMask::ConstOffsets);
+	test(sample, ImageOperandsMask::Sample);
+	test(minlod, ImageOperandsMask::MinLod);
 
 	TextureFunctionBaseArguments base_args = {};
 	base_args.img = img;
@@ -8411,7 +8411,7 @@ string CompilerGLSL::to_function_args(const TextureFunctionArguments &args, bool
 	// The workaround will assert that the LOD is in fact constant 0, or we cannot emit correct code.
 	// This happens for HLSL SampleCmpLevelZero on Texture2DArray and TextureCube.
 	bool workaround_lod_array_shadow_as_grad =
-	    ((imgtype.image.arrayed && imgtype.image.dim == Dim2D) || imgtype.image.dim == DimCube) &&
+	    ((imgtype.image.arrayed && imgtype.image.dim == Dim::Dim2D) || imgtype.image.dim == Dim::Cube) &&
 	    is_depth_image(imgtype, img) && args.lod != 0 && !args.base.is_fetch;
 
 	if (args.dref)
@@ -8434,7 +8434,7 @@ string CompilerGLSL::to_function_args(const TextureFunctionArguments &args, bool
 			// The coordinate type for textureProj shadow is always vec4 even for sampler1DShadow.
 			farg_str += ", vec4(";
 
-			if (imgtype.image.dim == Dim1D)
+			if (imgtype.image.dim == Dim::Dim1D)
 			{
 				// Could reuse coord_expr, but we will mess up the temporary usage checking.
 				farg_str += to_enclosed_expression(args.coord) + ".x";
@@ -8444,7 +8444,7 @@ string CompilerGLSL::to_function_args(const TextureFunctionArguments &args, bool
 				farg_str += ", ";
 				farg_str += to_enclosed_expression(args.coord) + ".y)";
 			}
-			else if (imgtype.image.dim == Dim2D)
+			else if (imgtype.image.dim == Dim::Dim2D)
 			{
 				// Could reuse coord_expr, but we will mess up the temporary usage checking.
 				farg_str += to_enclosed_expression(args.coord) + (swizz_func ? ".xy()" : ".xy");
@@ -9525,7 +9525,7 @@ void CompilerGLSL::emit_subgroup_op(const Instruction &i)
 
 	case Op::OpGroupNonUniformBallotBitCount:
 	{
-		const GroupOperation:: operation = static_cast<GroupOperation>(ops[3]);
+		const GroupOperation operation = static_cast<GroupOperation>(ops[3]);
 		if (operation == GroupOperation::Reduce)
 			request_subgroup_feature(ShaderSubgroupSupportHelper::SubgroupBallotBitCount);
 		else if (operation == GroupOperation::InclusiveScan || operation == GroupOperation::ExclusiveScan)
