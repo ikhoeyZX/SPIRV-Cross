@@ -10732,7 +10732,7 @@ string CompilerGLSL::access_chain_internal(uint32_t base, const uint32_t *indice
 			}
 
 			if (var && has_decoration(var->self, Decoration::BuiltIn) &&
-			    get_decoration(var->self, Decoration::BuiltIn) == BuiltIn::Position &&
+			    static_cast<spv::BuiltIn>(get_decoration(var->self, Decoration::BuiltIn) == BuiltIn::Position) &&
 			    get_execution_model() == ExecutionModel::MeshEXT)
 			{
 				access_meshlet_position_y = true;
@@ -12029,7 +12029,7 @@ void CompilerGLSL::emit_block_instructions(SPIRBlock &block)
 				// Explicitly, we don't want to inherit RelaxedPrecision state in this CopyObject,
 				// so it helps to have handle_instruction_precision() on the outside of emit_instruction().
 				EmbeddedInstruction inst;
-				inst.op = Op::OpCopyObject;
+				inst.op = static_cast<uint16_t>(spv::Op::OpCopyObject);
 				inst.length = 3;
 				inst.ops.push_back(expression_type_id(itr->first));
 				inst.ops.push_back(itr->second);
@@ -12048,7 +12048,7 @@ void CompilerGLSL::emit_block_instructions(SPIRBlock &block)
 			// Explicitly, we don't want to inherit RelaxedPrecision state in this CopyObject,
 			// so it helps to have handle_instruction_precision() on the outside of emit_instruction().
 			EmbeddedInstruction inst;
-			inst.op = Op::OpCopyObject;
+			inst.op = static_cast<uint16_t>(Op::OpCopyObject);
 			inst.length = 3;
 			inst.ops.push_back(expression_type_id(temporary_copy.src_id));
 			inst.ops.push_back(temporary_copy.dst_id);
@@ -12668,7 +12668,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		if (meta.relaxed_precision && backend.requires_relaxed_precision_analysis)
 			set_decoration(ops[1], Decoration::RelaxedPrecision);
 		if (meta.chain_is_builtin)
-			set_decoration(ops[1], Decoration::BuiltIn, meta.builtin);
+			set_decoration(ops[1], Decoration::BuiltIn, static_cast<uint32_t>(meta.builtin));
 
 		// If we have some expression dependencies in our access chain, this access chain is technically a forwarded
 		// temporary which could be subject to invalidation.
@@ -12725,7 +12725,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		uint32_t result_type = ops[0];
 		uint32_t id = ops[1];
 		auto e = access_chain_internal(ops[2], &ops[3], length - 3, ACCESS_CHAIN_INDEX_IS_LITERAL_BIT, nullptr);
-		if (has_decoration(ops[2], DecorationNonUniform))
+		if (has_decoration(ops[2], Decoration::NonUniform))
 			convert_non_uniform_expression(e, ops[2]);
 		set<SPIRExpression>(id, join(type_to_glsl(get<SPIRType>(result_type)), "(", e, ".length())"), result_type,
 		                    true);
@@ -13061,7 +13061,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		if (meta.storage_physical_type != 0)
 			set_extended_decoration(id, SPIRVCrossDecorationPhysicalTypeID, meta.storage_physical_type);
 		if (meta.storage_is_invariant)
-			set_decoration(id, DecorationInvariant);
+			set_decoration(id, Decoration::Invariant);
 
 		break;
 	}
@@ -13153,13 +13153,13 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			uint32_t tmp_type_id = expression_type(rhs).parent_type;
 
 			EmbeddedInstruction fake_load, fake_store;
-			fake_load.op = OpLoad;
+			fake_load.op = Op::OpLoad;
 			fake_load.length = 3;
 			fake_load.ops.push_back(tmp_type_id);
 			fake_load.ops.push_back(tmp_id);
 			fake_load.ops.push_back(rhs);
 
-			fake_store.op = OpStore;
+			fake_store.op = Op::OpStore;
 			fake_store.length = 2;
 			fake_store.ops.push_back(lhs);
 			fake_store.ops.push_back(tmp_id);
@@ -13419,7 +13419,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 	case Op::OpMatrixTimesVector:
 	{
 		// If the matrix needs transpose, just flip the multiply order.
-		auto *e = maybe_get<SPIRExpression>(ops[opcode == OpMatrixTimesVector ? 2 : 3]);
+		auto *e = maybe_get<SPIRExpression>(ops[opcode == Op::OpMatrixTimesVector ? 2 : 3]);
 		if (e && e->need_transpose)
 		{
 			e->need_transpose = false;
@@ -13612,7 +13612,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		uint32_t op1 = ops[3];
 		auto &type = get<SPIRType>(result_type);
 		emit_uninitialized_temporary_expression(result_type, result_id);
-		const char *op = opcode == OpIAddCarry ? "uaddCarry" : "usubBorrow";
+		const char *op = opcode == Op::OpIAddCarry ? "uaddCarry" : "usubBorrow";
 
 		statement(to_expression(result_id), ".", to_member_name(type, 0), " = ", op, "(", to_expression(op0), ", ",
 		          to_expression(op1), ", ", to_expression(result_id), ".", to_member_name(type, 1), ");");
@@ -13633,7 +13633,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		uint32_t op1 = ops[3];
 		auto &type = get<SPIRType>(result_type);
 		emit_uninitialized_temporary_expression(result_type, result_id);
-		const char *op = opcode == OpUMulExtended ? "umulExtended" : "imulExtended";
+		const char *op = opcode == Op::OpUMulExtended ? "umulExtended" : "imulExtended";
 
 		statement(op, "(", to_expression(op0), ", ", to_expression(op1), ", ", to_expression(result_id), ".",
 		          to_member_name(type, 1), ", ", to_expression(result_id), ".", to_member_name(type, 0), ");");
@@ -13827,7 +13827,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 	case Op::OpUGreaterThan:
 	case Op::OpSGreaterThan:
 	{
-		auto type = opcode == OpUGreaterThan ? uint_type : int_type;
+		auto type = opcode == Op::OpUGreaterThan ? uint_type : int_type;
 		if (expression_type(ops[2]).vecsize > 1)
 			GLSL_BFOP_CAST(greaterThan, type);
 		else
@@ -13847,7 +13847,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 	case Op::OpUGreaterThanEqual:
 	case Op::OpSGreaterThanEqual:
 	{
-		auto type = opcode == OpUGreaterThanEqual ? uint_type : int_type;
+		auto type = opcode == Op::OpUGreaterThanEqual ? uint_type : int_type;
 		if (expression_type(ops[2]).vecsize > 1)
 			GLSL_BFOP_CAST(greaterThanEqual, type);
 		else
@@ -13867,7 +13867,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 	case Op::OpULessThan:
 	case Op::OpSLessThan:
 	{
-		auto type = opcode == OpULessThan ? uint_type : int_type;
+		auto type = opcode == Op::OpULessThan ? uint_type : int_type;
 		if (expression_type(ops[2]).vecsize > 1)
 			GLSL_BFOP_CAST(lessThan, type);
 		else
@@ -13887,7 +13887,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 	case Op::OpULessThanEqual:
 	case Op::OpSLessThanEqual:
 	{
-		auto type = opcode == OpULessThanEqual ? uint_type : int_type;
+		auto type = opcode == Op::OpULessThanEqual ? uint_type : int_type;
 		if (expression_type(ops[2]).vecsize > 1)
 			GLSL_BFOP_CAST(lessThanEqual, type);
 		else
@@ -13910,7 +13910,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 	case Op::OpUConvert:
 	case Op::OpConvertUToF:
 	{
-		auto input_type = opcode == OpSConvert || opcode == OpConvertSToF ? int_type : uint_type;
+		auto input_type = opcode == Op::OpSConvert || opcode == Op::OpConvertSToF ? int_type : uint_type;
 		uint32_t result_type = ops[0];
 		uint32_t id = ops[1];
 
@@ -13935,7 +13935,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		auto expected_type = type;
 		auto &float_type = expression_type(ops[2]);
 		expected_type.basetype =
-		    opcode == OpConvertFToS ? to_signed_basetype(type.width) : to_unsigned_basetype(type.width);
+		    opcode == Op::OpConvertFToS ? to_signed_basetype(type.width) : to_unsigned_basetype(type.width);
 
 		auto func = type_to_glsl_constructor(expected_type);
 		emit_unary_func_op_cast(result_type, id, ops[2], func.c_str(), float_type.basetype, expected_type.basetype);
@@ -13954,7 +13954,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 
 		auto &type = get<SPIRType>(result_type);
 
-		if (type.op == OpTypeCooperativeMatrixKHR && opcode == OpFConvert)
+		if (type.op == Op::OpTypeCooperativeMatrixKHR && opcode == OpFConvert)
 		{
 			auto &expr_type = expression_type(ops[2]);
 			if (get<SPIRConstant>(type.ext.cooperative.use_id).scalar() !=
@@ -13968,7 +13968,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		}
 
 		if ((type.basetype == SPIRType::FloatE4M3 || type.basetype == SPIRType::FloatE5M2) &&
-		    has_decoration(id, spv::DecorationSaturatedToLargestFloat8NormalConversionEXT))
+		    has_decoration(id, spv::Decoration::SaturatedToLargestFloat8NormalConversionEXT))
 		{
 			emit_uninitialized_temporary_expression(result_type, id);
 			statement("saturatedConvertEXT(", to_expression(id), ", ", to_unpacked_expression(ops[2]), ");");
@@ -14229,7 +14229,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		if (type.storage == StorageClass::AtomicCounter)
 		{
 			// Legacy GLSL stuff, not sure if this is relevant to support.
-			if (opcode == OpAtomicIIncrement)
+			if (opcode == Op::OpAtomicIIncrement)
 				GLSL_UFOP(atomicCounterIncrement);
 			else
 				GLSL_UFOP(atomicCounterDecrement);
@@ -14242,9 +14242,9 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			const char *op = atomic_image ? "imageAtomicAdd" : "atomicAdd";
 
 			const char *increment = nullptr;
-			if (opcode == OpAtomicIIncrement && unsigned_type)
+			if (opcode == Op::OpAtomicIIncrement && unsigned_type)
 				increment = "1u";
-			else if (opcode == OpAtomicIIncrement)
+			else if (opcode == Op::OpAtomicIIncrement)
 				increment = "1";
 			else if (unsigned_type)
 				increment = "uint(-1)";
