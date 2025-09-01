@@ -14589,7 +14589,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 				if (type.image.ms)
 				{
 					uint32_t operands = ops[4];
-					if (operands != ImageOperandsMask::Sample || length != 6)
+					if (operands != static_cast<uint32_t>(ImageOperandsMask::Sample) || length != 6)
 						SPIRV_CROSS_THROW("Multisampled image used in OpImageRead, but unexpected "
 						                  "operand mask was used.");
 
@@ -14604,7 +14604,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 				if (type.image.ms)
 				{
 					uint32_t operands = ops[4];
-					if (operands != ImageOperandsMask::Sample || length != 6)
+					if (operands != static_cast<uint32_t>(ImageOperandsMask::Sample) || length != 6)
 						SPIRV_CROSS_THROW("Multisampled image used in OpImageRead, but unexpected "
 						                  "operand mask was used.");
 
@@ -14645,7 +14645,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 				if (type.image.ms)
 				{
 					uint32_t operands = ops[4];
-					if (operands != ImageOperandsMask::Sample || length != 6)
+					if (operands != static_cast<uint32_t>(ImageOperandsMask::Sample) || length != 6)
 						SPIRV_CROSS_THROW("Multisampled image used in OpImageRead, but unexpected "
 						                  "operand mask was used.");
 
@@ -14666,7 +14666,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 				if (type.image.ms)
 				{
 					uint32_t operands = ops[4];
-					if (operands != ImageOperandsMask::Sample || length != 6)
+					if (operands != static_cast<uint32_t>(ImageOperandsMask::Sample) || length != 6)
 						SPIRV_CROSS_THROW("Multisampled image used in OpImageRead, but unexpected "
 						                  "operand mask was used.");
 
@@ -14758,7 +14758,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		if (type.image.ms)
 		{
 			uint32_t operands = ops[3];
-			if (operands != ImageOperandsMask::Sample || length != 5)
+			if (operands != static_cast<uint32_t>(ImageOperandsMask::Sample) || length != 5)
 				SPIRV_CROSS_THROW("Multisampled image used in OpImageWrite, but unexpected operand mask was used.");
 			uint32_t samples = ops[4];
 			statement("imageStore(", to_non_uniform_aware_expression(ops[0]), ", ", coord_expr, ", ", to_expression(samples), ", ",
@@ -14976,7 +14976,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 				bool memory_scope_covered = false;
 				if (next_memory == memory)
 					memory_scope_covered = true;
-				else if (next_semantics == MemorySemanticsMask::WorkgroupMemory)
+				else if (next_semantics == static_cast<uint32_t>(MemorySemanticsMask::WorkgroupMemory))
 				{
 					// If we only care about workgroup memory, either Device or Workgroup scope is fine,
 					// scope does not have to match.
@@ -15009,7 +15009,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 
 		if (memory == static_cast<uint32_t>(Scope::Workgroup)) // Only need to consider memory within a group
 		{
-			if (semantics == MemorySemanticsMask::WorkgroupMemory)
+			if (semantics == static_cast<uint32_t>(MemorySemanticsMask::WorkgroupMemory))
 			{
 				// OpControlBarrier implies a memory barrier for shared memory as well.
 				bool implies_shared_barrier = opcode == Op::OpControlBarrier && execution_scope == Scope::Workgroup;
