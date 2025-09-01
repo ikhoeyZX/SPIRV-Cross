@@ -15728,7 +15728,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 		// values every time it's evaluated. Block any forwarding attempt.
 		// We also might want to invalidate all expressions to function as a sort of optimization
 		// barrier, but might be overkill for now.
-		if (scope == static_cast<uint32_t>(Scope::Device))
+		if (scope == Scope::Device)
 		{
 			require_extension_internal("GL_EXT_shader_realtime_clock");
 			if (type.basetype == SPIRType::BaseType::UInt64)
@@ -15738,7 +15738,7 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			else
 				SPIRV_CROSS_THROW("Unsupported result type for OpReadClockKHR opcode.");
 		}
-		else if (scope == static_cast<uint32_t>(Scope::Subgroup))
+		else if (scope == Scope::Subgroup)
 		{
 			require_extension_internal("GL_ARB_shader_clock");
 			if (type.basetype == SPIRType::BaseType::UInt64)
@@ -16875,15 +16875,15 @@ string CompilerGLSL::type_to_glsl(const SPIRType &type, uint32_t id)
 		const char *use = nullptr;
 		switch (use_type)
 		{
-		case CooperativeMatrixUse::MatrixAKHR:
+		case static_cast<uint32_t>(CooperativeMatrixUse::MatrixAKHR):
 			use = "gl_MatrixUseA";
 			break;
 
-		case CooperativeMatrixUse::MatrixBKHR:
+		case static_cast<uint32_t>(CooperativeMatrixUse::MatrixBKHR):
 			use = "gl_MatrixUseB";
 			break;
 
-		case CooperativeMatrixUse::MatrixAccumulatorKHR:
+		case static_cast<uint32_t>(CooperativeMatrixUse::MatrixAccumulatorKHR):
 			use = "gl_MatrixUseAccumulator";
 			break;
 
@@ -16897,9 +16897,9 @@ string CompilerGLSL::type_to_glsl(const SPIRType &type, uint32_t id)
 			if (!scope->specialization)
 			{
 				require_extension_internal("GL_KHR_memory_scope_semantics");
-				if (scope->scalar() == spv::Scope::Subgroup)
+				if (scope->scalar() == static_cast<uint32_t>(spv::Scope::Subgroup))
 					scope_expr = "gl_ScopeSubgroup";
-				else if (scope->scalar() == spv::Scope::Workgroup)
+				else if (scope->scalar() == static_cast<uint32_t>(spv::Scope::Workgroup))
 					scope_expr = "gl_ScopeWorkgroup";
 				else
 					SPIRV_CROSS_THROW("Invalid scope for cooperative matrix.");
@@ -17350,7 +17350,7 @@ void CompilerGLSL::emit_function(SPIRFunction &func, const Bitset &return_flags)
 		if (var.storage == StorageClass::TaskPayloadWorkgroupEXT)
 			continue;
 
-		if (variable_decl_is_remapped_storage(var, StorageClassWorkgroup))
+		if (variable_decl_is_remapped_storage(var, StorageClass::Workgroup))
 		{
 			// Special variable type which cannot have initializer,
 			// need to be declared as standalone variables.
@@ -18973,9 +18973,9 @@ const Instruction *CompilerGLSL::get_next_instruction_in_block(const Instruction
 
 uint32_t CompilerGLSL::mask_relevant_memory_semantics(uint32_t semantics)
 {
-	return semantics & (MemorySemanticsAtomicCounterMemoryMask | MemorySemanticsImageMemoryMask |
-	                    MemorySemanticsWorkgroupMemoryMask | MemorySemanticsUniformMemoryMask |
-	                    MemorySemanticsCrossWorkgroupMemoryMask | MemorySemanticsSubgroupMemoryMask);
+	return semantics & (MemorySemanticsMask::AtomicCounterMemory | MemorySemanticsMask::ImageMemory |
+	                    MemorySemanticsMask::WorkgroupMemory | MemorySemanticsMask::UniformMemory |
+	                    MemorySemanticsMask::CrossWorkgroupMemory | MemorySemanticsMask::SubgroupMemory);
 }
 
 bool CompilerGLSL::emit_array_copy(const char *expr, uint32_t lhs_id, uint32_t rhs_id, StorageClass, StorageClass)
@@ -19000,7 +19000,7 @@ bool CompilerGLSL::unroll_array_to_complex_store(uint32_t target_id, uint32_t so
 	if (!var || var->storage != StorageClass::Output)
 		return false;
 
-	if (!is_builtin_variable(*var) || BuiltIn(get_decoration(var->self, Decoration::BuiltIn)) != BuiltInSampleMask)
+	if (!is_builtin_variable(*var) || BuiltIn(get_decoration(var->self, Decoration::BuiltIn)) != BuiltIn::SampleMask)
 		return false;
 
 	auto &type = expression_type(source_id);
@@ -19014,7 +19014,7 @@ bool CompilerGLSL::unroll_array_to_complex_store(uint32_t target_id, uint32_t so
 	else
 		array_expr = to_expression(type.array.back());
 
-	SPIRType target_type { OpTypeInt };
+	SPIRType target_type { Op::OpTypeInt };
 	target_type.basetype = SPIRType::Int;
 
 	statement("for (int i = 0; i < int(", array_expr, "); i++)");
@@ -19048,10 +19048,10 @@ void CompilerGLSL::unroll_array_from_complex_load(uint32_t target_id, uint32_t s
 	bool is_builtin = is_builtin_variable(*var) &&
 	                  (builtin == BuiltIn::PointSize ||
 	                   builtin == BuiltIn::Position ||
-	                   builtin == BuiltInSampleMask);
+	                   builtin == BuiltIn::SampleMask);
 	bool is_tess = is_tessellation_shader();
 	bool is_patch = has_decoration(var->self, Decoration::Patch);
-	bool is_sample_mask = is_builtin && builtin == BuiltInSampleMask;
+	bool is_sample_mask = is_builtin && builtin == BuiltIn::SampleMask;
 
 	// Tessellation input arrays are special in that they are unsized, so we cannot directly copy from it.
 	// We must unroll the array load.
@@ -19079,7 +19079,7 @@ void CompilerGLSL::unroll_array_from_complex_load(uint32_t target_id, uint32_t s
 			statement(new_expr, "[i] = gl_in[i].", expr, ";");
 		else if (is_sample_mask)
 		{
-			SPIRType target_type { OpTypeInt };
+			SPIRType target_type { Op::OpTypeInt };
 			target_type.basetype = SPIRType::Int;
 			statement(new_expr, "[i] = ", bitcast_expression(target_type, type.basetype, join(expr, "[i]")), ";");
 		}
@@ -19393,7 +19393,7 @@ void CompilerGLSL::reorder_type_alias()
 	{
 		auto &type = get<SPIRType>(*alias_itr);
 		if (type.type_alias != TypeID(0) &&
-		    !has_extended_decoration(type.type_alias, SPIRVCrossDecoration::BufferBlockRepacked))
+		    !has_extended_decoration(type.type_alias, SPIRVCrossDecorationBufferBlockRepacked))
 		{
 			// We will skip declaring this type, so make sure the type_alias type comes before.
 			auto master_itr = find(begin(type_ids), end(type_ids), ID(type.type_alias));
@@ -19909,7 +19909,7 @@ void CompilerGLSL::rewrite_load_for_wrapped_row_major(std::string &expr, TypeID 
 				rewrite = true;
 
 			// Since we decide on a per-struct basis, only use mediump wrapper if all candidates are mediump.
-			if (!decorations.get(Decoration::RelaxedPrecision))
+			if (!decorations.get(static_cast<uint32_t>(Decoration::RelaxedPrecision)))
 				relaxed = false;
 		}
 	}
