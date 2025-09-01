@@ -15012,19 +15012,21 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			if (semantics == static_cast<uint32_t>(MemorySemanticsMask::WorkgroupMemory))
 			{
 				// OpControlBarrier implies a memory barrier for shared memory as well.
-				bool implies_shared_barrier = opcode == Op::OpControlBarrier && execution_scope == Scope::Workgroup;
+				bool implies_shared_barrier = opcode == Op::OpControlBarrier && execution_scope == static_cast<uint32_t>(Scope::Workgroup);
 				if (!implies_shared_barrier)
 					statement("memoryBarrierShared();");
 			}
 			else if (semantics != 0)
 				statement("groupMemoryBarrier();");
 		}
-		else if (memory == Scope::Subgroup)
+		else if (memory == static_cast<uint32_t>(Scope::Subgroup))
 		{
-			const uint32_t all_barriers =
+			const auto tmp =
 			    MemorySemanticsMask::WorkgroupMemory | MemorySemanticsMask::UniformMemory | MemorySemanticsMask::ImageMemory;
 
-			if (semantics & (MemorySemanticsMask::CrossWorkgroupMemory | MemorySemanticsMask::SubgroupMemory))
+			const uint32_t all_barriers = static_cast<uint32_t>(tmp);
+			
+			if (static_cast<spv::MemorySemanticsMask>(semantics) & (MemorySemanticsMask::CrossWorkgroupMemory | MemorySemanticsMask::SubgroupMemory))
 			{
 				// These are not relevant for GLSL, but assume it means memoryBarrier().
 				// memoryBarrier() does everything, so no need to test anything else.
@@ -15038,20 +15040,21 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			else
 			{
 				// Pick out individual barriers.
-				if (semantics & MemorySemanticsMask::WorkgroupMemory)
+				if (semantics & static_cast<uint32_t>(MemorySemanticsMask::WorkgroupMemory))
 					statement("subgroupMemoryBarrierShared();");
-				if (semantics & MemorySemanticsMask::UniformMemory)
+				if (semantics & static_cast<uint32_t>(MemorySemanticsMask::UniformMemory))
 					statement("subgroupMemoryBarrierBuffer();");
-				if (semantics & MemorySemanticsMask::ImageMemory)
+				if (semantics & static_cast<uint32_t>(MemorySemanticsMask::ImageMemory))
 					statement("subgroupMemoryBarrierImage();");
 			}
 		}
 		else
 		{
-			const uint32_t all_barriers =
+			const auto tmp =
 			    MemorySemanticsMask::WorkgroupMemory | MemorySemanticsMask::UniformMemory | MemorySemanticsMask::ImageMemory;
+			const uint32_t all_barriers = static_cast<uint32_t>(tmp);
 
-			if (semantics & (MemorySemanticsMask::CrossWorkgroupMemory | MemorySemanticsMask::SubgroupMemory))
+			if (static_cast<spv::MemorySemanticsMask>(semantics) & (MemorySemanticsMask::CrossWorkgroupMemory | MemorySemanticsMask::SubgroupMemory))
 			{
 				// These are not relevant for GLSL, but assume it means memoryBarrier().
 				// memoryBarrier() does everything, so no need to test anything else.
@@ -15065,11 +15068,11 @@ void CompilerGLSL::emit_instruction(const Instruction &instruction)
 			else
 			{
 				// Pick out individual barriers.
-				if (semantics & MemorySemanticsMask::WorkgroupMemory)
+				if (semantics & static_cast<uint32_t>(MemorySemanticsMask::WorkgroupMemory))
 					statement("memoryBarrierShared();");
-				if (semantics & MemorySemanticsMask::UniformMemory)
+				if (semantics & static_cast<uint32_t>(MemorySemanticsMask::UniformMemory))
 					statement("memoryBarrierBuffer();");
-				if (semantics & MemorySemanticsMask::ImageMemory)
+				if (semantics & static_cast<uint32_t>(MemorySemanticsMask::ImageMemory))
 					statement("memoryBarrierImage();");
 			}
 		}
