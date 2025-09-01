@@ -19999,7 +19999,7 @@ bool CompilerGLSL::is_stage_output_location_masked(uint32_t location, uint32_t c
 
 bool CompilerGLSL::is_stage_output_builtin_masked(spv::BuiltIn builtin) const
 {
-	return masked_output_builtins.count(builtin) != 0;
+	return masked_output_builtins.count(static_cast<uint32_t>(builtin)) != 0;
 }
 
 uint32_t CompilerGLSL::get_declared_member_location(const SPIRVariable &var, uint32_t mbr_idx, bool strip_array) const
@@ -20046,7 +20046,7 @@ StorageClass CompilerGLSL::get_expression_effective_storage_class(uint32_t ptr)
 	if (var && !forced_temporary)
 	{
 		if (variable_decl_is_remapped_storage(*var, StorageClass::Workgroup))
-			return StorageClassWorkgroup;
+			return StorageClass::Workgroup;
 		if (variable_decl_is_remapped_storage(*var, StorageClass::StorageBuffer))
 			return StorageClass::StorageBuffer;
 
@@ -20159,11 +20159,11 @@ uint32_t CompilerGLSL::get_fp_fast_math_flags_for_op(uint32_t result_type, uint3
 	}
 
 	if (szinp)
-		fp_flags &= ~(FPFastMathModeMask::NSZM | FPFastMathModeMask::NotInf | FPFastMathModeMask::NotNaN);
+		fp_flags &= ~(FPFastMathModeMask::NSZ | FPFastMathModeMask::NotInf | FPFastMathModeMask::NotNaN);
 
 	// Legacy NoContraction deals with any kind of transform to the expression.
 	if (id != 0 && has_decoration(id, Decoration::NoContraction))
-		fp_flags &= ~(FPFastMathModeMask::AllowContract | FPFastMathModeMask::AllowTransform | FPFastMathModeMask::AllowReassoc);
+		fp_flags &= ~(static_cast<uint32_t>(FPFastMathModeMask::AllowContract | FPFastMathModeMask::AllowTransform | FPFastMathModeMask::AllowReassoc));
 
 	// Handle float_controls2 execution modes.
 	bool found_default = false;
@@ -20189,8 +20189,8 @@ uint32_t CompilerGLSL::get_fp_fast_math_flags_for_op(uint32_t result_type, uint3
 
 bool CompilerGLSL::has_legacy_nocontract(uint32_t result_type, uint32_t id) const
 {
-	const auto fp_flags = FPFastMathModeMask::AllowContract |
+	const auto fp_flags = static_cast<uint32_t>(FPFastMathModeMask::AllowContract |
 	                      FPFastMathModeMask::AllowTransform |
-	                      FPFastMathModeMask::AllowReassoc;
+	                      FPFastMathModeMask::AllowReassoc);
 	return (get_fp_fast_math_flags_for_op(result_type, id) & fp_flags) != fp_flags;
 }
