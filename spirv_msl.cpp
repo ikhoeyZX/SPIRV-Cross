@@ -538,7 +538,7 @@ void CompilerMSL::build_implicit_builtins()
 				uint32_t var_id = offset + 2;
 
 				// Create gl_FragCoord.
-				SPIRType vec4_type { OpTypeVector };
+				SPIRType vec4_type { Op::OpTypeVector };
 				vec4_type.basetype = SPIRType::Float;
 				vec4_type.width = 32;
 				vec4_type.vecsize = 4;
@@ -887,7 +887,7 @@ void CompilerMSL::build_implicit_builtins()
 			uint32_t var_id = offset + 2;
 
 			// Create gl_HelperInvocation.
-			SPIRType bool_type { OpTypeBool };
+			SPIRType bool_type { Op::OpTypeBool };
 			bool_type.basetype = SPIRType::Boolean;
 			bool_type.width = 8;
 			bool_type.vecsize = 1;
@@ -991,7 +991,7 @@ void CompilerMSL::build_implicit_builtins()
 			uint32_t var_id = offset + 2;
 
 			// Create gl_FragDepth
-			SPIRType float_type { OpTypeFloat };
+			SPIRType float_type { Op::OpTypeFloat };
 			float_type.basetype = SPIRType::Float;
 			float_type.width = 32;
 			float_type.vecsize = 1;
@@ -1021,7 +1021,7 @@ void CompilerMSL::build_implicit_builtins()
 			uint32_t var_id = offset + 2;
 
 			// Create gl_PointSize
-			SPIRType float_type { OpTypeFloat };
+			SPIRType float_type { Op::OpTypeFloat };
 			float_type.basetype = SPIRType::Float;
 			float_type.width = 32;
 			float_type.vecsize = 1;
@@ -1140,7 +1140,7 @@ void CompilerMSL::build_implicit_builtins()
 		uint32_t var_id = offset + 2;
 
 		// Create gl_Position.
-		SPIRType vec4_type { OpTypeVector };
+		SPIRType vec4_type { Op::OpTypeVector };
 		vec4_type.basetype = SPIRType::Float;
 		vec4_type.width = 32;
 		vec4_type.vecsize = 4;
@@ -1173,11 +1173,11 @@ void CompilerMSL::build_implicit_builtins()
 		uint_type_ptr.pointer = true;
 		uint_type_ptr.pointer_depth++;
 		uint_type_ptr.parent_type = type_id;
-		uint_type_ptr.storage = StorageClassWorkgroup;
+		uint_type_ptr.storage = StorageClass::Workgroup;
 
 		auto &ptr_type = set<SPIRType>(type_ptr_id, uint_type_ptr);
 		ptr_type.self = type_id;
-		set<SPIRVariable>(var_id, type_ptr_id, StorageClassWorkgroup);
+		set<SPIRVariable>(var_id, type_ptr_id, StorageClass::Workgroup);
 		set_name(var_id, "spvMeshSizes");
 		builtin_mesh_sizes_id = var_id;
 	}
@@ -1189,7 +1189,7 @@ void CompilerMSL::build_implicit_builtins()
 		uint32_t type_ptr_id = offset + 1;
 		uint32_t var_id = offset + 2;
 
-		SPIRType mesh_grid_type { OpTypeStruct };
+		SPIRType mesh_grid_type { Op::OpTypeStruct };
 		mesh_grid_type.basetype = SPIRType::MeshGridProperties;
 		set<SPIRType>(type_id, mesh_grid_type);
 
@@ -1948,7 +1948,7 @@ void CompilerMSL::localize_global_variables()
 	{
 		uint32_t v_id = *iter;
 		auto &var = get<SPIRVariable>(v_id);
-		if (var.storage == StorageClassPrivate || var.storage == StorageClassWorkgroup ||
+		if (var.storage == StorageClassPrivate || var.storage == StorageClass::Workgroup ||
 		    var.storage == StorageClassTaskPayloadWorkgroupEXT)
 		{
 			if (!variable_is_lut(var))
@@ -1998,7 +1998,7 @@ void CompilerMSL::extract_global_variables_from_functions()
 
 		if (var.storage == StorageClass::Input || var.storage == StorageClass::Output ||
 		    var.storage == StorageClass::Uniform || var.storage == StorageClass::UniformConstant ||
-		    var.storage == StorageClassPushConstant || var.storage == StorageClassStorageBuffer)
+		    var.storage == StorageClassPushConstant || var.storage == StorageClass::StorageBuffer)
 		{
 			global_var_ids.insert(var.self);
 		}
@@ -2045,11 +2045,11 @@ void CompilerMSL::extract_global_variables_from_function(uint32_t func_id, std::
 
 			switch (op)
 			{
-			case OpLoad:
-			case OpInBoundsAccessChain:
-			case OpAccessChain:
-			case OpPtrAccessChain:
-			case OpArrayLength:
+			case Op::OpLoad:
+			case Op::OpInBoundsAccessChain:
+			case Op::OpAccessChain:
+			case Op::OpPtrAccessChain:
+			case Op::OpArrayLength:
 			{
 				uint32_t base_id = ops[2];
 				if (global_var_ids.find(base_id) != global_var_ids.end())
@@ -2080,7 +2080,7 @@ void CompilerMSL::extract_global_variables_from_function(uint32_t func_id, std::
 				break;
 			}
 
-			case OpFunctionCall:
+			case Op::OpFunctionCall:
 			{
 				// First see if any of the function call args are globals
 				for (uint32_t arg_idx = 3; arg_idx < i.length; arg_idx++)
@@ -2099,7 +2099,7 @@ void CompilerMSL::extract_global_variables_from_function(uint32_t func_id, std::
 				break;
 			}
 
-			case OpStore:
+			case Op::OpStore:
 			{
 				uint32_t base_id = ops[0];
 				if (global_var_ids.find(base_id) != global_var_ids.end())
@@ -2120,7 +2120,7 @@ void CompilerMSL::extract_global_variables_from_function(uint32_t func_id, std::
 				break;
 			}
 
-			case OpSelect:
+			case Op::OpSelect:
 			{
 				uint32_t base_id = ops[3];
 				if (global_var_ids.find(base_id) != global_var_ids.end())
@@ -2131,22 +2131,22 @@ void CompilerMSL::extract_global_variables_from_function(uint32_t func_id, std::
 				break;
 			}
 
-			case OpAtomicExchange:
-			case OpAtomicCompareExchange:
-			case OpAtomicStore:
-			case OpAtomicIIncrement:
-			case OpAtomicIDecrement:
-			case OpAtomicIAdd:
-			case OpAtomicFAddEXT:
-			case OpAtomicISub:
-			case OpAtomicSMin:
-			case OpAtomicUMin:
-			case OpAtomicSMax:
-			case OpAtomicUMax:
-			case OpAtomicAnd:
-			case OpAtomicOr:
-			case OpAtomicXor:
-			case OpImageWrite:
+			case Op::OpAtomicExchange:
+			case Op::OpAtomicCompareExchange:
+			case Op::OpAtomicStore:
+			case Op::OpAtomicIIncrement:
+			case Op::OpAtomicIDecrement:
+			case Op::OpAtomicIAdd:
+			case Op::OpAtomicFAddEXT:
+			case Op::OpAtomicISub:
+			case Op::OpAtomicSMin:
+			case Op::OpAtomicUMin:
+			case Op::OpAtomicSMax:
+			case Op::OpAtomicUMax:
+			case Op::OpAtomicAnd:
+			case Op::OpAtomicOr:
+			case Op::OpAtomicXor:
+			case Op::OpImageWrite:
 			{
 				if (needs_frag_discard_checks())
 					added_arg_ids.insert(builtin_helper_invocation_id);
@@ -2161,7 +2161,7 @@ void CompilerMSL::extract_global_variables_from_function(uint32_t func_id, std::
 			}
 
 			// Emulate texture2D atomic operations
-			case OpImageTexelPointer:
+			case Op::OpImageTexelPointer:
 			{
 				// When using the pointer, we need to know which variable it is actually loaded from.
 				uint32_t base_id = ops[2];
@@ -2181,7 +2181,7 @@ void CompilerMSL::extract_global_variables_from_function(uint32_t func_id, std::
 				break;
 			}
 
-			case OpExtInst:
+			case Op::OpExtInst:
 			{
 				uint32_t extension_set = ops[2];
 				if (get<SPIRExtension>(extension_set).ext == SPIRExtension::GLSL)
@@ -2217,20 +2217,20 @@ void CompilerMSL::extract_global_variables_from_function(uint32_t func_id, std::
 				break;
 			}
 
-			case OpGroupNonUniformInverseBallot:
+			case Op::OpGroupNonUniformInverseBallot:
 			{
 				added_arg_ids.insert(builtin_subgroup_invocation_id_id);
 				break;
 			}
 
-			case OpGroupNonUniformBallotFindLSB:
-			case OpGroupNonUniformBallotFindMSB:
+			case Op::OpGroupNonUniformBallotFindLSB:
+			case Op::OpGroupNonUniformBallotFindMSB:
 			{
 				added_arg_ids.insert(builtin_subgroup_size_id);
 				break;
 			}
 
-			case OpGroupNonUniformBallotBitCount:
+			case Op::OpGroupNonUniformBallotBitCount:
 			{
 				auto operation = static_cast<GroupOperation>(ops[3]);
 				switch (operation)
@@ -2248,7 +2248,7 @@ void CompilerMSL::extract_global_variables_from_function(uint32_t func_id, std::
 				break;
 			}
 
-			case OpGroupNonUniformRotateKHR:
+			case Op::OpGroupNonUniformRotateKHR:
 			{
 				// Add the correct invocation ID for calculating clustered rotate case.
 				if (i.length > 5)
@@ -2257,42 +2257,42 @@ void CompilerMSL::extract_global_variables_from_function(uint32_t func_id, std::
 				break;
 			}
 
-			case OpGroupNonUniformFAdd:
-			case OpGroupNonUniformFMul:
-			case OpGroupNonUniformFMin:
-			case OpGroupNonUniformFMax:
-			case OpGroupNonUniformIAdd:
-			case OpGroupNonUniformIMul:
-			case OpGroupNonUniformSMin:
-			case OpGroupNonUniformSMax:
-			case OpGroupNonUniformUMin:
-			case OpGroupNonUniformUMax:
-			case OpGroupNonUniformBitwiseAnd:
-			case OpGroupNonUniformBitwiseOr:
-			case OpGroupNonUniformBitwiseXor:
-			case OpGroupNonUniformLogicalAnd:
-			case OpGroupNonUniformLogicalOr:
-			case OpGroupNonUniformLogicalXor:
+			case Op::OpGroupNonUniformFAdd:
+			case Op::OpGroupNonUniformFMul:
+			case Op::OpGroupNonUniformFMin:
+			case Op::OpGroupNonUniformFMax:
+			case Op::OpGroupNonUniformIAdd:
+			case Op::OpGroupNonUniformIMul:
+			case Op::OpGroupNonUniformSMin:
+			case Op::OpGroupNonUniformSMax:
+			case Op::OpGroupNonUniformUMin:
+			case Op::OpGroupNonUniformUMax:
+			case Op::OpGroupNonUniformBitwiseAnd:
+			case Op::OpGroupNonUniformBitwiseOr:
+			case Op::OpGroupNonUniformBitwiseXor:
+			case Op::OpGroupNonUniformLogicalAnd:
+			case Op::OpGroupNonUniformLogicalOr:
+			case Op::OpGroupNonUniformLogicalXor:
 				if ((get_execution_model() != ExecutionModel::Fragment || msl_options.supports_msl_version(2, 2)) &&
 				    ops[3] == GroupOperationClusteredReduce)
 					added_arg_ids.insert(builtin_subgroup_invocation_id_id);
 				break;
 
-			case OpDemoteToHelperInvocation:
+			case Op::OpDemoteToHelperInvocation:
 				if (needs_manual_helper_invocation_updates() && needs_helper_invocation)
 					added_arg_ids.insert(builtin_helper_invocation_id);
 				break;
 
-			case OpIsHelperInvocationEXT:
+			case Op::OpIsHelperInvocationEXT:
 				if (needs_manual_helper_invocation_updates())
 					added_arg_ids.insert(builtin_helper_invocation_id);
 				break;
 
-			case OpRayQueryInitializeKHR:
-			case OpRayQueryProceedKHR:
-			case OpRayQueryTerminateKHR:
-			case OpRayQueryGenerateIntersectionKHR:
-			case OpRayQueryConfirmIntersectionKHR:
+			case Op::OpRayQueryInitializeKHR:
+			case Op::OpRayQueryProceedKHR:
+			case Op::OpRayQueryTerminateKHR:
+			case Op::OpRayQueryGenerateIntersectionKHR:
+			case Op::OpRayQueryConfirmIntersectionKHR:
 			{
 				// Ray query accesses memory directly, need check pass down object if using Private storage class.
 				uint32_t base_id = ops[0];
@@ -2301,24 +2301,24 @@ void CompilerMSL::extract_global_variables_from_function(uint32_t func_id, std::
 				break;
 			}
 
-			case OpRayQueryGetRayTMinKHR:
-			case OpRayQueryGetRayFlagsKHR:
-			case OpRayQueryGetWorldRayOriginKHR:
-			case OpRayQueryGetWorldRayDirectionKHR:
-			case OpRayQueryGetIntersectionCandidateAABBOpaqueKHR:
-			case OpRayQueryGetIntersectionTypeKHR:
-			case OpRayQueryGetIntersectionTKHR:
-			case OpRayQueryGetIntersectionInstanceCustomIndexKHR:
-			case OpRayQueryGetIntersectionInstanceIdKHR:
-			case OpRayQueryGetIntersectionInstanceShaderBindingTableRecordOffsetKHR:
-			case OpRayQueryGetIntersectionGeometryIndexKHR:
-			case OpRayQueryGetIntersectionPrimitiveIndexKHR:
-			case OpRayQueryGetIntersectionBarycentricsKHR:
-			case OpRayQueryGetIntersectionFrontFaceKHR:
-			case OpRayQueryGetIntersectionObjectRayDirectionKHR:
-			case OpRayQueryGetIntersectionObjectRayOriginKHR:
-			case OpRayQueryGetIntersectionObjectToWorldKHR:
-			case OpRayQueryGetIntersectionWorldToObjectKHR:
+			case Op::OpRayQueryGetRayTMinKHR:
+			case Op::OpRayQueryGetRayFlagsKHR:
+			case Op::OpRayQueryGetWorldRayOriginKHR:
+			case Op::OpRayQueryGetWorldRayDirectionKHR:
+			case Op::OpRayQueryGetIntersectionCandidateAABBOpaqueKHR:
+			case Op::OpRayQueryGetIntersectionTypeKHR:
+			case Op::OpRayQueryGetIntersectionTKHR:
+			case Op::OpRayQueryGetIntersectionInstanceCustomIndexKHR:
+			case Op::OpRayQueryGetIntersectionInstanceIdKHR:
+			case Op::OpRayQueryGetIntersectionInstanceShaderBindingTableRecordOffsetKHR:
+			case Op::OpRayQueryGetIntersectionGeometryIndexKHR:
+			case Op::OpRayQueryGetIntersectionPrimitiveIndexKHR:
+			case Op::OpRayQueryGetIntersectionBarycentricsKHR:
+			case Op::OpRayQueryGetIntersectionFrontFaceKHR:
+			case Op::OpRayQueryGetIntersectionObjectRayDirectionKHR:
+			case Op::OpRayQueryGetIntersectionObjectRayOriginKHR:
+			case Op::OpRayQueryGetIntersectionObjectToWorldKHR:
+			case Op::OpRayQueryGetIntersectionWorldToObjectKHR:
 			{
 				// Ray query accesses memory directly, need check pass down object if using Private storage class.
 				uint32_t base_id = ops[2];
@@ -2327,7 +2327,7 @@ void CompilerMSL::extract_global_variables_from_function(uint32_t func_id, std::
 				break;
 			}
 
-			case OpSetMeshOutputsEXT:
+			case Op::OpSetMeshOutputsEXT:
 			{
 				if (builtin_local_invocation_index_id != 0)
 					added_arg_ids.insert(builtin_local_invocation_index_id);
@@ -2445,7 +2445,7 @@ void CompilerMSL::extract_global_variables_from_function(uint32_t func_id, std::
 				uint32_t next_id = ir.increase_bound_by(1);
 				func.add_parameter(type_id, next_id, true);
 				auto &v = set<SPIRVariable>(next_id, type_id, StorageClassFunction, 0, arg_id);
-				v.storage = StorageClassWorkgroup;
+				v.storage = StorageClass::Workgroup;
 
 				// Ensure the existing variable has a valid name and the new variable has all the same meta info
 				if (ir.meta[arg_id].decoration.builtin)
@@ -2515,12 +2515,12 @@ void CompilerMSL::mark_packable_structs()
 			auto &type = this->get<SPIRType>(var.basetype);
 			if (type.pointer &&
 			    (type.storage == StorageClass::Uniform || type.storage == StorageClass::UniformConstant ||
-			     type.storage == StorageClassPushConstant || type.storage == StorageClassStorageBuffer) &&
+			     type.storage == StorageClassPushConstant || type.storage == StorageClass::StorageBuffer) &&
 			    (has_decoration(type.self, Decoration::Block) || has_decoration(type.self, DecorationBufferBlock)))
 				mark_as_packable(type);
 		}
 
-		if (var.storage == StorageClassWorkgroup)
+		if (var.storage == StorageClass::Workgroup)
 		{
 			auto *type = &this->get<SPIRType>(var.basetype);
 			if (type->basetype == SPIRType::Struct)
@@ -3796,7 +3796,7 @@ string CompilerMSL::to_tesc_invocation_id()
 void CompilerMSL::emit_local_masked_variable(const SPIRVariable &masked_var, bool strip_array)
 {
 	auto &entry_func = get<SPIRFunction>(ir.default_entry_point);
-	bool threadgroup_storage = variable_decl_is_remapped_storage(masked_var, StorageClassWorkgroup);
+	bool threadgroup_storage = variable_decl_is_remapped_storage(masked_var, StorageClass::Workgroup);
 
 	if (threadgroup_storage && msl_options.multi_patch_workgroup)
 	{
@@ -4778,9 +4778,9 @@ uint32_t CompilerMSL::add_interface_block_pointer(uint32_t ib_var_id, StorageCla
 		ib_ptr_type.storage = storage == StorageClass::Input ?
 		                          ((is_tesc_shader() && msl_options.multi_patch_workgroup) ||
 		                                   (is_tese_shader() && msl_options.raw_buffer_tese_input) ?
-		                               StorageClassStorageBuffer :
-		                               StorageClassWorkgroup) :
-		                          StorageClassStorageBuffer;
+		                               StorageClass::StorageBuffer :
+		                               StorageClass::Workgroup) :
+		                          StorageClass::StorageBuffer;
 		ir.meta[ib_ptr_type_id] = ir.meta[ib_type.self];
 		// To ensure that get_variable_data_type() doesn't strip off the pointer,
 		// which we need, use another pointer.
@@ -8311,7 +8311,7 @@ void CompilerMSL::emit_specialization_constants_and_structs()
 	if (workgroup_size_id == 0 && is_mesh_shader())
 	{
 		auto &execution = get_entry_point();
-		statement("constant uint3 ", builtin_to_glsl(BuiltInWorkgroupSize, StorageClassWorkgroup),
+		statement("constant uint3 ", builtin_to_glsl(BuiltInWorkgroupSize, StorageClass::Workgroup),
 		          " [[maybe_unused]] = ", "uint3(", execution.workgroup_size.x, ", ", execution.workgroup_size.y, ", ",
 		          execution.workgroup_size.z, ");");
 		statement("");
@@ -8387,7 +8387,7 @@ void CompilerMSL::emit_specialization_constants_and_structs()
 				// TODO: This can be expressed as a [[threads_per_threadgroup]] input semantic, but we need to know
 				// the work group size at compile time in SPIR-V, and [[threads_per_threadgroup]] would need to be passed around as a global.
 				// The work group size may be a specialization constant.
-				statement("constant uint3 ", builtin_to_glsl(BuiltInWorkgroupSize, StorageClassWorkgroup),
+				statement("constant uint3 ", builtin_to_glsl(BuiltInWorkgroupSize, StorageClass::Workgroup),
 				          " [[maybe_unused]] = ", constant_expression(get<SPIRConstant>(workgroup_size_id)), ";");
 				emitted = true;
 			}
@@ -9241,9 +9241,9 @@ bool CompilerMSL::prepare_access_chain_for_scalar_access(std::string &expr, cons
 	// For packed types, we could technically omit this if we know the reference does not have to turn into a pointer
 	// of some kind, but that requires external analysis passes to figure out, and
 	// this case is likely rare enough that we don't need to bother.
-	if (storage == StorageClassStorageBuffer || storage == StorageClassWorkgroup)
+	if (storage == StorageClass::StorageBuffer || storage == StorageClass::Workgroup)
 	{
-		const char *addr_space = storage == StorageClassWorkgroup ? "threadgroup" : "device";
+		const char *addr_space = storage == StorageClass::Workgroup ? "threadgroup" : "device";
 		expr = join("((", addr_space, " ", type_to_glsl(type), "*)&", enclose_expression(expr), ")");
 
 		// Further indexing should happen with packed rules (array index, not swizzle).
@@ -9372,7 +9372,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 
 	switch (opcode)
 	{
-	case OpLoad:
+	case Op::OpLoad:
 	{
 		uint32_t id = ops[1];
 		uint32_t ptr = ops[2];
@@ -9392,21 +9392,21 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 	}
 
 	// Comparisons
-	case OpIEqual:
+	case Op::OpIEqual:
 		MSL_BOP_CAST(==, int_type);
 		break;
 
-	case OpLogicalEqual:
-	case OpFOrdEqual:
+	case Op::OpLogicalEqual:
+	case Op::OpFOrdEqual:
 		MSL_BOP(==);
 		break;
 
-	case OpINotEqual:
+	case Op::OpINotEqual:
 		MSL_BOP_CAST(!=, int_type);
 		break;
 
-	case OpLogicalNotEqual:
-	case OpFOrdNotEqual:
+	case Op::OpLogicalNotEqual:
+	case Op::OpFOrdNotEqual:
 		// TODO: Should probably negate the == result here.
 		// Typically OrdNotEqual comes from GLSL which itself does not really specify what
 		// happens with NaN.
@@ -9414,171 +9414,171 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		MSL_BOP(!=);
 		break;
 
-	case OpUGreaterThan:
+	case Op::OpUGreaterThan:
 		MSL_BOP_CAST(>, uint_type);
 		break;
 
-	case OpSGreaterThan:
+	case Op::OpSGreaterThan:
 		MSL_BOP_CAST(>, int_type);
 		break;
 
-	case OpFOrdGreaterThan:
+	case Op::OpFOrdGreaterThan:
 		MSL_BOP(>);
 		break;
 
-	case OpUGreaterThanEqual:
+	case Op::OpUGreaterThanEqual:
 		MSL_BOP_CAST(>=, uint_type);
 		break;
 
-	case OpSGreaterThanEqual:
+	case Op::OpSGreaterThanEqual:
 		MSL_BOP_CAST(>=, int_type);
 		break;
 
-	case OpFOrdGreaterThanEqual:
+	case Op::OpFOrdGreaterThanEqual:
 		MSL_BOP(>=);
 		break;
 
-	case OpULessThan:
+	case Op::OpULessThan:
 		MSL_BOP_CAST(<, uint_type);
 		break;
 
-	case OpSLessThan:
+	case Op::OpSLessThan:
 		MSL_BOP_CAST(<, int_type);
 		break;
 
-	case OpFOrdLessThan:
+	case Op::OpFOrdLessThan:
 		MSL_BOP(<);
 		break;
 
-	case OpULessThanEqual:
+	case Op::OpULessThanEqual:
 		MSL_BOP_CAST(<=, uint_type);
 		break;
 
-	case OpSLessThanEqual:
+	case Op::OpSLessThanEqual:
 		MSL_BOP_CAST(<=, int_type);
 		break;
 
-	case OpFOrdLessThanEqual:
+	case Op::OpFOrdLessThanEqual:
 		MSL_BOP(<=);
 		break;
 
-	case OpFUnordEqual:
+	case Op::OpFUnordEqual:
 		MSL_UNORD_BOP(==);
 		break;
 
-	case OpFUnordNotEqual:
+	case Op::OpFUnordNotEqual:
 		// not equal in MSL generates une opcodes to begin with.
 		// Since unordered not equal is how it works in C, just inherit that behavior.
 		MSL_BOP(!=);
 		break;
 
-	case OpFUnordGreaterThan:
+	case Op::OpFUnordGreaterThan:
 		MSL_UNORD_BOP(>);
 		break;
 
-	case OpFUnordGreaterThanEqual:
+	case Op::OpFUnordGreaterThanEqual:
 		MSL_UNORD_BOP(>=);
 		break;
 
-	case OpFUnordLessThan:
+	case Op::OpFUnordLessThan:
 		MSL_UNORD_BOP(<);
 		break;
 
-	case OpFUnordLessThanEqual:
+	case Op::OpFUnordLessThanEqual:
 		MSL_UNORD_BOP(<=);
 		break;
 
 	// Pointer math
-	case OpPtrEqual:
+	case Op::OpPtrEqual:
 		MSL_PTR_BOP(==);
 		break;
 
-	case OpPtrNotEqual:
+	case Op::OpPtrNotEqual:
 		MSL_PTR_BOP(!=);
 		break;
 
-	case OpPtrDiff:
+	case Op::OpPtrDiff:
 		MSL_PTR_BOP(-);
 		break;
 
 	// Derivatives
-	case OpDPdx:
-	case OpDPdxFine:
-	case OpDPdxCoarse:
+	case Op::OpDPdx:
+	case Op::OpDPdxFine:
+	case Op::OpDPdxCoarse:
 		MSL_UFOP(dfdx);
 		register_control_dependent_expression(ops[1]);
 		break;
 
-	case OpDPdy:
-	case OpDPdyFine:
-	case OpDPdyCoarse:
+	case Op::OpDPdy:
+	case Op::OpDPdyFine:
+	case Op::OpDPdyCoarse:
 		MSL_UFOP(dfdy);
 		register_control_dependent_expression(ops[1]);
 		break;
 
-	case OpFwidth:
-	case OpFwidthCoarse:
-	case OpFwidthFine:
+	case Op::OpFwidth:
+	case Op::OpFwidthCoarse:
+	case Op::OpFwidthFine:
 		MSL_UFOP(fwidth);
 		register_control_dependent_expression(ops[1]);
 		break;
 
 	// Bitfield
-	case OpBitFieldInsert:
+	case Op::OpBitFieldInsert:
 	{
 		emit_bitfield_insert_op(ops[0], ops[1], ops[2], ops[3], ops[4], ops[5], "insert_bits", SPIRType::UInt);
 		break;
 	}
 
-	case OpBitFieldSExtract:
+	case Op::OpBitFieldSExtract:
 	{
 		emit_trinary_func_op_bitextract(ops[0], ops[1], ops[2], ops[3], ops[4], "extract_bits", int_type, int_type,
 		                                SPIRType::UInt, SPIRType::UInt);
 		break;
 	}
 
-	case OpBitFieldUExtract:
+	case Op::OpBitFieldUExtract:
 	{
 		emit_trinary_func_op_bitextract(ops[0], ops[1], ops[2], ops[3], ops[4], "extract_bits", uint_type, uint_type,
 		                                SPIRType::UInt, SPIRType::UInt);
 		break;
 	}
 
-	case OpBitReverse:
+	case Op::OpBitReverse:
 		// BitReverse does not have issues with sign since result type must match input type.
 		MSL_UFOP(reverse_bits);
 		break;
 
-	case OpBitCount:
+	case Op::OpBitCount:
 	{
 		auto basetype = expression_type(ops[2]).basetype;
 		emit_unary_func_op_cast(ops[0], ops[1], ops[2], "popcount", basetype, basetype);
 		break;
 	}
 
-	case OpSMod:
+	case Op::OpSMod:
 		MSL_BFOP(spvSMod);
 		break;
 
-	case OpFRem:
+	case Op::OpFRem:
 		MSL_BFOP(fmod);
 		break;
 
-	case OpFMul:
+	case Op::OpFMul:
 		if (msl_options.invariant_float_math || has_legacy_nocontract(ops[0], ops[1]))
 			MSL_BFOP(spvFMul);
 		else
 			MSL_BOP(*);
 		break;
 
-	case OpFAdd:
+	case Op::OpFAdd:
 		if (msl_options.invariant_float_math || has_legacy_nocontract(ops[0], ops[1]))
 			MSL_BFOP(spvFAdd);
 		else
 			MSL_BOP(+);
 		break;
 
-	case OpFSub:
+	case Op::OpFSub:
 		if (msl_options.invariant_float_math || has_legacy_nocontract(ops[0], ops[1]))
 			MSL_BFOP(spvFSub);
 		else
@@ -9586,7 +9586,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		break;
 
 	// Atomics
-	case OpAtomicExchange:
+	case Op::OpAtomicExchange:
 	{
 		uint32_t result_type = ops[0];
 		uint32_t id = ops[1];
@@ -9597,7 +9597,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpAtomicCompareExchange:
+	case Op::OpAtomicCompareExchange:
 	{
 		uint32_t result_type = ops[0];
 		uint32_t id = ops[1];
@@ -9612,10 +9612,10 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpAtomicCompareExchangeWeak:
+	case Op::OpAtomicCompareExchangeWeak:
 		SPIRV_CROSS_THROW("OpAtomicCompareExchangeWeak is only supported in kernel profile.");
 
-	case OpAtomicLoad:
+	case Op::OpAtomicLoad:
 	{
 		uint32_t result_type = ops[0];
 		uint32_t id = ops[1];
@@ -9626,7 +9626,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpAtomicStore:
+	case Op::OpAtomicStore:
 	{
 		uint32_t result_type = expression_type(ops[0]).self;
 		uint32_t id = ops[0];
@@ -9654,49 +9654,49 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 #define MSL_AFMO(op) MSL_AFMO_IMPL(op, ops[5], false)
 #define MSL_AFMIO(op) MSL_AFMO_IMPL(op, 1, true)
 
-	case OpAtomicIIncrement:
+	case Op::OpAtomicIIncrement:
 		MSL_AFMIO(add);
 		break;
 
-	case OpAtomicIDecrement:
+	case Op::OpAtomicIDecrement:
 		MSL_AFMIO(sub);
 		break;
 
-	case OpAtomicIAdd:
-	case OpAtomicFAddEXT:
+	case Op::OpAtomicIAdd:
+	case Op::OpAtomicFAddEXT:
 		MSL_AFMO(add);
 		break;
 
-	case OpAtomicISub:
+	case Op::OpAtomicISub:
 		MSL_AFMO(sub);
 		break;
 
-	case OpAtomicSMin:
-	case OpAtomicUMin:
+	case Op::OpAtomicSMin:
+	case Op::OpAtomicUMin:
 		MSL_AFMO(min);
 		break;
 
-	case OpAtomicSMax:
-	case OpAtomicUMax:
+	case Op::OpAtomicSMax:
+	case Op::OpAtomicUMax:
 		MSL_AFMO(max);
 		break;
 
-	case OpAtomicAnd:
+	case Op::OpAtomicAnd:
 		MSL_AFMO(and);
 		break;
 
-	case OpAtomicOr:
+	case Op::OpAtomicOr:
 		MSL_AFMO(or);
 		break;
 
-	case OpAtomicXor:
+	case Op::OpAtomicXor:
 		MSL_AFMO(xor);
 		break;
 
 	// Images
 
 	// Reads == Fetches in Metal
-	case OpImageRead:
+	case Op::OpImageRead:
 	{
 		// Mark that this shader reads from this image
 		uint32_t img_id = ops[2];
@@ -9725,7 +9725,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 	}
 
 	// Emulate texture2D atomic operations
-	case OpImageTexelPointer:
+	case Op::OpImageTexelPointer:
 	{
 		// When using the pointer, we need to know which variable it is actually loaded from.
 		auto *var = maybe_get_backing_variable(ops[2]);
@@ -9765,7 +9765,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpImageWrite:
+	case Op::OpImageWrite:
 	{
 		uint32_t img_id = ops[0];
 		uint32_t coord_id = ops[1];
@@ -9835,8 +9835,8 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpImageQuerySize:
-	case OpImageQuerySizeLod:
+	case Op::OpImageQuerySize:
+	case Op::OpImageQuerySizeLod:
 	{
 		uint32_t rslt_type_id = ops[0];
 		auto &rslt_type = get<SPIRType>(rslt_type_id);
@@ -9884,7 +9884,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpImageQueryLod:
+	case Op::OpImageQueryLod:
 	{
 		if (!msl_options.supports_msl_version(2, 2))
 			SPIRV_CROSS_THROW("ImageQueryLod is only supported on MSL 2.2 and up.");
@@ -9944,15 +9944,15 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		emit_op(rslt_type_id, id, expr, should_forward(img_id));                            \
 	} while (false)
 
-	case OpImageQueryLevels:
+	case Op::OpImageQueryLevels:
 		MSL_ImgQry(mip_levels);
 		break;
 
-	case OpImageQuerySamples:
+	case Op::OpImageQuerySamples:
 		MSL_ImgQry(samples);
 		break;
 
-	case OpImage:
+	case Op::OpImage:
 	{
 		uint32_t result_type = ops[0];
 		uint32_t id = ops[1];
@@ -9980,7 +9980,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 	}
 
 	// Casting
-	case OpQuantizeToF16:
+	case Op::OpQuantizeToF16:
 	{
 		uint32_t result_type = ops[0];
 		uint32_t id = ops[1];
@@ -9990,9 +9990,9 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpInBoundsAccessChain:
-	case OpAccessChain:
-	case OpPtrAccessChain:
+	case Op::OpInBoundsAccessChain:
+	case Op::OpAccessChain:
+	case Op::OpPtrAccessChain:
 		if (is_tessellation_shader())
 		{
 			if (!emit_tessellation_access_chain(ops, instruction.length))
@@ -10003,7 +10003,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		fix_up_interpolant_access_chain(ops, instruction.length);
 		break;
 
-	case OpStore:
+	case Op::OpStore:
 	{
 		const auto &type = expression_type(ops[0]);
 
@@ -10011,7 +10011,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 			break;
 
 		if (needs_frag_discard_checks() &&
-		    (type.storage == StorageClassStorageBuffer || type.storage == StorageClass::Uniform))
+		    (type.storage == StorageClass::StorageBuffer || type.storage == StorageClass::Uniform))
 		{
 			// If we're in a continue block, this kludge will make the block too complex
 			// to emit normally.
@@ -10028,7 +10028,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		if (!maybe_emit_array_assignment(ops[0], ops[1]))
 			CompilerGLSL::emit_instruction(instruction);
 		if (needs_frag_discard_checks() &&
-		    (type.storage == StorageClassStorageBuffer || type.storage == StorageClass::Uniform))
+		    (type.storage == StorageClass::StorageBuffer || type.storage == StorageClass::Uniform))
 			end_scope();
 		if (has_decoration(ops[0], Decoration::BuiltIn) && get_decoration(ops[0], Decoration::BuiltIn) == BuiltIn::PointSize)
 			writes_to_point_size = true;
@@ -10037,11 +10037,11 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 	}
 
 	// Compute barriers
-	case OpMemoryBarrier:
+	case Op::OpMemoryBarrier:
 		emit_barrier(0, ops[0], ops[1]);
 		break;
 
-	case OpControlBarrier:
+	case Op::OpControlBarrier:
 		// In GLSL a memory barrier is often followed by a control barrier.
 		// But in MSL, memory barriers are also control barriers (before MSL 3.2), so don't
 		// emit a simple control barrier if a memory barrier has just been emitted.
@@ -10049,7 +10049,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 			emit_barrier(ops[0], ops[1], ops[2]);
 		break;
 
-	case OpOuterProduct:
+	case Op::OpOuterProduct:
 	{
 		uint32_t result_type = ops[0];
 		uint32_t id = ops[1];
@@ -10074,8 +10074,8 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpVectorTimesMatrix:
-	case OpMatrixTimesVector:
+	case Op::OpVectorTimesMatrix:
+	case Op::OpMatrixTimesVector:
 	{
 		if (!msl_options.invariant_float_math && !has_legacy_nocontract(ops[0], ops[1]))
 		{
@@ -10117,7 +10117,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpMatrixTimesMatrix:
+	case Op::OpMatrixTimesMatrix:
 	{
 		if (!msl_options.invariant_float_math && !has_legacy_nocontract(ops[0], ops[1]))
 		{
@@ -10153,8 +10153,8 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpIAddCarry:
-	case OpISubBorrow:
+	case Op::OpIAddCarry:
+	case Op::OpISubBorrow:
 	{
 		uint32_t result_type = ops[0];
 		uint32_t result_id = ops[1];
@@ -10183,8 +10183,8 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpUMulExtended:
-	case OpSMulExtended:
+	case Op::OpUMulExtended:
+	case Op::OpSMulExtended:
 	{
 		uint32_t result_type = ops[0];
 		uint32_t result_id = ops[1];
@@ -10201,7 +10201,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpArrayLength:
+	case Op::OpArrayLength:
 	{
 		auto &type = expression_type(ops[2]);
 		uint32_t offset = type_struct_member_offset(type, ops[3]);
@@ -10213,50 +10213,50 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 	}
 
 	// Legacy sub-group stuff ...
-	case OpSubgroupBallotKHR:
-	case OpSubgroupFirstInvocationKHR:
-	case OpSubgroupReadInvocationKHR:
-	case OpSubgroupAllKHR:
-	case OpSubgroupAnyKHR:
-	case OpSubgroupAllEqualKHR:
+	case Op::OpSubgroupBallotKHR:
+	case Op::OpSubgroupFirstInvocationKHR:
+	case Op::OpSubgroupReadInvocationKHR:
+	case Op::OpSubgroupAllKHR:
+	case Op::OpSubgroupAnyKHR:
+	case Op::OpSubgroupAllEqualKHR:
 		emit_subgroup_op(instruction);
 		break;
 
 	// SPV_INTEL_shader_integer_functions2
-	case OpUCountLeadingZerosINTEL:
+	case Op::OpUCountLeadingZerosINTEL:
 		MSL_UFOP(clz);
 		break;
 
-	case OpUCountTrailingZerosINTEL:
+	case Op::OpUCountTrailingZerosINTEL:
 		MSL_UFOP(ctz);
 		break;
 
-	case OpAbsISubINTEL:
-	case OpAbsUSubINTEL:
+	case Op::OpAbsISubINTEL:
+	case Op::OpAbsUSubINTEL:
 		MSL_BFOP(absdiff);
 		break;
 
-	case OpIAddSatINTEL:
-	case OpUAddSatINTEL:
+	case Op::OpIAddSatINTEL:
+	case Op::OpUAddSatINTEL:
 		MSL_BFOP(addsat);
 		break;
 
-	case OpIAverageINTEL:
-	case OpUAverageINTEL:
+	case Op::OpIAverageINTEL:
+	case Op::OpUAverageINTEL:
 		MSL_BFOP(hadd);
 		break;
 
-	case OpIAverageRoundedINTEL:
-	case OpUAverageRoundedINTEL:
+	case Op::OpIAverageRoundedINTEL:
+	case Op::OpUAverageRoundedINTEL:
 		MSL_BFOP(rhadd);
 		break;
 
-	case OpISubSatINTEL:
-	case OpUSubSatINTEL:
+	case Op::OpISubSatINTEL:
+	case Op::OpUSubSatINTEL:
 		MSL_BFOP(subsat);
 		break;
 
-	case OpIMul32x16INTEL:
+	case Op::OpIMul32x16INTEL:
 	{
 		uint32_t result_type = ops[0];
 		uint32_t id = ops[1];
@@ -10268,7 +10268,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpUMul32x16INTEL:
+	case Op::OpUMul32x16INTEL:
 	{
 		uint32_t result_type = ops[0];
 		uint32_t id = ops[1];
@@ -10281,13 +10281,13 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 	}
 
 	// SPV_EXT_demote_to_helper_invocation
-	case OpDemoteToHelperInvocationEXT:
+	case Op::OpDemoteToHelperInvocationEXT:
 		if (!msl_options.supports_msl_version(2, 3))
 			SPIRV_CROSS_THROW("discard_fragment() does not formally have demote semantics until MSL 2.3.");
 		CompilerGLSL::emit_instruction(instruction);
 		break;
 
-	case OpIsHelperInvocationEXT:
+	case Op::OpIsHelperInvocationEXT:
 		if (msl_options.is_ios() && !msl_options.supports_msl_version(2, 3))
 			SPIRV_CROSS_THROW("simd_is_helper_thread() requires MSL 2.3 on iOS.");
 		else if (msl_options.is_macos() && !msl_options.supports_msl_version(2, 1))
@@ -10298,18 +10298,18 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		        false);
 		break;
 
-	case OpBeginInvocationInterlockEXT:
-	case OpEndInvocationInterlockEXT:
+	case Op::OpBeginInvocationInterlockEXT:
+	case Op::OpEndInvocationInterlockEXT:
 		if (!msl_options.supports_msl_version(2, 0))
 			SPIRV_CROSS_THROW("Raster order groups require MSL 2.0.");
 		break; // Nothing to do in the body
 
-	case OpConvertUToAccelerationStructureKHR:
+	case Op::OpConvertUToAccelerationStructureKHR:
 		SPIRV_CROSS_THROW("ConvertUToAccelerationStructure is not supported in MSL.");
-	case OpRayQueryGetIntersectionInstanceShaderBindingTableRecordOffsetKHR:
+	case Op::OpRayQueryGetIntersectionInstanceShaderBindingTableRecordOffsetKHR:
 		SPIRV_CROSS_THROW("BindingTableRecordOffset is not supported in MSL.");
 
-	case OpRayQueryInitializeKHR:
+	case Op::OpRayQueryInitializeKHR:
 	{
 		flush_variable_declaration(ops[0]);
 		register_write(ops[0]);
@@ -10320,7 +10320,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		          ", spvMakeIntersectionParams(", to_expression(ops[2]), "));");
 		break;
 	}
-	case OpRayQueryProceedKHR:
+	case Op::OpRayQueryProceedKHR:
 	{
 		flush_variable_declaration(ops[0]);
 		register_write(ops[2]);
@@ -10330,13 +10330,13 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 #define MSL_RAY_QUERY_IS_CANDIDATE get<SPIRConstant>(ops[3]).scalar_i32() == 0
 
 #define MSL_RAY_QUERY_GET_OP(op, msl_op)                                                   \
-	case OpRayQueryGet##op##KHR:                                                           \
+	case Op::OpRayQueryGet##op##KHR:                                                           \
 		flush_variable_declaration(ops[2]);                                                \
 		emit_op(ops[0], ops[1], join(to_expression(ops[2]), ".get_" #msl_op "()"), false); \
 		break
 
 #define MSL_RAY_QUERY_OP_INNER2(op, msl_prefix, msl_op)                                                          \
-	case OpRayQueryGet##op##KHR:                                                                                 \
+	case Op::OpRayQueryGet##op##KHR:                                                                                 \
 		flush_variable_declaration(ops[2]);                                                                      \
 		if (MSL_RAY_QUERY_IS_CANDIDATE)                                                                          \
 			emit_op(ops[0], ops[1], join(to_expression(ops[2]), #msl_prefix "_candidate_" #msl_op "()"), false); \
@@ -10361,7 +10361,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		MSL_RAY_QUERY_GET_OP2(IntersectionWorldToObject, world_to_object_transform);
 		MSL_RAY_QUERY_IS_OP2(IntersectionFrontFace, triangle_front_facing);
 
-	case OpRayQueryGetIntersectionTypeKHR:
+	case Op::OpRayQueryGetIntersectionTypeKHR:
 		flush_variable_declaration(ops[2]);
 		if (MSL_RAY_QUERY_IS_CANDIDATE)
 			emit_op(ops[0], ops[1], join("uint(", to_expression(ops[2]), ".get_candidate_intersection_type()) - 1"),
@@ -10369,30 +10369,30 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		else
 			emit_op(ops[0], ops[1], join("uint(", to_expression(ops[2]), ".get_committed_intersection_type())"), false);
 		break;
-	case OpRayQueryGetIntersectionTKHR:
+	case Op::OpRayQueryGetIntersectionTKHR:
 		flush_variable_declaration(ops[2]);
 		if (MSL_RAY_QUERY_IS_CANDIDATE)
 			emit_op(ops[0], ops[1], join(to_expression(ops[2]), ".get_candidate_triangle_distance()"), false);
 		else
 			emit_op(ops[0], ops[1], join(to_expression(ops[2]), ".get_committed_distance()"), false);
 		break;
-	case OpRayQueryGetIntersectionCandidateAABBOpaqueKHR:
+	case Op::OpRayQueryGetIntersectionCandidateAABBOpaqueKHR:
 	{
 		flush_variable_declaration(ops[0]);
 		emit_op(ops[0], ops[1], join(to_expression(ops[2]), ".is_candidate_non_opaque_bounding_box()"), false);
 		break;
 	}
-	case OpRayQueryConfirmIntersectionKHR:
+	case Op::OpRayQueryConfirmIntersectionKHR:
 		flush_variable_declaration(ops[0]);
 		register_write(ops[0]);
 		statement(to_expression(ops[0]), ".commit_triangle_intersection();");
 		break;
-	case OpRayQueryGenerateIntersectionKHR:
+	case Op::OpRayQueryGenerateIntersectionKHR:
 		flush_variable_declaration(ops[0]);
 		register_write(ops[0]);
 		statement(to_expression(ops[0]), ".commit_bounding_box_intersection(", to_expression(ops[1]), ");");
 		break;
-	case OpRayQueryTerminateKHR:
+	case Op::OpRayQueryTerminateKHR:
 		flush_variable_declaration(ops[0]);
 		register_write(ops[0]);
 		statement(to_expression(ops[0]), ".abort();");
@@ -10403,9 +10403,9 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 #undef MSL_RAY_QUERY_GET_OP2
 #undef MSL_RAY_QUERY_OP_INNER2
 
-	case OpConvertPtrToU:
-	case OpConvertUToPtr:
-	case OpBitcast:
+	case Op::OpConvertPtrToU:
+	case Op::OpConvertUToPtr:
+	case Op::OpBitcast:
 	{
 		auto &type = get<SPIRType>(ops[0]);
 		auto &input_type = expression_type(ops[2]);
@@ -10430,9 +10430,9 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpSDot:
-	case OpUDot:
-	case OpSUDot:
+	case Op::OpSDot:
+	case Op::OpUDot:
+	case Op::OpSUDot:
 	{
 		uint32_t result_type = ops[0];
 		uint32_t id = ops[1];
@@ -10490,9 +10490,9 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpSDotAccSat:
-	case OpUDotAccSat:
-	case OpSUDotAccSat:
+	case Op::OpSDotAccSat:
+	case Op::OpUDotAccSat:
+	case Op::OpSUDotAccSat:
 	{
 		uint32_t result_type = ops[0];
 		uint32_t id = ops[1];
@@ -10556,7 +10556,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpSetMeshOutputsEXT:
+	case Op::OpSetMeshOutputsEXT:
 	{
 		flush_variable_declaration(builtin_mesh_primitive_indices_id);
 		add_spv_func_and_recompile(SPVFuncImplSetMeshOutputsEXT);
@@ -10564,14 +10564,14 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpAssumeTrueKHR:
+	case Op::OpAssumeTrueKHR:
 	{
 		auto condition = ops[0];
 		statement(join("SPV_ASSUME(", to_unpacked_expression(condition), ")"));
 		break;
 	}
 
-	case OpExpectKHR:
+	case Op::OpExpectKHR:
 	{
 		auto result_type = ops[0];
 		auto ret = ops[1];
@@ -10789,8 +10789,8 @@ bool CompilerMSL::emit_array_copy(const char *expr, uint32_t lhs_id, uint32_t rh
 	bool lhs_is_thread_storage = storage_class_array_is_thread(lhs_storage);
 	bool rhs_is_thread_storage = storage_class_array_is_thread(rhs_storage);
 
-	bool lhs_is_array_template = lhs_is_thread_storage || lhs_storage == StorageClassWorkgroup;
-	bool rhs_is_array_template = rhs_is_thread_storage || rhs_storage == StorageClassWorkgroup;
+	bool lhs_is_array_template = lhs_is_thread_storage || lhs_storage == StorageClass::Workgroup;
+	bool rhs_is_array_template = rhs_is_thread_storage || rhs_storage == StorageClass::Workgroup;
 
 	// Special considerations for stage IO variables.
 	// If the variable is actually backed by non-user visible device storage, we use array templates for those.
@@ -10803,13 +10803,13 @@ bool CompilerMSL::emit_array_copy(const char *expr, uint32_t lhs_id, uint32_t rh
 	// This special case should also only apply to Function/Private storage classes.
 	// We should not check backing variable for temporaries.
 	auto *lhs_var = maybe_get_backing_variable(lhs_id);
-	if (lhs_var && lhs_storage == StorageClassStorageBuffer && storage_class_array_is_thread(lhs_var->storage))
+	if (lhs_var && lhs_storage == StorageClass::StorageBuffer && storage_class_array_is_thread(lhs_var->storage))
 		lhs_is_array_template = true;
 	else if (lhs_var && lhs_storage != StorageClassGeneric && type_is_explicit_layout(get<SPIRType>(lhs_var->basetype)))
 		lhs_is_array_template = false;
 
 	auto *rhs_var = maybe_get_backing_variable(rhs_id);
-	if (rhs_var && rhs_storage == StorageClassStorageBuffer && storage_class_array_is_thread(rhs_var->storage))
+	if (rhs_var && rhs_storage == StorageClass::StorageBuffer && storage_class_array_is_thread(rhs_var->storage))
 		rhs_is_array_template = true;
 	else if (rhs_var && rhs_storage != StorageClassGeneric && type_is_explicit_layout(get<SPIRType>(rhs_var->basetype)))
 		rhs_is_array_template = false;
@@ -10863,27 +10863,27 @@ bool CompilerMSL::emit_array_copy(const char *expr, uint32_t lhs_id, uint32_t rh
 		const char *tag = nullptr;
 		if (lhs_is_thread_storage && is_constant)
 			tag = "FromConstantToStack";
-		else if (lhs_storage == StorageClassWorkgroup && is_constant)
+		else if (lhs_storage == StorageClass::Workgroup && is_constant)
 			tag = "FromConstantToThreadGroup";
 		else if (lhs_is_thread_storage && rhs_is_thread_storage)
 			tag = "FromStackToStack";
-		else if (lhs_storage == StorageClassWorkgroup && rhs_is_thread_storage)
+		else if (lhs_storage == StorageClass::Workgroup && rhs_is_thread_storage)
 			tag = "FromStackToThreadGroup";
-		else if (lhs_is_thread_storage && rhs_storage == StorageClassWorkgroup)
+		else if (lhs_is_thread_storage && rhs_storage == StorageClass::Workgroup)
 			tag = "FromThreadGroupToStack";
-		else if (lhs_storage == StorageClassWorkgroup && rhs_storage == StorageClassWorkgroup)
+		else if (lhs_storage == StorageClass::Workgroup && rhs_storage == StorageClass::Workgroup)
 			tag = "FromThreadGroupToThreadGroup";
-		else if (lhs_storage == StorageClassStorageBuffer && rhs_storage == StorageClassStorageBuffer)
+		else if (lhs_storage == StorageClass::StorageBuffer && rhs_storage == StorageClass::StorageBuffer)
 			tag = "FromDeviceToDevice";
-		else if (lhs_storage == StorageClassStorageBuffer && is_constant)
+		else if (lhs_storage == StorageClass::StorageBuffer && is_constant)
 			tag = "FromConstantToDevice";
-		else if (lhs_storage == StorageClassStorageBuffer && rhs_storage == StorageClassWorkgroup)
+		else if (lhs_storage == StorageClass::StorageBuffer && rhs_storage == StorageClass::Workgroup)
 			tag = "FromThreadGroupToDevice";
-		else if (lhs_storage == StorageClassStorageBuffer && rhs_is_thread_storage)
+		else if (lhs_storage == StorageClass::StorageBuffer && rhs_is_thread_storage)
 			tag = "FromStackToDevice";
-		else if (lhs_storage == StorageClassWorkgroup && rhs_storage == StorageClassStorageBuffer)
+		else if (lhs_storage == StorageClass::Workgroup && rhs_storage == StorageClass::StorageBuffer)
 			tag = "FromDeviceToThreadGroup";
-		else if (lhs_is_thread_storage && rhs_storage == StorageClassStorageBuffer)
+		else if (lhs_is_thread_storage && rhs_storage == StorageClass::StorageBuffer)
 			tag = "FromDeviceToStack";
 		else
 			SPIRV_CROSS_THROW("Unknown storage class used for copying arrays.");
@@ -11000,7 +11000,7 @@ void CompilerMSL::emit_atomic_func_op(uint32_t result_type, uint32_t result_id, 
 	bool is_atomic_compare_exchange_strong = op1_is_pointer && op1;
 
 	bool check_discard = opcode != OpAtomicLoad && needs_frag_discard_checks() &&
-	                     ptr_type.storage != StorageClassWorkgroup;
+	                     ptr_type.storage != StorageClass::Workgroup;
 
 	// Even compare exchange atomics are vec4 on metal for ... reasons :v
 	uint32_t vec4_temporary_id = 0;
@@ -11120,7 +11120,7 @@ void CompilerMSL::emit_atomic_func_op(uint32_t result_type, uint32_t result_id, 
 		else
 		{
 			// Fallback scenario, could happen for raw pointers.
-			exp += ptr_type.storage == StorageClassWorkgroup ? "threadgroup" : "device";
+			exp += ptr_type.storage == StorageClass::Workgroup ? "threadgroup" : "device";
 		}
 
 		exp += " atomic_";
@@ -12762,10 +12762,10 @@ string CompilerMSL::to_texture_op(const Instruction &i, bool sparse, bool *forwa
 
 				switch (op)
 				{
-				case OpImageSampleDrefImplicitLod:
-				case OpImageSampleImplicitLod:
-				case OpImageSampleProjImplicitLod:
-				case OpImageSampleProjDrefImplicitLod:
+				case Op::OpImageSampleDrefImplicitLod:
+				case Op::OpImageSampleImplicitLod:
+				case Op::OpImageSampleProjImplicitLod:
+				case Op::OpImageSampleProjDrefImplicitLod:
 					register_control_dependent_expression(temp_id);
 					break;
 
@@ -13172,7 +13172,7 @@ string CompilerMSL::to_struct_member(const SPIRType &type, uint32_t member_type_
 	if (is_matrix(physical_type))
 		row_major = has_member_decoration(type.self, index, DecorationRowMajor);
 
-	SPIRType row_major_physical_type { OpTypeMatrix };
+	SPIRType row_major_physical_type { Op::OpTypeMatrix };
 	const SPIRType *declared_type = &physical_type;
 
 	// If a struct is being declared with physical layout,
@@ -14035,11 +14035,11 @@ string CompilerMSL::get_type_address_space(const SPIRType &type, uint32_t id, bo
 	const char *addr_space = nullptr;
 	switch (type.storage)
 	{
-	case StorageClassWorkgroup:
+	case StorageClass::Workgroup:
 		addr_space = "threadgroup";
 		break;
 
-	case StorageClassStorageBuffer:
+	case StorageClass::StorageBuffer:
 	{
 		// When dealing with descriptor aliasing, it becomes very problematic to make use of
 		// readonly qualifiers.
@@ -14122,7 +14122,7 @@ string CompilerMSL::get_type_address_space(const SPIRType &type, uint32_t id, bo
 					else
 						addr_space = "thread";
 				}
-				else if (variable_decl_is_remapped_storage(*var, StorageClassWorkgroup))
+				else if (variable_decl_is_remapped_storage(*var, StorageClass::Workgroup))
 					addr_space = "threadgroup";
 			}
 
@@ -14410,13 +14410,13 @@ void CompilerMSL::entry_point_args_builtin(string &ep_args)
 				ep_args += ", ";
 			switch (msl_options.vertex_index_type)
 			{
-			case Options::IndexType::None:
+			case Op::Options::IndexType::None:
 				break;
-			case Options::IndexType::UInt16:
+			case Op::Options::IndexType::UInt16:
 				ep_args += join("const device ushort* ", index_buffer_var_name, " [[buffer(",
 				                msl_options.shader_index_buffer_index, ")]]");
 				break;
-			case Options::IndexType::UInt32:
+			case Op::Options::IndexType::UInt32:
 				ep_args += join("const device uint* ", index_buffer_var_name, " [[buffer(",
 				                msl_options.shader_index_buffer_index, ")]]");
 				break;
@@ -14660,7 +14660,7 @@ void CompilerMSL::entry_point_args_discrete_descriptors(string &ep_args)
 	entry_point_bindings.clear();
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t var_id, SPIRVariable &var) {
 		if ((var.storage == StorageClass::Uniform || var.storage == StorageClass::UniformConstant ||
-		     var.storage == StorageClassPushConstant || var.storage == StorageClassStorageBuffer) &&
+		     var.storage == StorageClassPushConstant || var.storage == StorageClass::StorageBuffer) &&
 		    !is_hidden_variable(var))
 		{
 			auto &type = get_variable_data_type(var);
@@ -14688,7 +14688,7 @@ void CompilerMSL::entry_point_args_discrete_descriptors(string &ep_args)
 			// For fully mutable-style aliasing, we need argument buffers where we can exploit the fact
 			// that descriptors are all 8 bytes.
 			SPIRVariable *discrete_descriptor_alias = nullptr;
-			if (var.storage == StorageClass::Uniform || var.storage == StorageClassStorageBuffer)
+			if (var.storage == StorageClass::Uniform || var.storage == StorageClass::StorageBuffer)
 			{
 				for (auto &resource : resources)
 				{
@@ -14698,7 +14698,7 @@ void CompilerMSL::entry_point_args_discrete_descriptors(string &ep_args)
 					    get_decoration(var_id, DecorationBinding) &&
 					    resource.basetype == SPIRType::Struct && type.basetype == SPIRType::Struct &&
 					    (resource.var->storage == StorageClass::Uniform ||
-					     resource.var->storage == StorageClassStorageBuffer))
+					     resource.var->storage == StorageClass::StorageBuffer))
 					{
 						discrete_descriptor_alias = resource.var;
 						// Self-reference marks that we should declare the resource,
@@ -14818,7 +14818,7 @@ void CompilerMSL::entry_point_args_discrete_descriptors(string &ep_args)
 					if (!ep_args.empty())
 						ep_args += ", ";
 					const bool ssbo = has_decoration(type.self, DecorationBufferBlock);
-					if ((var.storage == spv::StorageClassStorageBuffer || ssbo) &&
+					if ((var.storage == spv::StorageClass::StorageBuffer || ssbo) &&
 					    msl_options.runtime_array_rich_descriptor)
 					{
 						add_spv_func_and_recompile(SPVFuncImplVariableSizedDescriptor);
@@ -15033,7 +15033,7 @@ void CompilerMSL::fix_up_shader_inputs_outputs()
 				});
 			}
 		}
-		else if ((var.storage == StorageClassStorageBuffer || (var.storage == StorageClass::Uniform && ssbo)) &&
+		else if ((var.storage == StorageClass::StorageBuffer || (var.storage == StorageClass::Uniform && ssbo)) &&
 		         !is_hidden_variable(var))
 		{
 			if (buffer_requires_array_length(var.self))
@@ -15065,7 +15065,7 @@ void CompilerMSL::fix_up_shader_inputs_outputs()
 		if (!msl_options.argument_buffers &&
 		     msl_options.replace_recursive_inputs && type_contains_recursion(type) &&
 		    (var.storage == StorageClass::Uniform || var.storage == StorageClass::UniformConstant ||
-		     var.storage == StorageClassPushConstant || var.storage == StorageClassStorageBuffer))
+		     var.storage == StorageClassPushConstant || var.storage == StorageClass::StorageBuffer))
 		{
 			recursive_inputs.insert(type.self);
 			entry_func.fixup_hooks_in.push_back([this, &type, &var, var_id]() {
@@ -15517,13 +15517,13 @@ void CompilerMSL::fix_up_shader_inputs_outputs()
 					builtin_declaration = true;
 					switch (msl_options.vertex_index_type)
 					{
-					case Options::IndexType::None:
+					case Op::Options::IndexType::None:
 						statement(builtin_type_decl(bi_type), " ", to_expression(var_id), " = ",
 						          to_expression(builtin_invocation_id_id), ".x + ",
 						          to_expression(builtin_dispatch_base_id), ".x;");
 						break;
-					case Options::IndexType::UInt16:
-					case Options::IndexType::UInt32:
+					case Op::Options::IndexType::UInt16:
+					case Op::Options::IndexType::UInt32:
 						statement(builtin_type_decl(bi_type), " ", to_expression(var_id), " = ", index_buffer_var_name,
 						          "[", to_expression(builtin_invocation_id_id), ".x] + ",
 						          to_expression(builtin_dispatch_base_id), ".x;");
@@ -15730,7 +15730,7 @@ const char *CompilerMSL::descriptor_address_space(uint32_t id, StorageClass stor
 	if (msl_options.argument_buffers)
 	{
 		bool storage_class_is_descriptor = storage == StorageClass::Uniform ||
-		                                   storage == StorageClassStorageBuffer ||
+		                                   storage == StorageClass::StorageBuffer ||
 		                                   storage == StorageClass::UniformConstant;
 
 		uint32_t desc_set = get_decoration(id, DecorationDescriptorSet);
@@ -15845,7 +15845,7 @@ string CompilerMSL::argument_decl(const SPIRFunction::Parameter &arg)
 			decl = join("spvDescriptorArray<", address_space, " ", type_name, "*>");
 		address_space = "const";
 	}
-	else if ((type_storage == StorageClass::Uniform || type_storage == StorageClassStorageBuffer) && is_array(type))
+	else if ((type_storage == StorageClass::Uniform || type_storage == StorageClass::StorageBuffer) && is_array(type))
 	{
 		is_using_builtin_array = true;
 		decl += join(cv_qualifier, type_to_glsl(type, arg.id), "*");
@@ -16431,7 +16431,7 @@ string CompilerMSL::to_member_reference(uint32_t base, const SPIRType &type, uin
 		    has_decoration(type.self, Decoration::Block) || has_decoration(type.self, DecorationBufferBlock);
 
 		bool is_buffer_variable =
-		    is_block && (var->storage == StorageClass::Uniform || var->storage == StorageClassStorageBuffer);
+		    is_block && (var->storage == StorageClass::Uniform || var->storage == StorageClass::StorageBuffer);
 		declared_as_pointer = is_buffer_variable && is_array(get_pointee_type(var->basetype));
 	}
 
@@ -16451,7 +16451,7 @@ string CompilerMSL::to_qualifiers_glsl(uint32_t id)
 	if (type.storage == StorageClassTaskPayloadWorkgroupEXT)
 		quals += "object_data ";
 
-	if (type.storage == StorageClassWorkgroup || (var && variable_decl_is_remapped_storage(*var, StorageClassWorkgroup)))
+	if (type.storage == StorageClass::Workgroup || (var && variable_decl_is_remapped_storage(*var, StorageClass::Workgroup)))
 		quals += "threadgroup ";
 
 	return quals;
@@ -16482,7 +16482,7 @@ string CompilerMSL::type_to_glsl(const SPIRType &type, uint32_t id, bool member)
 			{
 				const bool ssbo = has_decoration(p_parent_type->self, DecorationBufferBlock);
 				bool buffer_desc =
-						(var.storage == StorageClassStorageBuffer || ssbo) &&
+						(var.storage == StorageClass::StorageBuffer || ssbo) &&
 						msl_options.runtime_array_rich_descriptor;
 
 				const char *wrapper_type = buffer_desc ? "spvBufferDescriptor" : "spvDescriptor";
@@ -16580,7 +16580,7 @@ string CompilerMSL::type_to_glsl(const SPIRType &type, uint32_t id, bool member)
 		// Need to special-case threadgroup booleans. They are supposed to be logical
 		// storage, but MSL compilers will sometimes crash if you use threadgroup bool.
 		// Workaround this by using 16-bit types instead and fixup on load-store to this data.
-		if ((var && var->storage == StorageClassWorkgroup) || type.storage == StorageClassWorkgroup || member)
+		if ((var && var->storage == StorageClass::Workgroup) || type.storage == StorageClass::Workgroup || member)
 			type_name = "short";
 		else
 			type_name = "bool";
@@ -16653,7 +16653,7 @@ string CompilerMSL::type_to_glsl(const SPIRType &type, uint32_t id, bool member)
 		// matrix struct prior to Metal 3 lacks constructors in the threadgroup AS,
 		// preventing us from default-constructing or initializing matrices in threadgroup storage.
 		// Work around this by using our own type as storage.
-		if (((var && var->storage == StorageClassWorkgroup) || type.storage == StorageClassWorkgroup) &&
+		if (((var && var->storage == StorageClass::Workgroup) || type.storage == StorageClass::Workgroup) &&
 		    !msl_options.supports_msl_version(3, 0))
 		{
 			add_spv_func_and_recompile(SPVFuncImplStorageMatrix);
@@ -16710,7 +16710,7 @@ string CompilerMSL::type_to_array_glsl(const SPIRType &type, uint32_t variable_i
 		if (type_is_array_of_pointers(type) || using_builtin_array())
 		{
 			const SPIRVariable *var = variable_id ? maybe_get<SPIRVariable>(variable_id) : nullptr;
-			if (var && (var->storage == StorageClass::Uniform || var->storage == StorageClassStorageBuffer) &&
+			if (var && (var->storage == StorageClass::Uniform || var->storage == StorageClass::StorageBuffer) &&
 			    is_array(get_variable_data_type(*var)))
 			{
 				return join("[", get_resource_array_size(type, variable_id), "]");
@@ -16727,10 +16727,10 @@ string CompilerMSL::constant_op_expression(const SPIRConstantOp &cop)
 {
 	switch (cop.opcode)
 	{
-	case OpSMod:
+	case Op::OpSMod:
 		add_spv_func_and_recompile(SPVFuncImplSMod);
 		return join("spvSMod(", to_expression(cop.arguments[0]), ", ", to_expression(cop.arguments[1]), ")");
-	case OpQuantizeToF16:
+	case Op::OpQuantizeToF16:
 		add_spv_func_and_recompile(SPVFuncImplQuantizeToF16);
 		return join("spvQuantizeToF16(", to_expression(cop.arguments[0]), ")");
 	default:
@@ -16743,7 +16743,7 @@ bool CompilerMSL::variable_decl_is_remapped_storage(const SPIRVariable &variable
 	if (variable.storage == storage)
 		return true;
 
-	if (storage == StorageClassWorkgroup)
+	if (storage == StorageClass::Workgroup)
 	{
 		// Specially masked IO block variable.
 		// Normally, we will never access IO blocks directly here.
@@ -16759,7 +16759,7 @@ bool CompilerMSL::variable_decl_is_remapped_storage(const SPIRVariable &variable
 
 		return variable.storage == StorageClass::Output && is_tesc_shader() && is_stage_output_variable_masked(variable);
 	}
-	else if (storage == StorageClassStorageBuffer)
+	else if (storage == StorageClass::StorageBuffer)
 	{
 		// These builtins are passed directly; we don't want to use remapping
 		// for them.
@@ -17095,42 +17095,42 @@ void CompilerMSL::emit_subgroup_op(const Instruction &i)
 		{
 		default:
 			SPIRV_CROSS_THROW("Subgroup ops beyond broadcast, ballot, and shuffle on iOS require Metal 2.3 and up.");
-		case OpGroupNonUniformBroadcastFirst:
+		case Op::OpGroupNonUniformBroadcastFirst:
 			if (!msl_options.supports_msl_version(2, 2))
 				SPIRV_CROSS_THROW("BroadcastFirst on iOS requires Metal 2.2 and up.");
 			break;
-		case OpGroupNonUniformElect:
+		case Op::OpGroupNonUniformElect:
 			if (!msl_options.supports_msl_version(2, 2))
 				SPIRV_CROSS_THROW("Elect on iOS requires Metal 2.2 and up.");
 			break;
-		case OpGroupNonUniformAny:
-		case OpGroupNonUniformAll:
-		case OpGroupNonUniformAllEqual:
-		case OpGroupNonUniformBallot:
-		case OpGroupNonUniformInverseBallot:
-		case OpGroupNonUniformBallotBitExtract:
-		case OpGroupNonUniformBallotFindLSB:
-		case OpGroupNonUniformBallotFindMSB:
-		case OpGroupNonUniformBallotBitCount:
-		case OpSubgroupBallotKHR:
-		case OpSubgroupAllKHR:
-		case OpSubgroupAnyKHR:
-		case OpSubgroupAllEqualKHR:
+		case Op::OpGroupNonUniformAny:
+		case Op::OpGroupNonUniformAll:
+		case Op::OpGroupNonUniformAllEqual:
+		case Op::OpGroupNonUniformBallot:
+		case Op::OpGroupNonUniformInverseBallot:
+		case Op::OpGroupNonUniformBallotBitExtract:
+		case Op::OpGroupNonUniformBallotFindLSB:
+		case Op::OpGroupNonUniformBallotFindMSB:
+		case Op::OpGroupNonUniformBallotBitCount:
+		case Op::OpSubgroupBallotKHR:
+		case Op::OpSubgroupAllKHR:
+		case Op::OpSubgroupAnyKHR:
+		case Op::OpSubgroupAllEqualKHR:
 			if (!msl_options.supports_msl_version(2, 2))
 				SPIRV_CROSS_THROW("Ballot ops on iOS requires Metal 2.2 and up.");
 			break;
-		case OpGroupNonUniformRotateKHR:
+		case Op::OpGroupNonUniformRotateKHR:
 			if (!msl_options.supports_msl_version(2, 2))
 				SPIRV_CROSS_THROW("Rotate on iOS requires Metal 2.2 and up.");
 			break;
-		case OpGroupNonUniformBroadcast:
-		case OpGroupNonUniformShuffle:
-		case OpGroupNonUniformShuffleXor:
-		case OpGroupNonUniformShuffleUp:
-		case OpGroupNonUniformShuffleDown:
-		case OpGroupNonUniformQuadSwap:
-		case OpGroupNonUniformQuadBroadcast:
-		case OpSubgroupReadInvocationKHR:
+		case Op::OpGroupNonUniformBroadcast:
+		case Op::OpGroupNonUniformShuffle:
+		case Op::OpGroupNonUniformShuffleXor:
+		case Op::OpGroupNonUniformShuffleUp:
+		case Op::OpGroupNonUniformShuffleDown:
+		case Op::OpGroupNonUniformQuadSwap:
+		case Op::OpGroupNonUniformQuadBroadcast:
+		case Op::OpSubgroupReadInvocationKHR:
 			break;
 		}
 	}
@@ -17141,12 +17141,12 @@ void CompilerMSL::emit_subgroup_op(const Instruction &i)
 		{
 		default:
 			SPIRV_CROSS_THROW("Subgroup ops beyond broadcast and shuffle on macOS require Metal 2.1 and up.");
-		case OpGroupNonUniformBroadcast:
-		case OpGroupNonUniformShuffle:
-		case OpGroupNonUniformShuffleXor:
-		case OpGroupNonUniformShuffleUp:
-		case OpGroupNonUniformShuffleDown:
-		case OpSubgroupReadInvocationKHR:
+		case Op::OpGroupNonUniformBroadcast:
+		case Op::OpGroupNonUniformShuffle:
+		case Op::OpGroupNonUniformShuffleXor:
+		case Op::OpGroupNonUniformShuffleUp:
+		case Op::OpGroupNonUniformShuffleDown:
+		case Op::OpSubgroupReadInvocationKHR:
 			break;
 		}
 	}
@@ -17159,15 +17159,15 @@ void CompilerMSL::emit_subgroup_op(const Instruction &i)
 	switch (op)
 	{
 	// These earlier instructions don't have the scope operand.
-	case OpSubgroupBallotKHR:
-	case OpSubgroupFirstInvocationKHR:
-	case OpSubgroupReadInvocationKHR:
-	case OpSubgroupAllKHR:
-	case OpSubgroupAnyKHR:
-	case OpSubgroupAllEqualKHR:
+	case Op::OpSubgroupBallotKHR:
+	case Op::OpSubgroupFirstInvocationKHR:
+	case Op::OpSubgroupReadInvocationKHR:
+	case Op::OpSubgroupAllKHR:
+	case Op::OpSubgroupAnyKHR:
+	case Op::OpSubgroupAllEqualKHR:
 	// These instructions are always quad-scoped and thus do not have a scope operand.
-	case OpGroupNonUniformQuadAllKHR:
-	case OpGroupNonUniformQuadAnyKHR:
+	case Op::OpGroupNonUniformQuadAllKHR:
+	case Op::OpGroupNonUniformQuadAnyKHR:
 		scope = ScopeSubgroup;
 		break;
 	default:
@@ -17179,45 +17179,45 @@ void CompilerMSL::emit_subgroup_op(const Instruction &i)
 
 	switch (op)
 	{
-	case OpGroupNonUniformElect:
+	case Op::OpGroupNonUniformElect:
 		if (msl_options.use_quadgroup_operation())
 			emit_op(result_type, id, "quad_is_first()", false);
 		else
 			emit_op(result_type, id, "simd_is_first()", false);
 		break;
 
-	case OpGroupNonUniformBroadcast:
-	case OpSubgroupReadInvocationKHR:
+	case Op::OpGroupNonUniformBroadcast:
+	case Op::OpSubgroupReadInvocationKHR:
 		emit_binary_func_op(result_type, id, ops[op_idx], ops[op_idx + 1], "spvSubgroupBroadcast");
 		break;
 
-	case OpGroupNonUniformBroadcastFirst:
-	case OpSubgroupFirstInvocationKHR:
+	case Op::OpGroupNonUniformBroadcastFirst:
+	case Op::OpSubgroupFirstInvocationKHR:
 		emit_unary_func_op(result_type, id, ops[op_idx], "spvSubgroupBroadcastFirst");
 		break;
 
-	case OpGroupNonUniformBallot:
-	case OpSubgroupBallotKHR:
+	case Op::OpGroupNonUniformBallot:
+	case Op::OpSubgroupBallotKHR:
 		emit_unary_func_op(result_type, id, ops[op_idx], "spvSubgroupBallot");
 		break;
 
-	case OpGroupNonUniformInverseBallot:
+	case Op::OpGroupNonUniformInverseBallot:
 		emit_binary_func_op(result_type, id, ops[op_idx], builtin_subgroup_invocation_id_id, "spvSubgroupBallotBitExtract");
 		break;
 
-	case OpGroupNonUniformBallotBitExtract:
+	case Op::OpGroupNonUniformBallotBitExtract:
 		emit_binary_func_op(result_type, id, ops[op_idx], ops[op_idx + 1], "spvSubgroupBallotBitExtract");
 		break;
 
-	case OpGroupNonUniformBallotFindLSB:
+	case Op::OpGroupNonUniformBallotFindLSB:
 		emit_binary_func_op(result_type, id, ops[op_idx], builtin_subgroup_size_id, "spvSubgroupBallotFindLSB");
 		break;
 
-	case OpGroupNonUniformBallotFindMSB:
+	case Op::OpGroupNonUniformBallotFindMSB:
 		emit_binary_func_op(result_type, id, ops[op_idx], builtin_subgroup_size_id, "spvSubgroupBallotFindMSB");
 		break;
 
-	case OpGroupNonUniformBallotBitCount:
+	case Op::OpGroupNonUniformBallotBitCount:
 	{
 		auto operation = static_cast<GroupOperation>(ops[op_idx++]);
 		switch (operation)
@@ -17239,23 +17239,23 @@ void CompilerMSL::emit_subgroup_op(const Instruction &i)
 		break;
 	}
 
-	case OpGroupNonUniformShuffle:
+	case Op::OpGroupNonUniformShuffle:
 		emit_binary_func_op(result_type, id, ops[op_idx], ops[op_idx + 1], "spvSubgroupShuffle");
 		break;
 
-	case OpGroupNonUniformShuffleXor:
+	case Op::OpGroupNonUniformShuffleXor:
 		emit_binary_func_op(result_type, id, ops[op_idx], ops[op_idx + 1], "spvSubgroupShuffleXor");
 		break;
 
-	case OpGroupNonUniformShuffleUp:
+	case Op::OpGroupNonUniformShuffleUp:
 		emit_binary_func_op(result_type, id, ops[op_idx], ops[op_idx + 1], "spvSubgroupShuffleUp");
 		break;
 
-	case OpGroupNonUniformShuffleDown:
+	case Op::OpGroupNonUniformShuffleDown:
 		emit_binary_func_op(result_type, id, ops[op_idx], ops[op_idx + 1], "spvSubgroupShuffleDown");
 		break;
 
-	case OpGroupNonUniformRotateKHR:
+	case Op::OpGroupNonUniformRotateKHR:
 	{
 		if (i.length > 5)
 		{
@@ -17272,30 +17272,30 @@ void CompilerMSL::emit_subgroup_op(const Instruction &i)
 		break;
 	}
 
-	case OpGroupNonUniformAll:
-	case OpSubgroupAllKHR:
+	case Op::OpGroupNonUniformAll:
+	case Op::OpSubgroupAllKHR:
 		if (msl_options.use_quadgroup_operation())
 			emit_unary_func_op(result_type, id, ops[op_idx], "quad_all");
 		else
 			emit_unary_func_op(result_type, id, ops[op_idx], "simd_all");
 		break;
 
-	case OpGroupNonUniformAny:
-	case OpSubgroupAnyKHR:
+	case Op::OpGroupNonUniformAny:
+	case Op::OpSubgroupAnyKHR:
 		if (msl_options.use_quadgroup_operation())
 			emit_unary_func_op(result_type, id, ops[op_idx], "quad_any");
 		else
 			emit_unary_func_op(result_type, id, ops[op_idx], "simd_any");
 		break;
 
-	case OpGroupNonUniformAllEqual:
-	case OpSubgroupAllEqualKHR:
+	case Op::OpGroupNonUniformAllEqual:
+	case Op::OpSubgroupAllEqualKHR:
 		emit_unary_func_op(result_type, id, ops[op_idx], "spvSubgroupAllEqual");
 		break;
 
 		// clang-format off
 #define MSL_GROUP_OP(op, msl_op) \
-case OpGroupNonUniform##op: \
+case Op::OpGroupNonUniform##op: \
 	{ \
 		auto operation = static_cast<GroupOperation>(ops[op_idx++]); \
 		if (operation == GroupOperationReduce) \
@@ -17323,7 +17323,7 @@ case OpGroupNonUniform##op: \
 	// The others, unfortunately, don't support InclusiveScan or ExclusiveScan.
 
 #define MSL_GROUP_OP(op, msl_op) \
-case OpGroupNonUniform##op: \
+case Op::OpGroupNonUniform##op: \
 	{ \
 		auto operation = static_cast<GroupOperation>(ops[op_idx++]); \
 		if (operation == GroupOperationReduce) \
@@ -17345,7 +17345,7 @@ case OpGroupNonUniform##op: \
 	}
 
 #define MSL_GROUP_OP_CAST(op, msl_op, type) \
-case OpGroupNonUniform##op: \
+case Op::OpGroupNonUniform##op: \
 	{ \
 		auto operation = static_cast<GroupOperation>(ops[op_idx++]); \
 		if (operation == GroupOperationReduce) \
@@ -17384,19 +17384,19 @@ case OpGroupNonUniform##op: \
 #undef MSL_GROUP_OP
 #undef MSL_GROUP_OP_CAST
 
-	case OpGroupNonUniformQuadSwap:
+	case Op::OpGroupNonUniformQuadSwap:
 		emit_binary_func_op(result_type, id, ops[op_idx], ops[op_idx + 1], "spvQuadSwap");
 		break;
 
-	case OpGroupNonUniformQuadBroadcast:
+	case Op::OpGroupNonUniformQuadBroadcast:
 		emit_binary_func_op(result_type, id, ops[op_idx], ops[op_idx + 1], "spvQuadBroadcast");
 		break;
 
-	case OpGroupNonUniformQuadAllKHR:
+	case Op::OpGroupNonUniformQuadAllKHR:
 		emit_unary_func_op(result_type, id, ops[op_idx], "quad_all");
 		break;
 
-	case OpGroupNonUniformQuadAnyKHR:
+	case Op::OpGroupNonUniformQuadAnyKHR:
 		emit_unary_func_op(result_type, id, ops[op_idx], "quad_any");
 		break;
 
@@ -18373,7 +18373,7 @@ void CompilerMSL::analyze_workgroup_variables()
 {
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t, SPIRVariable &var) {
 		// If workgroup variables have initializer, it can only be ConstantNull (zero init)
-		if (var.storage == StorageClassWorkgroup && var.initializer)
+		if (var.storage == StorageClass::Workgroup && var.initializer)
 		{
 			needs_workgroup_zero_init = true;
 
@@ -18390,9 +18390,9 @@ bool CompilerMSL::SampledImageScanner::handle(spv::Op opcode, const uint32_t *ar
 {
 	switch (opcode)
 	{
-	case OpLoad:
-	case OpImage:
-	case OpSampledImage:
+	case Op::OpLoad:
+	case Op::OpImage:
+	case Op::OpSampledImage:
 	{
 		if (length < 3)
 			return false;
@@ -18406,17 +18406,17 @@ bool CompilerMSL::SampledImageScanner::handle(spv::Op opcode, const uint32_t *ar
 		compiler.set<SPIRExpression>(id, "", result_type, true);
 		break;
 	}
-	case OpImageSampleExplicitLod:
-	case OpImageSampleProjExplicitLod:
-	case OpImageSampleDrefExplicitLod:
-	case OpImageSampleProjDrefExplicitLod:
-	case OpImageSampleImplicitLod:
-	case OpImageSampleProjImplicitLod:
-	case OpImageSampleDrefImplicitLod:
-	case OpImageSampleProjDrefImplicitLod:
-	case OpImageFetch:
-	case OpImageGather:
-	case OpImageDrefGather:
+	case Op::OpImageSampleExplicitLod:
+	case Op::OpImageSampleProjExplicitLod:
+	case Op::OpImageSampleDrefExplicitLod:
+	case Op::OpImageSampleProjDrefExplicitLod:
+	case Op::OpImageSampleImplicitLod:
+	case Op::OpImageSampleProjImplicitLod:
+	case Op::OpImageSampleDrefImplicitLod:
+	case Op::OpImageSampleProjDrefImplicitLod:
+	case Op::OpImageFetch:
+	case Op::OpImageGather:
+	case Op::OpImageDrefGather:
 		compiler.has_sampled_images =
 		    compiler.has_sampled_images || compiler.is_sampled_image_type(compiler.expression_type(args[2]));
 		compiler.needs_swizzle_buffer_def = compiler.needs_swizzle_buffer_def || compiler.has_sampled_images;
@@ -18456,16 +18456,16 @@ bool CompilerMSL::OpCodePreprocessor::handle(Op opcode, const uint32_t *args, ui
 	switch (opcode)
 	{
 
-	case OpFunctionCall:
+	case Op::OpFunctionCall:
 		suppress_missing_prototypes = true;
 		break;
 
-	case OpDemoteToHelperInvocationEXT:
+	case Op::OpDemoteToHelperInvocationEXT:
 		uses_discard = true;
 		break;
 
 	// Emulate texture2D atomic operations
-	case OpImageTexelPointer:
+	case Op::OpImageTexelPointer:
 	{
 		if (!compiler.msl_options.supports_msl_version(3, 1))
 		{
@@ -18475,30 +18475,30 @@ bool CompilerMSL::OpCodePreprocessor::handle(Op opcode, const uint32_t *args, ui
 		break;
 	}
 
-	case OpImageWrite:
+	case Op::OpImageWrite:
 		uses_image_write = true;
 		break;
 
-	case OpStore:
+	case Op::OpStore:
 		check_resource_write(args[0]);
 		break;
 
 	// Emulate texture2D atomic operations
-	case OpAtomicExchange:
-	case OpAtomicCompareExchange:
-	case OpAtomicCompareExchangeWeak:
-	case OpAtomicIIncrement:
-	case OpAtomicIDecrement:
-	case OpAtomicIAdd:
-	case OpAtomicFAddEXT:
-	case OpAtomicISub:
-	case OpAtomicSMin:
-	case OpAtomicUMin:
-	case OpAtomicSMax:
-	case OpAtomicUMax:
-	case OpAtomicAnd:
-	case OpAtomicOr:
-	case OpAtomicXor:
+	case Op::OpAtomicExchange:
+	case Op::OpAtomicCompareExchange:
+	case Op::OpAtomicCompareExchangeWeak:
+	case Op::OpAtomicIIncrement:
+	case Op::OpAtomicIDecrement:
+	case Op::OpAtomicIAdd:
+	case Op::OpAtomicFAddEXT:
+	case Op::OpAtomicISub:
+	case Op::OpAtomicSMin:
+	case Op::OpAtomicUMin:
+	case Op::OpAtomicSMax:
+	case Op::OpAtomicUMax:
+	case Op::OpAtomicAnd:
+	case Op::OpAtomicOr:
+	case Op::OpAtomicXor:
 	{
 		uses_atomics = true;
 		auto it = image_pointers_emulated.find(args[2]);
@@ -18512,7 +18512,7 @@ bool CompilerMSL::OpCodePreprocessor::handle(Op opcode, const uint32_t *args, ui
 		break;
 	}
 
-	case OpAtomicStore:
+	case Op::OpAtomicStore:
 	{
 		uses_atomics = true;
 		auto it = image_pointers_emulated.find(args[0]);
@@ -18526,7 +18526,7 @@ bool CompilerMSL::OpCodePreprocessor::handle(Op opcode, const uint32_t *args, ui
 		break;
 	}
 
-	case OpAtomicLoad:
+	case Op::OpAtomicLoad:
 	{
 		uses_atomics = true;
 		auto it = image_pointers_emulated.find(args[2]);
@@ -18537,23 +18537,23 @@ bool CompilerMSL::OpCodePreprocessor::handle(Op opcode, const uint32_t *args, ui
 		break;
 	}
 
-	case OpGroupNonUniformInverseBallot:
+	case Op::OpGroupNonUniformInverseBallot:
 		needs_subgroup_invocation_id = true;
 		break;
 
-	case OpGroupNonUniformBallotFindLSB:
-	case OpGroupNonUniformBallotFindMSB:
+	case Op::OpGroupNonUniformBallotFindLSB:
+	case Op::OpGroupNonUniformBallotFindMSB:
 		needs_subgroup_size = true;
 		break;
 
-	case OpGroupNonUniformBallotBitCount:
+	case Op::OpGroupNonUniformBallotBitCount:
 		if (args[3] == GroupOperationReduce)
 			needs_subgroup_size = true;
 		else
 			needs_subgroup_invocation_id = true;
 		break;
 
-	case OpGroupNonUniformRotateKHR:
+	case Op::OpGroupNonUniformRotateKHR:
 		// Add the correct invocation ID for calculating clustered rotate case.
 		if (length > 5)
 		{
@@ -18564,29 +18564,29 @@ bool CompilerMSL::OpCodePreprocessor::handle(Op opcode, const uint32_t *args, ui
 		}
 		break;
 
-	case OpGroupNonUniformFAdd:
-	case OpGroupNonUniformFMul:
-	case OpGroupNonUniformFMin:
-	case OpGroupNonUniformFMax:
-	case OpGroupNonUniformIAdd:
-	case OpGroupNonUniformIMul:
-	case OpGroupNonUniformSMin:
-	case OpGroupNonUniformSMax:
-	case OpGroupNonUniformUMin:
-	case OpGroupNonUniformUMax:
-	case OpGroupNonUniformBitwiseAnd:
-	case OpGroupNonUniformBitwiseOr:
-	case OpGroupNonUniformBitwiseXor:
-	case OpGroupNonUniformLogicalAnd:
-	case OpGroupNonUniformLogicalOr:
-	case OpGroupNonUniformLogicalXor:
+	case Op::OpGroupNonUniformFAdd:
+	case Op::OpGroupNonUniformFMul:
+	case Op::OpGroupNonUniformFMin:
+	case Op::OpGroupNonUniformFMax:
+	case Op::OpGroupNonUniformIAdd:
+	case Op::OpGroupNonUniformIMul:
+	case Op::OpGroupNonUniformSMin:
+	case Op::OpGroupNonUniformSMax:
+	case Op::OpGroupNonUniformUMin:
+	case Op::OpGroupNonUniformUMax:
+	case Op::OpGroupNonUniformBitwiseAnd:
+	case Op::OpGroupNonUniformBitwiseOr:
+	case Op::OpGroupNonUniformBitwiseXor:
+	case Op::OpGroupNonUniformLogicalAnd:
+	case Op::OpGroupNonUniformLogicalOr:
+	case Op::OpGroupNonUniformLogicalXor:
 		if ((compiler.get_execution_model() != ExecutionModel::Fragment ||
 		     compiler.msl_options.supports_msl_version(2, 2)) &&
 		    args[3] == GroupOperationClusteredReduce)
 			needs_subgroup_invocation_id = true;
 		break;
 
-	case OpArrayLength:
+	case Op::OpArrayLength:
 	{
 		auto *var = compiler.maybe_get_backing_variable(args[2]);
 		if (var != nullptr)
@@ -18597,9 +18597,9 @@ bool CompilerMSL::OpCodePreprocessor::handle(Op opcode, const uint32_t *args, ui
 		break;
 	}
 
-	case OpInBoundsAccessChain:
-	case OpAccessChain:
-	case OpPtrAccessChain:
+	case Op::OpInBoundsAccessChain:
+	case Op::OpAccessChain:
+	case Op::OpPtrAccessChain:
 	{
 		// OpArrayLength might want to know if taking ArrayLength of an array of SSBOs.
 		uint32_t result_type = args[0];
@@ -18612,7 +18612,7 @@ bool CompilerMSL::OpCodePreprocessor::handle(Op opcode, const uint32_t *args, ui
 		break;
 	}
 
-	case OpExtInst:
+	case Op::OpExtInst:
 	{
 		uint32_t extension_set = args[2];
 		SPIRExtension::Extension ext = compiler.get<SPIRExtension>(extension_set).ext;
@@ -18668,7 +18668,7 @@ bool CompilerMSL::OpCodePreprocessor::handle(Op opcode, const uint32_t *args, ui
 		break;
 	}
 
-	case OpIsHelperInvocationEXT:
+	case Op::OpIsHelperInvocationEXT:
 		if (compiler.needs_manual_helper_invocation_updates())
 			needs_helper_invocation = true;
 		break;
@@ -18690,7 +18690,7 @@ void CompilerMSL::OpCodePreprocessor::check_resource_write(uint32_t var_id)
 {
 	auto *p_var = compiler.maybe_get_backing_variable(var_id);
 	StorageClass sc = p_var ? p_var->storage : StorageClassMax;
-	if (sc == StorageClass::Uniform || sc == StorageClassStorageBuffer)
+	if (sc == StorageClass::Uniform || sc == StorageClass::StorageBuffer)
 		uses_buffer_write = true;
 }
 
@@ -18699,54 +18699,54 @@ CompilerMSL::SPVFuncImpl CompilerMSL::OpCodePreprocessor::get_spv_func_impl(Op o
 {
 	switch (opcode)
 	{
-	case OpSMod:
+	case Op::OpSMod:
 		return SPVFuncImplSMod;
 
-	case OpFMod:
+	case Op::OpFMod:
 		return SPVFuncImplMod;
 
-	case OpFAdd:
-	case OpFSub:
+	case Op::OpFAdd:
+	case Op::OpFSub:
 		if (compiler.msl_options.invariant_float_math || compiler.has_legacy_nocontract(args[0], args[1]))
 			return opcode == OpFAdd ? SPVFuncImplFAdd : SPVFuncImplFSub;
 		break;
 
-	case OpFMul:
-	case OpOuterProduct:
-	case OpMatrixTimesVector:
-	case OpVectorTimesMatrix:
-	case OpMatrixTimesMatrix:
+	case Op::OpFMul:
+	case Op::OpOuterProduct:
+	case Op::OpMatrixTimesVector:
+	case Op::OpVectorTimesMatrix:
+	case Op::OpMatrixTimesMatrix:
 		if (compiler.msl_options.invariant_float_math || compiler.has_legacy_nocontract(args[0], args[1]))
 			return SPVFuncImplFMul;
 		break;
 
-	case OpQuantizeToF16:
+	case Op::OpQuantizeToF16:
 		return SPVFuncImplQuantizeToF16;
 
-	case OpTypeArray:
+	case Op::OpTypeArray:
 	{
 		// Allow Metal to use the array<T> template to make arrays a value type
 		return SPVFuncImplUnsafeArray;
 	}
 
 	// Emulate texture2D atomic operations
-	case OpAtomicExchange:
-	case OpAtomicCompareExchange:
-	case OpAtomicCompareExchangeWeak:
-	case OpAtomicIIncrement:
-	case OpAtomicIDecrement:
-	case OpAtomicIAdd:
-	case OpAtomicFAddEXT:
-	case OpAtomicISub:
-	case OpAtomicSMin:
-	case OpAtomicUMin:
-	case OpAtomicSMax:
-	case OpAtomicUMax:
-	case OpAtomicAnd:
-	case OpAtomicOr:
-	case OpAtomicXor:
-	case OpAtomicLoad:
-	case OpAtomicStore:
+	case Op::OpAtomicExchange:
+	case Op::OpAtomicCompareExchange:
+	case Op::OpAtomicCompareExchangeWeak:
+	case Op::OpAtomicIIncrement:
+	case Op::OpAtomicIDecrement:
+	case Op::OpAtomicIAdd:
+	case Op::OpAtomicFAddEXT:
+	case Op::OpAtomicISub:
+	case Op::OpAtomicSMin:
+	case Op::OpAtomicUMin:
+	case Op::OpAtomicSMax:
+	case Op::OpAtomicUMax:
+	case Op::OpAtomicAnd:
+	case Op::OpAtomicOr:
+	case Op::OpAtomicXor:
+	case Op::OpAtomicLoad:
+	case Op::OpAtomicStore:
 	{
 		auto it = image_pointers_emulated.find(args[opcode == OpAtomicStore ? 0 : 2]);
 		if (it != image_pointers_emulated.end())
@@ -18758,9 +18758,9 @@ CompilerMSL::SPVFuncImpl CompilerMSL::OpCodePreprocessor::get_spv_func_impl(Op o
 		break;
 	}
 
-	case OpImageFetch:
-	case OpImageRead:
-	case OpImageWrite:
+	case Op::OpImageFetch:
+	case Op::OpImageRead:
+	case Op::OpImageWrite:
 	{
 		// Retrieve the image type, and if it's a Buffer, emit a texel coordinate function
 		uint32_t tid = result_types[args[opcode == OpImageWrite ? 0 : 2]];
@@ -18769,7 +18769,7 @@ CompilerMSL::SPVFuncImpl CompilerMSL::OpCodePreprocessor::get_spv_func_impl(Op o
 		break;
 	}
 
-	case OpExtInst:
+	case Op::OpExtInst:
 	{
 		uint32_t extension_set = args[2];
 		if (compiler.get<SPIRExtension>(extension_set).ext == SPIRExtension::GLSL)
@@ -18833,73 +18833,73 @@ CompilerMSL::SPVFuncImpl CompilerMSL::OpCodePreprocessor::get_spv_func_impl(Op o
 		break;
 	}
 
-	case OpGroupNonUniformBroadcast:
-	case OpSubgroupReadInvocationKHR:
+	case Op::OpGroupNonUniformBroadcast:
+	case Op::OpSubgroupReadInvocationKHR:
 		return SPVFuncImplSubgroupBroadcast;
 
-	case OpGroupNonUniformBroadcastFirst:
-	case OpSubgroupFirstInvocationKHR:
+	case Op::OpGroupNonUniformBroadcastFirst:
+	case Op::OpSubgroupFirstInvocationKHR:
 		return SPVFuncImplSubgroupBroadcastFirst;
 
-	case OpGroupNonUniformBallot:
-	case OpSubgroupBallotKHR:
+	case Op::OpGroupNonUniformBallot:
+	case Op::OpSubgroupBallotKHR:
 		return SPVFuncImplSubgroupBallot;
 
-	case OpGroupNonUniformInverseBallot:
-	case OpGroupNonUniformBallotBitExtract:
+	case Op::OpGroupNonUniformInverseBallot:
+	case Op::OpGroupNonUniformBallotBitExtract:
 		return SPVFuncImplSubgroupBallotBitExtract;
 
-	case OpGroupNonUniformBallotFindLSB:
+	case Op::OpGroupNonUniformBallotFindLSB:
 		return SPVFuncImplSubgroupBallotFindLSB;
 
-	case OpGroupNonUniformBallotFindMSB:
+	case Op::OpGroupNonUniformBallotFindMSB:
 		return SPVFuncImplSubgroupBallotFindMSB;
 
-	case OpGroupNonUniformBallotBitCount:
+	case Op::OpGroupNonUniformBallotBitCount:
 		return SPVFuncImplSubgroupBallotBitCount;
 
-	case OpGroupNonUniformAllEqual:
-	case OpSubgroupAllEqualKHR:
+	case Op::OpGroupNonUniformAllEqual:
+	case Op::OpSubgroupAllEqualKHR:
 		return SPVFuncImplSubgroupAllEqual;
 
-	case OpGroupNonUniformShuffle:
+	case Op::OpGroupNonUniformShuffle:
 		return SPVFuncImplSubgroupShuffle;
 
-	case OpGroupNonUniformShuffleXor:
+	case Op::OpGroupNonUniformShuffleXor:
 		return SPVFuncImplSubgroupShuffleXor;
 
-	case OpGroupNonUniformShuffleUp:
+	case Op::OpGroupNonUniformShuffleUp:
 		return SPVFuncImplSubgroupShuffleUp;
 
-	case OpGroupNonUniformShuffleDown:
+	case Op::OpGroupNonUniformShuffleDown:
 		return SPVFuncImplSubgroupShuffleDown;
 
-	case OpGroupNonUniformRotateKHR:
+	case Op::OpGroupNonUniformRotateKHR:
 		// Clustered rotate is performed using shuffle.
 		if (length > 5)
 			return SPVFuncImplSubgroupShuffle;
 		return SPVFuncImplSubgroupRotate;
 
-	case OpGroupNonUniformQuadBroadcast:
+	case Op::OpGroupNonUniformQuadBroadcast:
 		return SPVFuncImplQuadBroadcast;
 
-	case OpGroupNonUniformQuadSwap:
+	case Op::OpGroupNonUniformQuadSwap:
 		return SPVFuncImplQuadSwap;
 
-	case OpSDot:
-	case OpUDot:
-	case OpSUDot:
-	case OpSDotAccSat:
-	case OpUDotAccSat:
-	case OpSUDotAccSat:
+	case Op::OpSDot:
+	case Op::OpUDot:
+	case Op::OpSUDot:
+	case Op::OpSDotAccSat:
+	case Op::OpUDotAccSat:
+	case Op::OpSUDotAccSat:
 		return SPVFuncImplReduceAdd;
 
-	case OpSMulExtended:
-	case OpUMulExtended:
+	case Op::OpSMulExtended:
+	case Op::OpUMulExtended:
 		return SPVFuncImplMulExtended;
 
-	case OpAssumeTrueKHR:
-	case OpExpectKHR:
+	case Op::OpAssumeTrueKHR:
+	case Op::OpExpectKHR:
 		return SPVFuncImplAssume;
 
 	default:
@@ -19025,7 +19025,7 @@ void CompilerMSL::cast_from_variable_load(uint32_t source_id, std::string &expr,
 
 	bool rewrite_boolean_load =
 	    expr_type.basetype == SPIRType::Boolean &&
-	    (var && (var->storage == StorageClassWorkgroup || var_type->basetype == SPIRType::Struct));
+	    (var && (var->storage == StorageClass::Workgroup || var_type->basetype == SPIRType::Struct));
 
 	// Type fixups for workgroup variables if they are booleans.
 	if (rewrite_boolean_load)
@@ -19040,7 +19040,7 @@ void CompilerMSL::cast_from_variable_load(uint32_t source_id, std::string &expr,
 	// Don't do fixup for packed types; those are handled specially.
 	// FIXME: Maybe use a type like spvStorageMatrix for packed matrices?
 	if (!msl_options.supports_msl_version(3, 0) && var &&
-	    (var->storage == StorageClassWorkgroup ||
+	    (var->storage == StorageClass::Workgroup ||
 	     (var_type->basetype == SPIRType::Struct &&
 	      has_extended_decoration(var_type->self, SPIRVCrossDecorationWorkgroupStruct) && !is_packed)) &&
 	    expr_type.columns > 1)
@@ -19171,7 +19171,7 @@ void CompilerMSL::cast_to_variable_store(uint32_t target_id, std::string &expr, 
 
 	bool rewrite_boolean_store =
 		expr_type.basetype == SPIRType::Boolean &&
-		(var && (var->storage == StorageClassWorkgroup || var_type->basetype == SPIRType::Struct));
+		(var && (var->storage == StorageClass::Workgroup || var_type->basetype == SPIRType::Struct));
 
 	// Type fixups for workgroup variables or struct members if they are booleans.
 	if (rewrite_boolean_store)
@@ -19192,7 +19192,7 @@ void CompilerMSL::cast_to_variable_store(uint32_t target_id, std::string &expr, 
 	// Don't do fixup for packed types; those are handled specially.
 	// FIXME: Maybe use a type like spvStorageMatrix for packed matrices?
 	if (!msl_options.supports_msl_version(3, 0) && var &&
-	    (var->storage == StorageClassWorkgroup ||
+	    (var->storage == StorageClass::Workgroup ||
 	     (var_type->basetype == SPIRType::Struct &&
 	      has_extended_decoration(var_type->self, SPIRVCrossDecorationWorkgroupStruct) && !is_packed)) &&
 	    expr_type.columns > 1)
@@ -19431,7 +19431,7 @@ void CompilerMSL::analyze_argument_buffers()
 
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t self, SPIRVariable &var) {
 		if ((var.storage == StorageClass::Uniform || var.storage == StorageClass::UniformConstant ||
-		     var.storage == StorageClassStorageBuffer) &&
+		     var.storage == StorageClass::StorageBuffer) &&
 		    !is_hidden_variable(var))
 		{
 			uint32_t desc_set = get_decoration(self, DecorationDescriptorSet);
@@ -19592,7 +19592,7 @@ void CompilerMSL::analyze_argument_buffers()
 
 		if ((argument_buffer_device_storage_mask & (1u << desc_set)) != 0)
 		{
-			buffer_type.storage = StorageClassStorageBuffer;
+			buffer_type.storage = StorageClass::StorageBuffer;
 			// Make sure the argument buffer gets marked as const device.
 			set_decoration(next_id, DecorationNonWritable);
 			// Need to mark the type as a Block to enable this.
@@ -19783,17 +19783,17 @@ void CompilerMSL::analyze_argument_buffers()
 					uint32_t atomic_type_id = offset;
 					uint32_t type_ptr_id = offset + 1;
 
-					SPIRType atomic_type { OpTypeInt };
+					SPIRType atomic_type { Op::OpTypeInt };
 					atomic_type.basetype = SPIRType::AtomicCounter;
 					atomic_type.width = 32;
 					atomic_type.vecsize = 1;
 					set<SPIRType>(atomic_type_id, atomic_type);
 
-					atomic_type.op = OpTypePointer;
+					atomic_type.op = Op::OpTypePointer;
 					atomic_type.pointer = true;
 					atomic_type.pointer_depth++;
 					atomic_type.parent_type = atomic_type_id;
-					atomic_type.storage = StorageClassStorageBuffer;
+					atomic_type.storage = StorageClass::StorageBuffer;
 					auto &atomic_ptr_type = set<SPIRType>(type_ptr_id, atomic_type);
 					atomic_ptr_type.self = atomic_type_id;
 
