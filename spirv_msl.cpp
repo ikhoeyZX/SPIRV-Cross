@@ -343,10 +343,10 @@ void CompilerMSL::build_implicit_builtins()
 					does_shader_write_sample_mask = true;
 				}
 
-				if (force_frag_depth_passthrough && builtin == BuiltInFragDepth)
+				if (force_frag_depth_passthrough && builtin == BuiltIn::FragDepth)
 				{
 					builtin_frag_depth_id = var.self;
-					mark_implicit_builtin(StorageClass::Output, BuiltInFragDepth, var.self);
+					mark_implicit_builtin(StorageClass::Output, BuiltIn::FragDepth, var.self);
 					has_frag_depth = true;
 				}
 			}
@@ -357,9 +357,9 @@ void CompilerMSL::build_implicit_builtins()
 				active_output_builtins.set(BuiltIn::PointSize);
 			}
 
-			if (builtin == BuiltInPrimitivePointIndicesEXT ||
-			    builtin == BuiltInPrimitiveLineIndicesEXT ||
-			    builtin == BuiltInPrimitiveTriangleIndicesEXT)
+			if (builtin == BuiltIn::PrimitivePointIndicesEXT ||
+			    builtin == BuiltIn::PrimitiveLineIndicesEXT ||
+			    builtin == BuiltIn::PrimitiveTriangleIndicesEXT)
 			{
 				builtin_mesh_primitive_indices_id = var.self;
 			}
@@ -372,15 +372,15 @@ void CompilerMSL::build_implicit_builtins()
 			{
 				switch (builtin)
 				{
-				case BuiltInFragCoord:
-					mark_implicit_builtin(StorageClass::Input, BuiltInFragCoord, var.self);
+				case BuiltIn::FragCoord:
+					mark_implicit_builtin(StorageClass::Input, BuiltIn::FragCoord, var.self);
 					builtin_frag_coord_id = var.self;
 					has_frag_coord = true;
 					break;
-				case BuiltInLayer:
+				case BuiltIn::Layer:
 					if (!msl_options.arrayed_subpass_input || msl_options.multiview)
 						break;
-					mark_implicit_builtin(StorageClass::Input, BuiltInLayer, var.self);
+					mark_implicit_builtin(StorageClass::Input, BuiltIn::Layer, var.self);
 					builtin_layer_id = var.self;
 					has_layer = true;
 					break;
@@ -432,26 +432,26 @@ void CompilerMSL::build_implicit_builtins()
 				}
 			}
 
-			if (need_tesc_params && builtin == BuiltInInvocationId)
+			if (need_tesc_params && builtin == BuiltIn::InvocationId)
 			{
 				builtin_invocation_id_id = var.self;
-				mark_implicit_builtin(StorageClass::Input, BuiltInInvocationId, var.self);
+				mark_implicit_builtin(StorageClass::Input, BuiltIn::InvocationId, var.self);
 				has_invocation_id = true;
 			}
 
-			if ((need_tesc_params || need_tese_params) && builtin == BuiltInPrimitiveId)
+			if ((need_tesc_params || need_tese_params) && builtin == BuiltIn::PrimitiveId)
 			{
 				builtin_primitive_id_id = var.self;
-				mark_implicit_builtin(StorageClass::Input, BuiltInPrimitiveId, var.self);
+				mark_implicit_builtin(StorageClass::Input, BuiltIn::PrimitiveId, var.self);
 				has_primitive_id = true;
 			}
 
-			if (need_tese_params && builtin == BuiltInTessLevelOuter)
+			if (need_tese_params && builtin == BuiltIn::TessLevelOuter)
 			{
 				tess_level_outer_var_id = var.self;
 			}
 
-			if (need_tese_params && builtin == BuiltInTessLevelInner)
+			if (need_tese_params && builtin == BuiltIn::TessLevelInner)
 			{
 				tess_level_inner_var_id = var.self;
 			}
@@ -554,9 +554,9 @@ void CompilerMSL::build_implicit_builtins()
 				ptr_type.self = type_id;
 
 				set<SPIRVariable>(var_id, type_ptr_id, StorageClass::Input);
-				set_decoration(var_id, Decoration::BuiltIn, BuiltInFragCoord);
+				set_decoration(var_id, Decoration::BuiltIn, BuiltIn::FragCoord);
 				builtin_frag_coord_id = var_id;
-				mark_implicit_builtin(StorageClass::Input, BuiltInFragCoord, var_id);
+				mark_implicit_builtin(StorageClass::Input, BuiltIn::FragCoord, var_id);
 			}
 
 			if (!has_layer && msl_options.arrayed_subpass_input && !msl_options.multiview)
@@ -576,9 +576,9 @@ void CompilerMSL::build_implicit_builtins()
 				ptr_type.self = get_uint_type_id();
 
 				set<SPIRVariable>(var_id, type_ptr_id, StorageClass::Input);
-				set_decoration(var_id, Decoration::BuiltIn, BuiltInLayer);
+				set_decoration(var_id, Decoration::BuiltIn, BuiltIn::Layer);
 				builtin_layer_id = var_id;
-				mark_implicit_builtin(StorageClass::Input, BuiltInLayer, var_id);
+				mark_implicit_builtin(StorageClass::Input, BuiltIn::Layer, var_id);
 			}
 
 			if (!has_view_idx && msl_options.multiview)
@@ -713,9 +713,9 @@ void CompilerMSL::build_implicit_builtins()
 			ptr_out_type.self = get_uint_type_id();
 			uint32_t var_id = type_ptr_out_id + 1;
 			set<SPIRVariable>(var_id, type_ptr_out_id, StorageClass::Output);
-			set_decoration(var_id, Decoration::BuiltIn, BuiltInLayer);
+			set_decoration(var_id, Decoration::BuiltIn, BuiltIn::Layer);
 			builtin_layer_id = var_id;
-			mark_implicit_builtin(StorageClass::Output, BuiltInLayer, var_id);
+			mark_implicit_builtin(StorageClass::Output, BuiltIn::Layer, var_id);
 		}
 
 		if ((need_tesc_params && (msl_options.multi_patch_workgroup || !has_invocation_id || !has_primitive_id)) ||
@@ -748,9 +748,9 @@ void CompilerMSL::build_implicit_builtins()
 
 				// Create gl_InvocationID.
 				set<SPIRVariable>(var_id, type_ptr_id, StorageClass::Input);
-				set_decoration(var_id, Decoration::BuiltIn, BuiltInInvocationId);
+				set_decoration(var_id, Decoration::BuiltIn, BuiltIn::InvocationId);
 				builtin_invocation_id_id = var_id;
-				mark_implicit_builtin(StorageClass::Input, BuiltInInvocationId, var_id);
+				mark_implicit_builtin(StorageClass::Input, BuiltIn::InvocationId, var_id);
 			}
 
 			if ((need_tesc_params || need_tese_params) && !has_primitive_id)
@@ -759,9 +759,9 @@ void CompilerMSL::build_implicit_builtins()
 
 				// Create gl_PrimitiveID.
 				set<SPIRVariable>(var_id, type_ptr_id, StorageClass::Input);
-				set_decoration(var_id, Decoration::BuiltIn, BuiltInPrimitiveId);
+				set_decoration(var_id, Decoration::BuiltIn, BuiltIn::PrimitiveId);
 				builtin_primitive_id_id = var_id;
-				mark_implicit_builtin(StorageClass::Input, BuiltInPrimitiveId, var_id);
+				mark_implicit_builtin(StorageClass::Input, BuiltIn::PrimitiveId, var_id);
 			}
 
 			if (need_grid_params)
@@ -844,10 +844,10 @@ void CompilerMSL::build_implicit_builtins()
 				uint32_t type_id = offset + 1;
 
 				SPIRType var_type = get<SPIRType>(workgroup_id_type);
-				var_type.storage = StorageClassUniform;
+				var_type.storage = StorageClass::Uniform;
 				set<SPIRType>(type_id, var_type);
 
-				set<SPIRVariable>(var_id, type_id, StorageClassUniform);
+				set<SPIRVariable>(var_id, type_id, StorageClass::Uniform);
 				// This should never match anything.
 				set_decoration(var_id, DecorationDescriptorSet, ~(5u));
 				set_decoration(var_id, DecorationBinding, msl_options.indirect_params_buffer_index);
@@ -1007,10 +1007,10 @@ void CompilerMSL::build_implicit_builtins()
 			auto &ptr_in_type = set<SPIRType>(type_ptr_id, float_type_ptr_in);
 			ptr_in_type.self = type_id;
 			set<SPIRVariable>(var_id, type_ptr_id, StorageClass::Output);
-			set_decoration(var_id, Decoration::BuiltIn, BuiltInFragDepth);
+			set_decoration(var_id, Decoration::BuiltIn, BuiltIn::FragDepth);
 			builtin_frag_depth_id = var_id;
-			mark_implicit_builtin(StorageClass::Output, BuiltInFragDepth, var_id);
-			active_output_builtins.set(BuiltInFragDepth);
+			mark_implicit_builtin(StorageClass::Output, BuiltIn::FragDepth, var_id);
+			active_output_builtins.set(BuiltIn::FragDepth);
 		}
 
 		if (!has_point_size && need_point_size)
@@ -1275,7 +1275,7 @@ uint32_t CompilerMSL::build_constant_uint_array_pointer()
 	uint_type_pointer.pointer = true;
 	uint_type_pointer.pointer_depth++;
 	uint_type_pointer.parent_type = get_uint_type_id();
-	uint_type_pointer.storage = StorageClassUniform;
+	uint_type_pointer.storage = StorageClass::Uniform;
 	set<SPIRType>(type_ptr_id, uint_type_pointer);
 	set_decoration(type_ptr_id, DecorationArrayStride, 4);
 
@@ -1284,7 +1284,7 @@ uint32_t CompilerMSL::build_constant_uint_array_pointer()
 	uint_type_pointer2.parent_type = type_ptr_id;
 	set<SPIRType>(type_ptr_ptr_id, uint_type_pointer2);
 
-	set<SPIRVariable>(var_id, type_ptr_ptr_id, StorageClassUniformConstant);
+	set<SPIRVariable>(var_id, type_ptr_ptr_id, StorageClass::UniformConstant);
 	return var_id;
 }
 
@@ -1903,7 +1903,7 @@ void CompilerMSL::preprocess_op_codes()
 	// before then so that gl_SampleID will get added; so we also need to check if
 	// that function would add gl_FragCoord.
 	if (preproc.needs_sample_id || msl_options.force_sample_rate_shading ||
-	    (is_sample_rate() && (active_input_builtins.get(BuiltInFragCoord) ||
+	    (is_sample_rate() && (active_input_builtins.get(BuiltIn::FragCoord) ||
 	                          (need_subpass_input_ms && !msl_options.use_framebuffer_fetch_subpasses))))
 		needs_sample_id = true;
 	if (preproc.needs_helper_invocation || active_input_builtins.get(BuiltInHelperInvocation))
@@ -1997,7 +1997,7 @@ void CompilerMSL::extract_global_variables_from_functions()
 		}
 
 		if (var.storage == StorageClass::Input || var.storage == StorageClass::Output ||
-		    var.storage == StorageClassUniform || var.storage == StorageClassUniformConstant ||
+		    var.storage == StorageClass::Uniform || var.storage == StorageClass::UniformConstant ||
 		    var.storage == StorageClassPushConstant || var.storage == StorageClassStorageBuffer)
 		{
 			global_var_ids.insert(var.self);
@@ -2379,7 +2379,7 @@ void CompilerMSL::extract_global_variables_from_function(uint32_t func_id, std::
 			bool is_builtin = is_builtin_variable(var);
 			bool variable_is_stage_io =
 					!is_builtin || bi_type == BuiltInPosition || bi_type == BuiltIn::PointSize ||
-					bi_type == BuiltInClipDistance || bi_type == BuiltInCullDistance ||
+					bi_type == BuiltIn::ClipDistance || bi_type == BuiltIn::CullDistance ||
 					p_type->basetype == SPIRType::Struct;
 			bool is_redirected_to_global_stage_io = (is_control_point_storage || is_patch_block_storage) &&
 			                                        variable_is_stage_io;
@@ -2514,7 +2514,7 @@ void CompilerMSL::mark_packable_structs()
 		{
 			auto &type = this->get<SPIRType>(var.basetype);
 			if (type.pointer &&
-			    (type.storage == StorageClassUniform || type.storage == StorageClassUniformConstant ||
+			    (type.storage == StorageClass::Uniform || type.storage == StorageClass::UniformConstant ||
 			     type.storage == StorageClassPushConstant || type.storage == StorageClassStorageBuffer) &&
 			    (has_decoration(type.self, Decoration::Block) || has_decoration(type.self, DecorationBufferBlock)))
 				mark_as_packable(type);
@@ -3035,14 +3035,14 @@ void CompilerMSL::add_composite_variable_to_interface_block(StorageClass storage
 	bool flatten_from_ib_var = false;
 	string flatten_from_ib_mbr_name;
 
-	if (storage == StorageClass::Output && is_builtin && builtin == BuiltInClipDistance)
+	if (storage == StorageClass::Output && is_builtin && builtin == BuiltIn::ClipDistance)
 	{
 		// Also declare [[clip_distance]] attribute here.
 		uint32_t clip_array_mbr_idx = uint32_t(ib_type.member_types.size());
 		ib_type.member_types.push_back(get_variable_data_type_id(var));
-		set_member_decoration(ib_type.self, clip_array_mbr_idx, Decoration::BuiltIn, BuiltInClipDistance);
+		set_member_decoration(ib_type.self, clip_array_mbr_idx, Decoration::BuiltIn, BuiltIn::ClipDistance);
 
-		flatten_from_ib_mbr_name = builtin_to_glsl(BuiltInClipDistance, StorageClass::Output);
+		flatten_from_ib_mbr_name = builtin_to_glsl(BuiltIn::ClipDistance, StorageClass::Output);
 		set_member_name(ib_type.self, clip_array_mbr_idx, flatten_from_ib_mbr_name);
 
 		// When we flatten, we flatten directly from the "out" struct,
@@ -3123,7 +3123,7 @@ void CompilerMSL::add_composite_variable_to_interface_block(StorageClass storage
 			set_member_decoration(ib_type.self, ib_mbr_idx, DecorationLocation, locn);
 			mark_location_as_used_by_shader(locn, *usable_type, storage);
 		}
-		else if (is_builtin && (builtin == BuiltInClipDistance || builtin == BuiltInCullDistance))
+		else if (is_builtin && (builtin == BuiltIn::ClipDistance || builtin == BuiltIn::CullDistance))
 		{
 			// Declare the Clip/CullDistance as [[user(clip/cullN)]].
 			set_member_decoration(ib_type.self, ib_mbr_idx, Decoration::BuiltIn, builtin);
@@ -3268,14 +3268,14 @@ void CompilerMSL::add_composite_member_variable_to_interface_block(StorageClass 
 	bool flatten_from_ib_var = false;
 	string flatten_from_ib_mbr_name;
 
-	if (storage == StorageClass::Output && is_builtin && builtin == BuiltInClipDistance)
+	if (storage == StorageClass::Output && is_builtin && builtin == BuiltIn::ClipDistance)
 	{
 		// Also declare [[clip_distance]] attribute here.
 		uint32_t clip_array_mbr_idx = uint32_t(ib_type.member_types.size());
 		ib_type.member_types.push_back(mbr_type_id);
-		set_member_decoration(ib_type.self, clip_array_mbr_idx, Decoration::BuiltIn, BuiltInClipDistance);
+		set_member_decoration(ib_type.self, clip_array_mbr_idx, Decoration::BuiltIn, BuiltIn::ClipDistance);
 
-		flatten_from_ib_mbr_name = builtin_to_glsl(BuiltInClipDistance, StorageClass::Output);
+		flatten_from_ib_mbr_name = builtin_to_glsl(BuiltIn::ClipDistance, StorageClass::Output);
 		set_member_name(ib_type.self, clip_array_mbr_idx, flatten_from_ib_mbr_name);
 
 		// When we flatten, we flatten directly from the "out" struct,
@@ -3380,7 +3380,7 @@ void CompilerMSL::add_composite_member_variable_to_interface_block(StorageClass 
 			mark_location_as_used_by_shader(location, *usable_type, storage);
 			location++;
 		}
-		else if (is_builtin && (builtin == BuiltInClipDistance || builtin == BuiltInCullDistance))
+		else if (is_builtin && (builtin == BuiltIn::ClipDistance || builtin == BuiltIn::CullDistance))
 		{
 			// Declare the Clip/CullDistance as [[user(clip/cullN)]].
 			set_member_decoration(ib_type.self, ib_mbr_idx, Decoration::BuiltIn, builtin);
@@ -3704,7 +3704,7 @@ void CompilerMSL::add_tess_level_input_to_interface_block(const std::string &ib_
 	{
 		mbr_name = builtin_to_glsl(builtin, StorageClassFunction);
 
-		uint32_t type_id = build_extended_vector_type(var_type.self, builtin == BuiltInTessLevelOuter ? 4 : 2);
+		uint32_t type_id = build_extended_vector_type(var_type.self, builtin == BuiltIn::TessLevelOuter ? 4 : 2);
 
 		uint32_t ptr_type_id = ir.increase_bound_by(1);
 		auto &new_var_type = set<SPIRType>(ptr_type_id, get<SPIRType>(type_id));
@@ -3739,7 +3739,7 @@ void CompilerMSL::add_tess_level_input(const std::string &base_ref, const std::s
 	vars_needing_early_declaration.push_back(var.self);
 	bool triangles = is_tessellating_triangles();
 
-	if (builtin == BuiltInTessLevelOuter)
+	if (builtin == BuiltIn::TessLevelOuter)
 	{
 		entry_func.fixup_hooks_in.push_back(
 		    [=]()
@@ -3790,7 +3790,7 @@ string CompilerMSL::to_tesc_invocation_id()
 		return join(to_expression(builtin_invocation_id_id), ".x % ", get_entry_point().output_vertices);
 	}
 	else
-		return builtin_to_glsl(BuiltInInvocationId, StorageClass::Input);
+		return builtin_to_glsl(BuiltIn::InvocationId, StorageClass::Input);
 }
 
 void CompilerMSL::emit_local_masked_variable(const SPIRVariable &masked_var, bool strip_array)
@@ -4007,7 +4007,7 @@ void CompilerMSL::add_variable_to_interface_block(StorageClass storage, const st
 						bool storage_is_stage_io = variable_storage_requires_stage_io(storage);
 
 						// Clip/CullDistance always need to be declared as user attributes.
-						if (builtin == BuiltInClipDistance || builtin == BuiltInCullDistance)
+						if (builtin == BuiltIn::ClipDistance || builtin == BuiltIn::CullDistance)
 							is_builtin = false;
 
 						const string var_name = to_name(var.self);
@@ -4062,7 +4062,7 @@ void CompilerMSL::add_variable_to_interface_block(StorageClass storage, const st
 		}
 	}
 	else if (is_tese_shader() && storage == StorageClass::Input && !meta.strip_array && is_builtin &&
-	         (builtin == BuiltInTessLevelOuter || builtin == BuiltInTessLevelInner))
+	         (builtin == BuiltIn::TessLevelOuter || builtin == BuiltIn::TessLevelInner))
 	{
 		add_tess_level_input_to_interface_block(ib_var_ref, ib_type, var);
 	}
@@ -4076,7 +4076,7 @@ void CompilerMSL::add_variable_to_interface_block(StorageClass storage, const st
 			bool attribute_load_store = storage == StorageClass::Input && get_execution_model() != ExecutionModel::Fragment;
 
 			// Clip/CullDistance always needs to be declared as user attributes.
-			if (builtin == BuiltInClipDistance || builtin == BuiltInCullDistance)
+			if (builtin == BuiltIn::ClipDistance || builtin == BuiltIn::CullDistance)
 				is_builtin = false;
 
 			// MSL does not allow matrices or arrays in input or output variables, so need to handle it specially.
@@ -4209,7 +4209,7 @@ uint32_t CompilerMSL::add_interface_block(StorageClass storage, bool patch)
 		{
 			bi_type = BuiltIn(get_decoration(var_id, Decoration::BuiltIn));
 			builtin_is_gl_in_out = bi_type == BuiltInPosition || bi_type == BuiltIn::PointSize ||
-			                       bi_type == BuiltInClipDistance || bi_type == BuiltInCullDistance;
+			                       bi_type == BuiltIn::ClipDistance || bi_type == BuiltIn::CullDistance;
 		}
 
 		if (is_builtin && is_block)
@@ -4218,15 +4218,15 @@ uint32_t CompilerMSL::add_interface_block(StorageClass storage, bool patch)
 		uint32_t location = get_decoration(var_id, DecorationLocation);
 
 		bool builtin_is_stage_in_out = builtin_is_gl_in_out ||
-		                               bi_type == BuiltInLayer || bi_type == BuiltInViewportIndex ||
+		                               bi_type == BuiltIn::Layer || bi_type == BuiltIn::ViewportIndex ||
 		                               bi_type == BuiltInBaryCoordKHR || bi_type == BuiltInBaryCoordNoPerspKHR ||
-		                               bi_type == BuiltInFragDepth ||
-		                               bi_type == BuiltInFragStencilRefEXT || bi_type == BuiltIn::SampleMask;
+		                               bi_type == BuiltIn::FragDepth ||
+		                               bi_type == BuiltIn::FragStencilRefEXT || bi_type == BuiltIn::SampleMask;
 
 		// These builtins are part of the stage in/out structs.
 		bool is_interface_block_builtin =
 		    builtin_is_stage_in_out || (is_tese_shader() && !msl_options.raw_buffer_tese_input &&
-		                                (bi_type == BuiltInTessLevelOuter || bi_type == BuiltInTessLevelInner));
+		                                (bi_type == BuiltIn::TessLevelOuter || bi_type == BuiltIn::TessLevelInner));
 
 		bool is_active = interface_variable_exists_in_entry_point(var.self);
 		if (is_builtin && is_active)
@@ -4250,7 +4250,7 @@ uint32_t CompilerMSL::add_interface_block(StorageClass storage, bool patch)
 		bool hidden = is_hidden_variable(var, incl_builtins);
 
 		// ClipDistance is never hidden, we need to emulate it when used as an input.
-		if (bi_type == BuiltInClipDistance || bi_type == BuiltInCullDistance)
+		if (bi_type == BuiltIn::ClipDistance || bi_type == BuiltIn::CullDistance)
 			hidden = false;
 
 		// It's not enough to simply avoid marking fragment outputs if the pipeline won't
@@ -4260,8 +4260,8 @@ uint32_t CompilerMSL::add_interface_block(StorageClass storage, bool patch)
 		// In GLSL, depth and stencil outputs are just ignored when explicit early fragment tests are required.
 		// In Metal, it's a compilation error, so we need to exclude them from the output struct.
 		if (get_execution_model() == ExecutionModel::Fragment && storage == StorageClass::Output && !patch &&
-		    ((is_builtin && ((bi_type == BuiltInFragDepth && (!msl_options.enable_frag_depth_builtin || uses_explicit_early_fragment_test())) ||
-		                     (bi_type == BuiltInFragStencilRefEXT && (!msl_options.enable_frag_stencil_ref_builtin || uses_explicit_early_fragment_test())))) ||
+		    ((is_builtin && ((bi_type == BuiltIn::FragDepth && (!msl_options.enable_frag_depth_builtin || uses_explicit_early_fragment_test())) ||
+		                     (bi_type == BuiltIn::FragStencilRefEXT && (!msl_options.enable_frag_stencil_ref_builtin || uses_explicit_early_fragment_test())))) ||
 		     (!is_builtin && !(msl_options.enable_frag_output_mask & (1 << location)))))
 		{
 			hidden = true;
@@ -4324,13 +4324,13 @@ uint32_t CompilerMSL::add_interface_block(StorageClass storage, bool patch)
 		}
 
 		if (is_tese_shader() && msl_options.raw_buffer_tese_input && patch && storage == StorageClass::Input &&
-		    (bi_type == BuiltInTessLevelOuter || bi_type == BuiltInTessLevelInner))
+		    (bi_type == BuiltIn::TessLevelOuter || bi_type == BuiltIn::TessLevelInner))
 		{
 			// In this case, we won't add the builtin to the interface struct,
 			// but we still need the hook to run to populate the arrays.
 			string base_ref = join(tess_factor_buffer_var_name, "[", to_expression(builtin_primitive_id_id), "]");
 			const char *mbr_name =
-			    bi_type == BuiltInTessLevelOuter ? "edgeTessellationFactor" : "insideTessellationFactor";
+			    bi_type == BuiltIn::TessLevelOuter ? "edgeTessellationFactor" : "insideTessellationFactor";
 			add_tess_level_input(base_ref, mbr_name, var);
 			if (inputs_by_builtin.count(bi_type))
 			{
@@ -4573,7 +4573,7 @@ uint32_t CompilerMSL::add_interface_block(StorageClass storage, bool patch)
 				continue;
 
 			// Tessellation levels have their own struct, so there's no need to add them here.
-			if (input.second.builtin == BuiltInTessLevelOuter || input.second.builtin == BuiltInTessLevelInner)
+			if (input.second.builtin == BuiltIn::TessLevelOuter || input.second.builtin == BuiltIn::TessLevelInner)
 				continue;
 
 			// Create a fake variable to put at the location.
@@ -4865,7 +4865,7 @@ uint32_t CompilerMSL::ensure_correct_builtin_type(uint32_t type_id, BuiltIn buil
 	auto &pointee_type = get_pointee_type(type);
 
 	if ((builtin == BuiltIn::SampleMask && is_array(pointee_type)) ||
-	    ((builtin == BuiltInLayer || builtin == BuiltInViewportIndex || builtin == BuiltInFragStencilRefEXT) &&
+	    ((builtin == BuiltIn::Layer || builtin == BuiltIn::ViewportIndex || builtin == BuiltIn::FragStencilRefEXT) &&
 	     pointee_type.basetype != SPIRType::UInt))
 	{
 		uint32_t next_id = ir.increase_bound_by(is_pointer(type) ? 2 : 1);
@@ -8927,7 +8927,7 @@ bool CompilerMSL::emit_tessellation_access_chain(const uint32_t *ops, uint32_t l
 
 		variable_is_flat = !builtin_variable || is_block ||
 		                   bi_type == BuiltInPosition || bi_type == BuiltIn::PointSize ||
-		                   bi_type == BuiltInClipDistance || bi_type == BuiltInCullDistance;
+		                   bi_type == BuiltIn::ClipDistance || bi_type == BuiltIn::CullDistance;
 	}
 
 	if (variable_is_flat)
@@ -9186,7 +9186,7 @@ bool CompilerMSL::emit_tessellation_access_chain(const uint32_t *ops, uint32_t l
 	// Don't do this if the index is a constant 1, though. We need to drop stores
 	// to that one.
 	auto *m = ir.find_meta(var ? var->self : ID(0));
-	if (is_tesc_shader() && var && m && m->decoration.builtin_type == BuiltInTessLevelInner &&
+	if (is_tesc_shader() && var && m && m->decoration.builtin_type == BuiltIn::TessLevelInner &&
 	    is_tessellating_triangles())
 	{
 		auto *c = maybe_get<SPIRConstant>(ops[3]);
@@ -9220,13 +9220,13 @@ bool CompilerMSL::is_out_of_bounds_tessellation_level(uint32_t id_lhs)
 	if (!e || !e->access_chain)
 		return false;
 	BuiltIn builtin = BuiltIn(get_decoration(e->loaded_from, Decoration::BuiltIn));
-	if (builtin != BuiltInTessLevelInner && builtin != BuiltInTessLevelOuter)
+	if (builtin != BuiltIn::TessLevelInner && builtin != BuiltIn::TessLevelOuter)
 		return false;
 	auto *c = maybe_get<SPIRConstant>(e->implied_read_expressions[1]);
 	if (!c)
 		return false;
-	return (builtin == BuiltInTessLevelInner && c->scalar() == 1) ||
-	       (builtin == BuiltInTessLevelOuter && c->scalar() == 3);
+	return (builtin == BuiltIn::TessLevelInner && c->scalar() == 1) ||
+	       (builtin == BuiltIn::TessLevelOuter && c->scalar() == 3);
 }
 
 bool CompilerMSL::prepare_access_chain_for_scalar_access(std::string &expr, const SPIRType &type,
@@ -10011,7 +10011,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 			break;
 
 		if (needs_frag_discard_checks() &&
-		    (type.storage == StorageClassStorageBuffer || type.storage == StorageClassUniform))
+		    (type.storage == StorageClassStorageBuffer || type.storage == StorageClass::Uniform))
 		{
 			// If we're in a continue block, this kludge will make the block too complex
 			// to emit normally.
@@ -10028,7 +10028,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		if (!maybe_emit_array_assignment(ops[0], ops[1]))
 			CompilerGLSL::emit_instruction(instruction);
 		if (needs_frag_discard_checks() &&
-		    (type.storage == StorageClassStorageBuffer || type.storage == StorageClassUniform))
+		    (type.storage == StorageClassStorageBuffer || type.storage == StorageClass::Uniform))
 			end_scope();
 		if (has_decoration(ops[0], Decoration::BuiltIn) && get_decoration(ops[0], Decoration::BuiltIn) == BuiltIn::PointSize)
 			writes_to_point_size = true;
@@ -10849,7 +10849,7 @@ bool CompilerMSL::emit_array_copy(const char *expr, uint32_t lhs_id, uint32_t rh
 		{
 			is_constant = true;
 		}
-		else if (rhs_storage == StorageClassUniform || rhs_storage == StorageClassUniformConstant)
+		else if (rhs_storage == StorageClass::Uniform || rhs_storage == StorageClass::UniformConstant)
 		{
 			is_constant = true;
 		}
@@ -10905,9 +10905,9 @@ bool CompilerMSL::emit_array_copy(const char *expr, uint32_t lhs_id, uint32_t rh
 uint32_t CompilerMSL::get_physical_tess_level_array_size(spv::BuiltIn builtin) const
 {
 	if (is_tessellating_triangles())
-		return builtin == BuiltInTessLevelInner ? 1 : 3;
+		return builtin == BuiltIn::TessLevelInner ? 1 : 3;
 	else
-		return builtin == BuiltInTessLevelInner ? 2 : 4;
+		return builtin == BuiltIn::TessLevelInner ? 2 : 4;
 }
 
 // Since MSL does not allow arrays to be copied via simple variable assignment,
@@ -10942,7 +10942,7 @@ bool CompilerMSL::maybe_emit_array_assignment(uint32_t id_lhs, uint32_t id_rhs)
 	{
 		auto builtin = BuiltIn(get_decoration(id_lhs, Decoration::BuiltIn));
 		// Need to manually unroll the array store.
-		if (builtin == BuiltInTessLevelInner || builtin == BuiltInTessLevelOuter)
+		if (builtin == BuiltIn::TessLevelInner || builtin == BuiltIn::TessLevelOuter)
 		{
 			uint32_t array_size = get_physical_tess_level_array_size(builtin);
 			if (array_size == 1)
@@ -11849,7 +11849,7 @@ void CompilerMSL::emit_function_prototype(SPIRFunction &func, const Bitset &)
 				{
 					const char *sampler_address_space =
 							descriptor_address_space(name_id,
-							                         StorageClassUniformConstant,
+							                         StorageClass::UniformConstant,
 							                         "thread const");
 					decl += join(", ", sampler_address_space, " ", sampler_type(arg_type, name_id, false), "& ",
 					             to_sampler_expression(name_id));
@@ -13273,7 +13273,7 @@ string CompilerMSL::to_struct_member(const SPIRType &type, uint32_t member_type_
 		BuiltIn builtin = BuiltIn::Max;
 		if (is_member_builtin(type, index, &builtin))
 		{
-			if (builtin == BuiltInPrimitiveShadingRateKHR)
+			if (builtin == BuiltIn::PrimitiveShadingRateKHR)
 			{
 				// not supported in metal 3.0
 				is_using_builtin_array = false;
@@ -13281,9 +13281,9 @@ string CompilerMSL::to_struct_member(const SPIRType &type, uint32_t member_type_
 			}
 
 			SPIRType metallic_type = *declared_type;
-			if (builtin == BuiltInCullPrimitiveEXT)
+			if (builtin == BuiltIn::CullPrimitiveEXT)
 				metallic_type.basetype = SPIRType::Boolean;
-			else if (builtin == BuiltInPrimitiveId || builtin == BuiltInLayer || builtin == BuiltInViewportIndex)
+			else if (builtin == BuiltIn::PrimitiveId || builtin == BuiltIn::Layer || builtin == BuiltIn::ViewportIndex)
 				metallic_type.basetype = SPIRType::UInt;
 
 			is_using_builtin_array = true;
@@ -13458,24 +13458,24 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 				// the shader into a render pipeline that uses a non-point topology.
 				return msl_options.enable_point_size_builtin ? (string(" [[") + builtin_qualifier(builtin) + "]]") : "";
 
-			case BuiltInViewportIndex:
+			case BuiltIn::ViewportIndex:
 				if (!msl_options.supports_msl_version(2, 0))
 					SPIRV_CROSS_THROW("ViewportIndex requires Metal 2.0.");
 				/* fallthrough */
 			case BuiltInPosition:
-			case BuiltInLayer:
-			case BuiltInCullPrimitiveEXT:
-			case BuiltInPrimitiveShadingRateKHR:
-			case BuiltInPrimitiveId:
+			case BuiltIn::Layer:
+			case BuiltIn::CullPrimitiveEXT:
+			case BuiltIn::PrimitiveShadingRateKHR:
+			case BuiltIn::PrimitiveId:
 				return string(" [[") + builtin_qualifier(builtin) + "]]" + (mbr_type.array.empty() ? "" : " ");
 
-			case BuiltInClipDistance:
+			case BuiltIn::ClipDistance:
 				if (has_member_decoration(type.self, index, DecorationIndex))
 					return join(" [[user(clip", get_member_decoration(type.self, index, DecorationIndex), ")]]");
 				else
 					return string(" [[") + builtin_qualifier(builtin) + "]]" + (mbr_type.array.empty() ? "" : " ");
 
-			case BuiltInCullDistance:
+			case BuiltIn::CullDistance:
 				if (has_member_decoration(type.self, index, DecorationIndex))
 					return join(" [[user(cull", get_member_decoration(type.self, index, DecorationIndex), ")]]");
 				else
@@ -13507,8 +13507,8 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 		{
 			switch (builtin)
 			{
-			case BuiltInInvocationId:
-			case BuiltInPrimitiveId:
+			case BuiltIn::InvocationId:
+			case BuiltIn::PrimitiveId:
 				if (msl_options.multi_patch_workgroup)
 					return "";
 				return string(" [[") + builtin_qualifier(builtin) + "]]" + (mbr_type.array.empty() ? "" : " ");
@@ -13555,8 +13555,8 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 		{
 			switch (builtin)
 			{
-			case BuiltInPrimitiveId:
-			case BuiltInTessCoord:
+			case BuiltIn::PrimitiveId:
+			case BuiltIn::TessCoord:
 				return string(" [[") + builtin_qualifier(builtin) + "]]";
 			case BuiltInPatchVertices:
 				return "";
@@ -13599,18 +13599,18 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 				/* fallthrough */
 			case BuiltInFrontFacing:
 			case BuiltInPointCoord:
-			case BuiltInFragCoord:
+			case BuiltIn::FragCoord:
 			case BuiltInSampleId:
 			case BuiltIn::SampleMask:
-			case BuiltInLayer:
+			case BuiltIn::Layer:
 			case BuiltInBaryCoordKHR:
 			case BuiltInBaryCoordNoPerspKHR:
 				quals = builtin_qualifier(builtin);
 				break;
 
-			case BuiltInClipDistance:
+			case BuiltIn::ClipDistance:
 				return join(" [[user(clip", get_member_decoration(type.self, index, DecorationIndex), ")]]");
-			case BuiltInCullDistance:
+			case BuiltIn::CullDistance:
 				return join(" [[user(cull", get_member_decoration(type.self, index, DecorationIndex), ")]]");
 
 			default:
@@ -13629,7 +13629,7 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 		// Don't bother decorating integers with the 'flat' attribute; it's
 		// the default (in fact, the only option). Also don't bother with the
 		// FragCoord builtin; it's always noperspective on Metal.
-		if (!type_is_integral(mbr_type) && (!is_builtin || builtin != BuiltInFragCoord))
+		if (!type_is_integral(mbr_type) && (!is_builtin || builtin != BuiltIn::FragCoord))
 		{
 			if (has_member_decoration(type.self, index, DecorationFlat))
 			{
@@ -13688,7 +13688,7 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 		{
 			switch (builtin)
 			{
-			case BuiltInFragStencilRefEXT:
+			case BuiltIn::FragStencilRefEXT:
 				// Similar to PointSize, only mark FragStencilRef if there's a stencil buffer.
 				// Some shaders may include a FragStencilRef builtin even when used to render
 				// without a stencil attachment, and Metal will reject this builtin
@@ -13700,7 +13700,7 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 					SPIRV_CROSS_THROW("Stencil export only supported in MSL 2.1 and up.");
 				return string(" [[") + builtin_qualifier(builtin) + "]]";
 
-			case BuiltInFragDepth:
+			case BuiltIn::FragDepth:
 				// Ditto FragDepth.
 				if (!msl_options.enable_frag_depth_builtin)
 					return "";
@@ -13834,10 +13834,10 @@ uint32_t CompilerMSL::get_or_allocate_builtin_input_member_location(spv::BuiltIn
 	// Triangle tess level inputs are shared in one packed float4,
 	// mark both builtins as sharing one location.
 	if (!msl_options.raw_buffer_tese_input && is_tessellating_triangles() &&
-	    (builtin == BuiltInTessLevelInner || builtin == BuiltInTessLevelOuter))
+	    (builtin == BuiltIn::TessLevelInner || builtin == BuiltIn::TessLevelOuter))
 	{
-		builtin_to_automatic_input_location[BuiltInTessLevelInner] = loc;
-		builtin_to_automatic_input_location[BuiltInTessLevelOuter] = loc;
+		builtin_to_automatic_input_location[BuiltIn::TessLevelInner] = loc;
+		builtin_to_automatic_input_location[BuiltIn::TessLevelOuter] = loc;
 	}
 	else
 		builtin_to_automatic_input_location[builtin] = loc;
@@ -13877,10 +13877,10 @@ uint32_t CompilerMSL::get_or_allocate_builtin_output_member_location(spv::BuiltI
 
 	// Triangle tess level inputs are shared in one packed float4;
 	// mark both builtins as sharing one location.
-	if (is_tessellating_triangles() && (builtin == BuiltInTessLevelInner || builtin == BuiltInTessLevelOuter))
+	if (is_tessellating_triangles() && (builtin == BuiltIn::TessLevelInner || builtin == BuiltIn::TessLevelOuter))
 	{
-		builtin_to_automatic_output_location[BuiltInTessLevelInner] = loc;
-		builtin_to_automatic_output_location[BuiltInTessLevelOuter] = loc;
+		builtin_to_automatic_output_location[BuiltIn::TessLevelInner] = loc;
+		builtin_to_automatic_output_location[BuiltIn::TessLevelOuter] = loc;
 	}
 	else
 		builtin_to_automatic_output_location[builtin] = loc;
@@ -14058,8 +14058,8 @@ string CompilerMSL::get_type_address_space(const SPIRType &type, uint32_t id, bo
 		addr_space = "device";
 		break;
 
-	case StorageClassUniform:
-	case StorageClassUniformConstant:
+	case StorageClass::Uniform:
+	case StorageClass::UniformConstant:
 	case StorageClassPushConstant:
 		if (type.basetype == SPIRType::Struct)
 		{
@@ -14100,7 +14100,7 @@ string CompilerMSL::get_type_address_space(const SPIRType &type, uint32_t id, bo
 			bool is_patch_stage_in = has_decoration(var->self, DecorationPatch);
 			bool is_builtin = has_decoration(var->self, Decoration::BuiltIn);
 			BuiltIn builtin = (BuiltIn)get_decoration(var->self, Decoration::BuiltIn);
-			bool is_tess_level = is_builtin && (builtin == BuiltInTessLevelOuter || builtin == BuiltInTessLevelInner);
+			bool is_tess_level = is_builtin && (builtin == BuiltIn::TessLevelOuter || builtin == BuiltIn::TessLevelInner);
 			if (is_stage_in || (is_patch_stage_in && !is_tess_level))
 				addr_space = "const device";
 		}
@@ -14224,16 +14224,16 @@ bool CompilerMSL::is_direct_input_builtin(BuiltIn bi_type)
 	// Tess. control function in
 	case BuiltInPosition:
 	case BuiltIn::PointSize:
-	case BuiltInClipDistance:
-	case BuiltInCullDistance:
+	case BuiltIn::ClipDistance:
+	case BuiltIn::CullDistance:
 	case BuiltInPatchVertices:
 		return false;
-	case BuiltInInvocationId:
-	case BuiltInPrimitiveId:
+	case BuiltIn::InvocationId:
+	case BuiltIn::PrimitiveId:
 		return !is_tesc_shader() || !msl_options.multi_patch_workgroup;
 	// Tess. evaluation function in
-	case BuiltInTessLevelInner:
-	case BuiltInTessLevelOuter:
+	case BuiltIn::TessLevelInner:
+	case BuiltIn::TessLevelOuter:
 		return false;
 	// Fragment function in
 	case BuiltIn::SamplePosition:
@@ -14316,7 +14316,7 @@ void CompilerMSL::entry_point_args_builtin(string &ep_args)
 				builtin_declaration = true;
 
 				// Handle different MSL gl_TessCoord types. (float2, float3)
-				if (bi_type == BuiltInTessCoord && get_entry_point().flags.get(ExecutionModeQuads))
+				if (bi_type == BuiltIn::TessCoord && get_entry_point().flags.get(ExecutionModeQuads))
 					ep_args += "float2 " + to_expression(var_id) + "In";
 				else
 					ep_args += builtin_type_decl(bi_type, var_id) + " " + to_expression(var_id);
@@ -14450,9 +14450,9 @@ void CompilerMSL::entry_point_args_builtin(string &ep_args)
 					return;
 
 				BuiltIn builtin = BuiltIn(get_decoration(var.self, Decoration::BuiltIn));
-				if (builtin == BuiltInTessLevelInner)
+				if (builtin == BuiltIn::TessLevelInner)
 					inner_factor_initializer_id = var.initializer;
-				else if (builtin == BuiltInTessLevelOuter)
+				else if (builtin == BuiltIn::TessLevelOuter)
 					outer_factor_initializer_id = var.initializer;
 			});
 
@@ -14467,7 +14467,7 @@ void CompilerMSL::entry_point_args_builtin(string &ep_args)
 					    uint32_t components = is_tessellating_triangles() ? 3 : 4;
 					    for (uint32_t i = 0; i < components; i++)
 					    {
-						    statement(builtin_to_glsl(BuiltInTessLevelOuter, StorageClass::Output), "[", i,
+						    statement(builtin_to_glsl(BuiltIn::TessLevelOuter, StorageClass::Output), "[", i,
 						              "] = ", "half(", to_expression(c->subconstants[i]), ");");
 					    }
 				    });
@@ -14479,7 +14479,7 @@ void CompilerMSL::entry_point_args_builtin(string &ep_args)
 				if (is_tessellating_triangles())
 				{
 					entry_func.fixup_hooks_in.push_back([=]() {
-						statement(builtin_to_glsl(BuiltInTessLevelInner, StorageClass::Output), " = ", "half(",
+						statement(builtin_to_glsl(BuiltIn::TessLevelInner, StorageClass::Output), " = ", "half(",
 						          to_expression(c->subconstants[0]), ");");
 					});
 				}
@@ -14488,7 +14488,7 @@ void CompilerMSL::entry_point_args_builtin(string &ep_args)
 					entry_func.fixup_hooks_in.push_back([=]() {
 						for (uint32_t i = 0; i < 2; i++)
 						{
-							statement(builtin_to_glsl(BuiltInTessLevelInner, StorageClass::Output), "[", i, "] = ",
+							statement(builtin_to_glsl(BuiltIn::TessLevelInner, StorageClass::Output), "[", i, "] = ",
 							          "half(", to_expression(c->subconstants[i]), ");");
 						}
 					});
@@ -14659,7 +14659,7 @@ void CompilerMSL::entry_point_args_discrete_descriptors(string &ep_args)
 
 	entry_point_bindings.clear();
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t var_id, SPIRVariable &var) {
-		if ((var.storage == StorageClassUniform || var.storage == StorageClassUniformConstant ||
+		if ((var.storage == StorageClass::Uniform || var.storage == StorageClass::UniformConstant ||
 		     var.storage == StorageClassPushConstant || var.storage == StorageClassStorageBuffer) &&
 		    !is_hidden_variable(var))
 		{
@@ -14688,7 +14688,7 @@ void CompilerMSL::entry_point_args_discrete_descriptors(string &ep_args)
 			// For fully mutable-style aliasing, we need argument buffers where we can exploit the fact
 			// that descriptors are all 8 bytes.
 			SPIRVariable *discrete_descriptor_alias = nullptr;
-			if (var.storage == StorageClassUniform || var.storage == StorageClassStorageBuffer)
+			if (var.storage == StorageClass::Uniform || var.storage == StorageClassStorageBuffer)
 			{
 				for (auto &resource : resources)
 				{
@@ -14697,7 +14697,7 @@ void CompilerMSL::entry_point_args_discrete_descriptors(string &ep_args)
 					    get_decoration(resource.var->self, DecorationBinding) ==
 					    get_decoration(var_id, DecorationBinding) &&
 					    resource.basetype == SPIRType::Struct && type.basetype == SPIRType::Struct &&
-					    (resource.var->storage == StorageClassUniform ||
+					    (resource.var->storage == StorageClass::Uniform ||
 					     resource.var->storage == StorageClassStorageBuffer))
 					{
 						discrete_descriptor_alias = resource.var;
@@ -15008,7 +15008,7 @@ void CompilerMSL::fix_up_shader_inputs_outputs()
 		uint32_t var_id = var.self;
 		bool ssbo = has_decoration(type.self, DecorationBufferBlock);
 
-		if (var.storage == StorageClassUniformConstant && !is_hidden_variable(var))
+		if (var.storage == StorageClass::UniformConstant && !is_hidden_variable(var))
 		{
 			if (msl_options.swizzle_texture_samples && has_sampled_images && is_sampled_image_type(type))
 			{
@@ -15033,7 +15033,7 @@ void CompilerMSL::fix_up_shader_inputs_outputs()
 				});
 			}
 		}
-		else if ((var.storage == StorageClassStorageBuffer || (var.storage == StorageClassUniform && ssbo)) &&
+		else if ((var.storage == StorageClassStorageBuffer || (var.storage == StorageClass::Uniform && ssbo)) &&
 		         !is_hidden_variable(var))
 		{
 			if (buffer_requires_array_length(var.self))
@@ -15064,7 +15064,7 @@ void CompilerMSL::fix_up_shader_inputs_outputs()
 
 		if (!msl_options.argument_buffers &&
 		     msl_options.replace_recursive_inputs && type_contains_recursion(type) &&
-		    (var.storage == StorageClassUniform || var.storage == StorageClassUniformConstant ||
+		    (var.storage == StorageClass::Uniform || var.storage == StorageClass::UniformConstant ||
 		     var.storage == StorageClassPushConstant || var.storage == StorageClassStorageBuffer))
 		{
 			recursive_inputs.insert(type.self);
@@ -15097,7 +15097,7 @@ void CompilerMSL::fix_up_shader_inputs_outputs()
 					          to_expression(builtin_sample_id_id), ");");
 				});
 				break;
-			case BuiltInFragCoord:
+			case BuiltIn::FragCoord:
 				if (is_sample_rate())
 				{
 					entry_func.fixup_hooks_in.push_back([=]() {
@@ -15106,7 +15106,7 @@ void CompilerMSL::fix_up_shader_inputs_outputs()
 					});
 				}
 				break;
-			case BuiltInInvocationId:
+			case BuiltIn::InvocationId:
 				// This is direct-mapped without multi-patch workgroups.
 				if (!is_tesc_shader() || !msl_options.multi_patch_workgroup)
 					break;
@@ -15117,7 +15117,7 @@ void CompilerMSL::fix_up_shader_inputs_outputs()
 					          ";");
 				});
 				break;
-			case BuiltInPrimitiveId:
+			case BuiltIn::PrimitiveId:
 				// This is natively supported by fragment and tessellation evaluation shaders.
 				// In tessellation control shaders, this is direct-mapped without multi-patch workgroups.
 				if (!is_tesc_shader() || !msl_options.multi_patch_workgroup)
@@ -15157,13 +15157,13 @@ void CompilerMSL::fix_up_shader_inputs_outputs()
 					});
 				}
 				break;
-			case BuiltInTessCoord:
+			case BuiltIn::TessCoord:
 				if (get_entry_point().flags.get(ExecutionModeQuads))
 				{
 					// The entry point will only have a float2 TessCoord variable.
 					// Pad to float3.
 					entry_func.fixup_hooks_in.push_back([=]() {
-						auto name = builtin_to_glsl(BuiltInTessCoord, StorageClass::Input);
+						auto name = builtin_to_glsl(BuiltIn::TessCoord, StorageClass::Input);
 						statement("float3 " + name + " = float3(" + name + "In.x, " + name + "In.y, 0.0);");
 					});
 				}
@@ -15587,7 +15587,7 @@ void CompilerMSL::fix_up_shader_inputs_outputs()
 					});
 				}
 				break;
-			case BuiltInFragDepth:
+			case BuiltIn::FragDepth:
 				if (msl_options.input_attachment_is_ds_attachment && !writes_to_depth)
 				{
 					entry_func.fixup_hooks_out.push_back([=]() {
@@ -15729,9 +15729,9 @@ const char *CompilerMSL::descriptor_address_space(uint32_t id, StorageClass stor
 {
 	if (msl_options.argument_buffers)
 	{
-		bool storage_class_is_descriptor = storage == StorageClassUniform ||
+		bool storage_class_is_descriptor = storage == StorageClass::Uniform ||
 		                                   storage == StorageClassStorageBuffer ||
-		                                   storage == StorageClassUniformConstant;
+		                                   storage == StorageClass::UniformConstant;
 
 		uint32_t desc_set = get_decoration(id, DecorationDescriptorSet);
 		if (storage_class_is_descriptor && descriptor_set_is_argument_buffer(desc_set))
@@ -15780,7 +15780,7 @@ string CompilerMSL::argument_decl(const SPIRFunction::Parameter &arg)
 	// readonly coming from glslang is not reliable in all cases.
 	if (type_is_msl_framebuffer_fetch(type) || type_storage == StorageClassPhysicalStorageBuffer)
 		constref = false;
-	else if (type_storage == StorageClassUniformConstant)
+	else if (type_storage == StorageClass::UniformConstant)
 		constref = true;
 
 	bool type_is_image = type.basetype == SPIRType::Image || type.basetype == SPIRType::SampledImage ||
@@ -15815,11 +15815,11 @@ string CompilerMSL::argument_decl(const SPIRFunction::Parameter &arg)
 		auto storage = get<SPIRType>(var.basetype).storage;
 
 		if (storage == StorageClass::Input &&
-		    (builtin_type == BuiltInTessLevelInner || builtin_type == BuiltInTessLevelOuter))
+		    (builtin_type == BuiltIn::TessLevelInner || builtin_type == BuiltIn::TessLevelOuter))
 		{
 			is_using_builtin_array = false;
 		}
-		else if (builtin_type != BuiltInClipDistance && builtin_type != BuiltInCullDistance)
+		else if (builtin_type != BuiltIn::ClipDistance && builtin_type != BuiltIn::CullDistance)
 		{
 			is_using_builtin_array = true;
 		}
@@ -15845,7 +15845,7 @@ string CompilerMSL::argument_decl(const SPIRFunction::Parameter &arg)
 			decl = join("spvDescriptorArray<", address_space, " ", type_name, "*>");
 		address_space = "const";
 	}
-	else if ((type_storage == StorageClassUniform || type_storage == StorageClassStorageBuffer) && is_array(type))
+	else if ((type_storage == StorageClass::Uniform || type_storage == StorageClassStorageBuffer) && is_array(type))
 	{
 		is_using_builtin_array = true;
 		decl += join(cv_qualifier, type_to_glsl(type, arg.id), "*");
@@ -15923,7 +15923,7 @@ string CompilerMSL::argument_decl(const SPIRFunction::Parameter &arg)
 
 		// Special case, need to override the array size here if we're using tess level as an argument.
 		if (is_tesc_shader() && builtin &&
-		    (builtin_type == BuiltInTessLevelInner || builtin_type == BuiltInTessLevelOuter))
+		    (builtin_type == BuiltIn::TessLevelInner || builtin_type == BuiltIn::TessLevelOuter))
 		{
 			uint32_t array_size = get_physical_tess_level_array_size(builtin_type);
 			if (array_size == 1)
@@ -16431,7 +16431,7 @@ string CompilerMSL::to_member_reference(uint32_t base, const SPIRType &type, uin
 		    has_decoration(type.self, Decoration::Block) || has_decoration(type.self, DecorationBufferBlock);
 
 		bool is_buffer_variable =
-		    is_block && (var->storage == StorageClassUniform || var->storage == StorageClassStorageBuffer);
+		    is_block && (var->storage == StorageClass::Uniform || var->storage == StorageClassStorageBuffer);
 		declared_as_pointer = is_buffer_variable && is_array(get_pointee_type(var->basetype));
 	}
 
@@ -16710,7 +16710,7 @@ string CompilerMSL::type_to_array_glsl(const SPIRType &type, uint32_t variable_i
 		if (type_is_array_of_pointers(type) || using_builtin_array())
 		{
 			const SPIRVariable *var = variable_id ? maybe_get<SPIRVariable>(variable_id) : nullptr;
-			if (var && (var->storage == StorageClassUniform || var->storage == StorageClassStorageBuffer) &&
+			if (var && (var->storage == StorageClass::Uniform || var->storage == StorageClassStorageBuffer) &&
 			    is_array(get_variable_data_type(*var)))
 			{
 				return join("[", get_resource_array_size(type, variable_id), "]");
@@ -16764,7 +16764,7 @@ bool CompilerMSL::variable_decl_is_remapped_storage(const SPIRVariable &variable
 		// These builtins are passed directly; we don't want to use remapping
 		// for them.
 		auto builtin = (BuiltIn)get_decoration(variable.self, Decoration::BuiltIn);
-		if (is_tese_shader() && is_builtin_variable(variable) && (builtin == BuiltInTessCoord || builtin == BuiltInPrimitiveId))
+		if (is_tese_shader() && is_builtin_variable(variable) && (builtin == BuiltIn::TessCoord || builtin == BuiltIn::PrimitiveId))
 			return false;
 
 		// We won't be able to catch writes to control point outputs here since variable
@@ -17637,21 +17637,21 @@ string CompilerMSL::builtin_to_glsl(BuiltIn builtin, StorageClass storage)
 	// When used in the entry function, output builtins are qualified with output struct name.
 	// Test storage class as NOT Input, as output builtins might be part of generic type.
 	// Also don't do this for tessellation control shaders.
-	case BuiltInViewportIndex:
+	case BuiltIn::ViewportIndex:
 		if (!msl_options.supports_msl_version(2, 0))
 			SPIRV_CROSS_THROW("ViewportIndex requires Metal 2.0.");
 		/* fallthrough */
-	case BuiltInFragDepth:
-	case BuiltInFragStencilRefEXT:
-		if ((builtin == BuiltInFragDepth && !msl_options.enable_frag_depth_builtin) ||
-		    (builtin == BuiltInFragStencilRefEXT && !msl_options.enable_frag_stencil_ref_builtin))
+	case BuiltIn::FragDepth:
+	case BuiltIn::FragStencilRefEXT:
+		if ((builtin == BuiltIn::FragDepth && !msl_options.enable_frag_depth_builtin) ||
+		    (builtin == BuiltIn::FragStencilRefEXT && !msl_options.enable_frag_stencil_ref_builtin))
 			break;
 		/* fallthrough */
 	case BuiltInPosition:
 	case BuiltIn::PointSize:
-	case BuiltInClipDistance:
-	case BuiltInCullDistance:
-	case BuiltInLayer:
+	case BuiltIn::ClipDistance:
+	case BuiltIn::CullDistance:
+	case BuiltIn::Layer:
 		if (is_tesc_shader())
 			break;
 		if (is_mesh_shader())
@@ -17685,7 +17685,7 @@ string CompilerMSL::builtin_to_glsl(BuiltIn builtin, StorageClass storage)
 			return stage_in_var_name + "." + CompilerGLSL::builtin_to_glsl(builtin, storage);
 		break;
 
-	case BuiltInTessLevelOuter:
+	case BuiltIn::TessLevelOuter:
 		if (is_tesc_shader() && storage != StorageClass::Input && current_function &&
 		    (current_function->self == ir.default_entry_point))
 		{
@@ -17694,7 +17694,7 @@ string CompilerMSL::builtin_to_glsl(BuiltIn builtin, StorageClass storage)
 		}
 		break;
 
-	case BuiltInTessLevelInner:
+	case BuiltIn::TessLevelInner:
 		if (is_tesc_shader() && storage != StorageClass::Input && current_function &&
 		    (current_function->self == ir.default_entry_point))
 		{
@@ -17713,7 +17713,7 @@ string CompilerMSL::builtin_to_glsl(BuiltIn builtin, StorageClass storage)
 		// In SPIR-V 1.6 with Volatile HelperInvocation, we cannot emit a fixup early.
 		return "simd_is_helper_thread()";
 
-	case BuiltInPrimitiveId:
+	case BuiltIn::PrimitiveId:
 		return "gl_PrimitiveID";
 
 	default:
@@ -17747,9 +17747,9 @@ string CompilerMSL::builtin_qualifier(BuiltIn builtin)
 		SPIRV_CROSS_THROW("DrawIndex is not supported in MSL.");
 
 	// Vertex function out
-	case BuiltInClipDistance:
+	case BuiltIn::ClipDistance:
 		return "clip_distance";
-	case BuiltInCullDistance:
+	case BuiltIn::CullDistance:
 		return "cull_distance";
 	case BuiltIn::PointSize:
 		return "point_size";
@@ -17762,15 +17762,15 @@ string CompilerMSL::builtin_qualifier(BuiltIn builtin)
 		}
 		else
 			return "position";
-	case BuiltInLayer:
+	case BuiltIn::Layer:
 		return "render_target_array_index";
-	case BuiltInViewportIndex:
+	case BuiltIn::ViewportIndex:
 		if (!msl_options.supports_msl_version(2, 0))
 			SPIRV_CROSS_THROW("ViewportIndex requires Metal 2.0.");
 		return "viewport_array_index";
 
 	// Tess. control function in
-	case BuiltInInvocationId:
+	case BuiltIn::InvocationId:
 		if (msl_options.multi_patch_workgroup)
 		{
 			// Shouldn't be reached.
@@ -17780,7 +17780,7 @@ string CompilerMSL::builtin_qualifier(BuiltIn builtin)
 	case BuiltInPatchVertices:
 		// Shouldn't be reached.
 		SPIRV_CROSS_THROW("PatchVertices is derived from the auxiliary buffer in MSL.");
-	case BuiltInPrimitiveId:
+	case BuiltIn::PrimitiveId:
 		switch (execution.model)
 		{
 		case ExecutionModelTessellationControl:
@@ -17805,13 +17805,13 @@ string CompilerMSL::builtin_qualifier(BuiltIn builtin)
 		}
 
 	// Tess. control function out
-	case BuiltInTessLevelOuter:
-	case BuiltInTessLevelInner:
+	case BuiltIn::TessLevelOuter:
+	case BuiltIn::TessLevelInner:
 		// Shouldn't be reached.
 		SPIRV_CROSS_THROW("Tessellation levels are handled specially in MSL.");
 
 	// Tess. evaluation function in
-	case BuiltInTessCoord:
+	case BuiltIn::TessCoord:
 		return "position_in_patch";
 
 	// Fragment function in
@@ -17819,7 +17819,7 @@ string CompilerMSL::builtin_qualifier(BuiltIn builtin)
 		return "front_facing";
 	case BuiltInPointCoord:
 		return "point_coord";
-	case BuiltInFragCoord:
+	case BuiltIn::FragCoord:
 		return "position";
 	case BuiltInSampleId:
 		return "sample_id";
@@ -17836,7 +17836,7 @@ string CompilerMSL::builtin_qualifier(BuiltIn builtin)
 		return "render_target_array_index";
 
 	// Fragment function out
-	case BuiltInFragDepth:
+	case BuiltIn::FragDepth:
 		if (execution.flags.get(ExecutionModeDepthGreater))
 			return "depth(greater)";
 		else if (execution.flags.get(ExecutionModeDepthLess))
@@ -17844,7 +17844,7 @@ string CompilerMSL::builtin_qualifier(BuiltIn builtin)
 		else
 			return "depth(any)";
 
-	case BuiltInFragStencilRefEXT:
+	case BuiltIn::FragStencilRefEXT:
 		return "stencil";
 
 	// Compute function in
@@ -17937,7 +17937,7 @@ string CompilerMSL::builtin_qualifier(BuiltIn builtin)
 			SPIRV_CROSS_THROW("Barycentrics are only supported in MSL 2.2 and above on macOS.");
 		return "barycentric_coord";
 
-	case BuiltInCullPrimitiveEXT:
+	case BuiltIn::CullPrimitiveEXT:
 		return "primitive_culled";
 
 	default:
@@ -17967,40 +17967,40 @@ string CompilerMSL::builtin_type_decl(BuiltIn builtin, uint32_t id)
 		SPIRV_CROSS_THROW("DrawIndex is not supported in MSL.");
 
 	// Vertex function out
-	case BuiltInClipDistance:
-	case BuiltInCullDistance:
+	case BuiltIn::ClipDistance:
+	case BuiltIn::CullDistance:
 		return "float";
 	case BuiltIn::PointSize:
 		return "float";
 	case BuiltInPosition:
 		return "float4";
-	case BuiltInLayer:
+	case BuiltIn::Layer:
 		return "uint";
-	case BuiltInViewportIndex:
+	case BuiltIn::ViewportIndex:
 		if (!msl_options.supports_msl_version(2, 0))
 			SPIRV_CROSS_THROW("ViewportIndex requires Metal 2.0.");
 		return "uint";
 
 	// Tess. control function in
-	case BuiltInInvocationId:
+	case BuiltIn::InvocationId:
 		return "uint";
 	case BuiltInPatchVertices:
 		return "uint";
-	case BuiltInPrimitiveId:
+	case BuiltIn::PrimitiveId:
 		return "uint";
 
 	// Tess. control function out
-	case BuiltInTessLevelInner:
+	case BuiltIn::TessLevelInner:
 		if (is_tese_shader())
 			return (msl_options.raw_buffer_tese_input || is_tessellating_triangles()) ? "float" : "float2";
 		return "half";
-	case BuiltInTessLevelOuter:
+	case BuiltIn::TessLevelOuter:
 		if (is_tese_shader())
 			return (msl_options.raw_buffer_tese_input || is_tessellating_triangles()) ? "float" : "float4";
 		return "half";
 
 	// Tess. evaluation function in
-	case BuiltInTessCoord:
+	case BuiltIn::TessCoord:
 		return "float3";
 
 	// Fragment function in
@@ -18008,7 +18008,7 @@ string CompilerMSL::builtin_type_decl(BuiltIn builtin, uint32_t id)
 		return "bool";
 	case BuiltInPointCoord:
 		return "float2";
-	case BuiltInFragCoord:
+	case BuiltIn::FragCoord:
 		return "float4";
 	case BuiltInSampleId:
 		return "uint";
@@ -18028,10 +18028,10 @@ string CompilerMSL::builtin_type_decl(BuiltIn builtin, uint32_t id)
 		return type_to_glsl(get_variable_data_type(get<SPIRVariable>(id)));
 
 	// Fragment function out
-	case BuiltInFragDepth:
+	case BuiltIn::FragDepth:
 		return "float";
 
-	case BuiltInFragStencilRefEXT:
+	case BuiltIn::FragStencilRefEXT:
 		return "uint";
 
 	// Compute function in
@@ -18057,11 +18057,11 @@ string CompilerMSL::builtin_type_decl(BuiltIn builtin, uint32_t id)
 	case BuiltInDeviceIndex:
 		return "int";
 
-	case BuiltInPrimitivePointIndicesEXT:
+	case BuiltIn::PrimitivePointIndicesEXT:
 		return "uint";
-	case BuiltInPrimitiveLineIndicesEXT:
+	case BuiltIn::PrimitiveLineIndicesEXT:
 		return "uint2";
-	case BuiltInPrimitiveTriangleIndicesEXT:
+	case BuiltIn::PrimitiveTriangleIndicesEXT:
 		return "uint3";
 
 	default:
@@ -18690,7 +18690,7 @@ void CompilerMSL::OpCodePreprocessor::check_resource_write(uint32_t var_id)
 {
 	auto *p_var = compiler.maybe_get_backing_variable(var_id);
 	StorageClass sc = p_var ? p_var->storage : StorageClassMax;
-	if (sc == StorageClassUniform || sc == StorageClassStorageBuffer)
+	if (sc == StorageClass::Uniform || sc == StorageClassStorageBuffer)
 		uses_buffer_write = true;
 }
 
@@ -19078,10 +19078,10 @@ void CompilerMSL::cast_from_variable_load(uint32_t source_id, std::string &expr,
 	case BuiltInLocalInvocationIndex:
 	case BuiltInWorkgroupSize:
 	case BuiltInNumWorkgroups:
-	case BuiltInLayer:
-	case BuiltInViewportIndex:
-	case BuiltInFragStencilRefEXT:
-	case BuiltInPrimitiveId:
+	case BuiltIn::Layer:
+	case BuiltIn::ViewportIndex:
+	case BuiltIn::FragStencilRefEXT:
+	case BuiltIn::PrimitiveId:
 	case BuiltInSubgroupSize:
 	case BuiltInSubgroupLocalInvocationId:
 	case BuiltIn::ViewIndex:
@@ -19094,8 +19094,8 @@ void CompilerMSL::cast_from_variable_load(uint32_t source_id, std::string &expr,
 		expected_width = 32;
 		break;
 
-	case BuiltInTessLevelInner:
-	case BuiltInTessLevelOuter:
+	case BuiltIn::TessLevelInner:
+	case BuiltIn::TessLevelOuter:
 		if (is_tesc_shader())
 		{
 			expected_type = SPIRType::Half;
@@ -19117,7 +19117,7 @@ void CompilerMSL::cast_from_variable_load(uint32_t source_id, std::string &expr,
 	}
 	else if (expected_type != expr_type.basetype)
 	{
-		if (is_array(expr_type) && (builtin == BuiltInTessLevelInner || builtin == BuiltInTessLevelOuter))
+		if (is_array(expr_type) && (builtin == BuiltIn::TessLevelInner || builtin == BuiltIn::TessLevelOuter))
 		{
 			// Triggers when loading TessLevel directly as an array.
 			// Need explicit padding + cast.
@@ -19212,17 +19212,17 @@ void CompilerMSL::cast_to_variable_store(uint32_t target_id, std::string &expr, 
 	auto expected_width = expr_type.width;
 	switch (builtin)
 	{
-	case BuiltInLayer:
-	case BuiltInViewportIndex:
-	case BuiltInFragStencilRefEXT:
-	case BuiltInPrimitiveId:
+	case BuiltIn::Layer:
+	case BuiltIn::ViewportIndex:
+	case BuiltIn::FragStencilRefEXT:
+	case BuiltIn::PrimitiveId:
 	case BuiltIn::ViewIndex:
 		expected_type = SPIRType::UInt;
 		expected_width = 32;
 		break;
 
-	case BuiltInTessLevelInner:
-	case BuiltInTessLevelOuter:
+	case BuiltIn::TessLevelInner:
+	case BuiltIn::TessLevelOuter:
 		expected_type = SPIRType::Half;
 		expected_width = 16;
 		break;
@@ -19327,7 +19327,7 @@ void CompilerMSL::emit_argument_buffer_aliased_descriptor(const SPIRVariable &al
 	auto &data_type = get_variable_data_type(aliased_var);
 	string descriptor_storage = descriptor_address_space(aliased_var.self, aliased_var.storage, "");
 
-	if (aliased_var.storage == StorageClassUniformConstant)
+	if (aliased_var.storage == StorageClass::UniformConstant)
 	{
 		if (is_var_runtime_size_array(aliased_var))
 		{
@@ -19430,7 +19430,7 @@ void CompilerMSL::analyze_argument_buffers()
 	bool needs_buffer_sizes = false;
 
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t self, SPIRVariable &var) {
-		if ((var.storage == StorageClassUniform || var.storage == StorageClassUniformConstant ||
+		if ((var.storage == StorageClass::Uniform || var.storage == StorageClass::UniformConstant ||
 		     var.storage == StorageClassStorageBuffer) &&
 		    !is_hidden_variable(var))
 		{
@@ -19534,7 +19534,7 @@ void CompilerMSL::analyze_argument_buffers()
 				uint_type_pointer.pointer = true;
 				uint_type_pointer.pointer_depth++;
 				uint_type_pointer.parent_type = get_uint_type_id();
-				uint_type_pointer.storage = StorageClassUniform;
+				uint_type_pointer.storage = StorageClass::Uniform;
 				set<SPIRType>(uint_ptr_type_id, uint_type_pointer);
 				set_decoration(uint_ptr_type_id, DecorationArrayStride, 4);
 			}
@@ -19542,7 +19542,7 @@ void CompilerMSL::analyze_argument_buffers()
 			if (set_needs_swizzle_buffer[desc_set])
 			{
 				uint32_t var_id = ir.increase_bound_by(1);
-				auto &var = set<SPIRVariable>(var_id, uint_ptr_type_id, StorageClassUniformConstant);
+				auto &var = set<SPIRVariable>(var_id, uint_ptr_type_id, StorageClass::UniformConstant);
 				set_name(var_id, "spvSwizzleConstants");
 				set_decoration(var_id, DecorationDescriptorSet, desc_set);
 				set_decoration(var_id, DecorationBinding, kSwizzleBufferBinding);
@@ -19553,7 +19553,7 @@ void CompilerMSL::analyze_argument_buffers()
 			if (set_needs_buffer_sizes[desc_set])
 			{
 				uint32_t var_id = ir.increase_bound_by(1);
-				auto &var = set<SPIRVariable>(var_id, uint_ptr_type_id, StorageClassUniformConstant);
+				auto &var = set<SPIRVariable>(var_id, uint_ptr_type_id, StorageClass::UniformConstant);
 				set_name(var_id, "spvBufferSizeConstants");
 				set_decoration(var_id, DecorationDescriptorSet, desc_set);
 				set_decoration(var_id, DecorationBinding, kBufferSizeBufferBinding);
@@ -19599,7 +19599,7 @@ void CompilerMSL::analyze_argument_buffers()
 			set_decoration(type_id, Decoration::Block);
 		}
 		else
-			buffer_type.storage = StorageClassUniform;
+			buffer_type.storage = StorageClass::Uniform;
 
 		auto buffer_type_name = join("spvDescriptorSetBuffer", desc_set);
 		set_name(type_id, buffer_type_name);
@@ -19612,7 +19612,7 @@ void CompilerMSL::analyze_argument_buffers()
 		ptr_type.parent_type = type_id;
 
 		uint32_t buffer_variable_id = next_id;
-		auto &buffer_var = set<SPIRVariable>(buffer_variable_id, ptr_type_id, StorageClassUniform);
+		auto &buffer_var = set<SPIRVariable>(buffer_variable_id, ptr_type_id, StorageClass::Uniform);
 		auto buffer_name = join("spvDescriptorSet", desc_set);
 		set_name(buffer_variable_id, buffer_name);
 
@@ -19721,7 +19721,7 @@ void CompilerMSL::analyze_argument_buffers()
 				uint32_t sampler_type_id = ir.increase_bound_by(type_is_array ? 2 : 1);
 				auto &new_sampler_type = set<SPIRType>(sampler_type_id, OpTypeSampler);
 				new_sampler_type.basetype = SPIRType::Sampler;
-				new_sampler_type.storage = StorageClassUniformConstant;
+				new_sampler_type.storage = StorageClass::UniformConstant;
 
 				if (type_is_array)
 				{
@@ -19805,7 +19805,7 @@ void CompilerMSL::analyze_argument_buffers()
 					if (has_extended_decoration(var.self, SPIRVCrossDecorationOverlappingBinding))
 					{
 						// Casting raw pointers is fine since their ABI is fixed, but anything opaque is deeply questionable on Metal 2.
-						if (get<SPIRVariable>(resource.overlapping_var_id).storage == StorageClassUniformConstant &&
+						if (get<SPIRVariable>(resource.overlapping_var_id).storage == StorageClass::UniformConstant &&
 						    !msl_options.supports_msl_version(3, 0))
 						{
 							SPIRV_CROSS_THROW("Full mutable aliasing of argument buffer descriptors only works on Metal 3+.");
@@ -19875,7 +19875,7 @@ void CompilerMSL::add_argument_buffer_padding_buffer_type(SPIRType &struct_type,
 		uint32_t buff_type_id = ir.increase_bound_by(2);
 		auto &buff_type = set<SPIRType>(buff_type_id, OpNop);
 		buff_type.basetype = rez_bind.basetype;
-		buff_type.storage = StorageClassUniformConstant;
+		buff_type.storage = StorageClass::UniformConstant;
 
 		uint32_t ptr_type_id = buff_type_id + 1;
 		auto &ptr_type = set<SPIRType>(ptr_type_id, OpTypePointer);
@@ -19905,7 +19905,7 @@ void CompilerMSL::add_argument_buffer_padding_image_type(SPIRType &struct_type, 
 		uint32_t img_type_id = base_type_id + 1;
 		auto &img_type = set<SPIRType>(img_type_id, OpTypeImage);
 		img_type.basetype = SPIRType::Image;
-		img_type.storage = StorageClassUniformConstant;
+		img_type.storage = StorageClass::UniformConstant;
 
 		img_type.image.type = base_type_id;
 		img_type.image.dim = Dim2D;
@@ -19913,7 +19913,7 @@ void CompilerMSL::add_argument_buffer_padding_image_type(SPIRType &struct_type, 
 		img_type.image.arrayed = false;
 		img_type.image.ms = false;
 		img_type.image.sampled = 1;
-		img_type.image.format = ImageFormatUnknown;
+		img_type.image.format = ImageFormat::Unknown;
 		img_type.image.access = AccessQualifierMax;
 
 		argument_buffer_padding_image_type_id = img_type_id;
@@ -19931,7 +19931,7 @@ void CompilerMSL::add_argument_buffer_padding_sampler_type(SPIRType &struct_type
 		uint32_t samp_type_id = ir.increase_bound_by(1);
 		auto &samp_type = set<SPIRType>(samp_type_id, OpTypeSampler);
 		samp_type.basetype = SPIRType::Sampler;
-		samp_type.storage = StorageClassUniformConstant;
+		samp_type.storage = StorageClass::UniformConstant;
 
 		argument_buffer_padding_sampler_type_id = samp_type_id;
 	}
@@ -20123,8 +20123,8 @@ void CompilerMSL::emit_mesh_outputs()
 				{
 				case BuiltInPosition:
 				case BuiltIn::PointSize:
-				case BuiltInClipDistance:
-				case BuiltInCullDistance:
+				case BuiltIn::ClipDistance:
+				case BuiltIn::CullDistance:
 					access = "." + builtin_to_glsl(builtin, StorageClass::Output);
 					break;
 				default:
@@ -20209,11 +20209,11 @@ void CompilerMSL::emit_mesh_outputs()
 
 					switch (builtin)
 					{
-					case BuiltInPrimitiveId:
-					case BuiltInLayer:
-					case BuiltInViewportIndex:
-					case BuiltInCullPrimitiveEXT:
-					case BuiltInPrimitiveShadingRateKHR:
+					case BuiltIn::PrimitiveId:
+					case BuiltIn::Layer:
+					case BuiltIn::ViewportIndex:
+					case BuiltIn::CullPrimitiveEXT:
+					case BuiltIn::PrimitiveShadingRateKHR:
 						access = "." + builtin_to_glsl(builtin, StorageClass::Output);
 						break;
 					default:
