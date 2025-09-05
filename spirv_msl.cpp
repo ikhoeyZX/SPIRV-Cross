@@ -212,7 +212,7 @@ uint32_t CompilerMSL::get_resource_array_size(const SPIRType &type, uint32_t id)
 		return array_size;
 
 	StageSetBinding tuple = { get_entry_point().model, desc_set,
-		                      get_decoration(id, DecorationBinding) };
+		                      get_decoration(id, Decoration::Binding) };
 	auto itr = resource_bindings.find(tuple);
 	return itr != end(resource_bindings) ? itr->second.first.count : array_size;
 }
@@ -850,7 +850,7 @@ void CompilerMSL::build_implicit_builtins()
 				set<SPIRVariable>(var_id, type_id, StorageClass::Uniform);
 				// This should never match anything.
 				set_decoration(var_id, Decoration::DescriptorSet, ~(5u));
-				set_decoration(var_id, DecorationBinding, msl_options.indirect_params_buffer_index);
+				set_decoration(var_id, Decoration::Binding, msl_options.indirect_params_buffer_index);
 				set_extended_decoration(var_id, SPIRVCrossDecorationResourceIndexPrimary,
 				                        msl_options.indirect_params_buffer_index);
 			}
@@ -1048,7 +1048,7 @@ void CompilerMSL::build_implicit_builtins()
 		set_name(var_id, "spvSwizzleConstants");
 		// This should never match anything.
 		set_decoration(var_id, Decoration::DescriptorSet, kSwizzleBufferBinding);
-		set_decoration(var_id, DecorationBinding, msl_options.swizzle_buffer_index);
+		set_decoration(var_id, Decoration::Binding, msl_options.swizzle_buffer_index);
 		set_extended_decoration(var_id, SPIRVCrossDecorationResourceIndexPrimary, msl_options.swizzle_buffer_index);
 		swizzle_buffer_id = var_id;
 	}
@@ -1059,7 +1059,7 @@ void CompilerMSL::build_implicit_builtins()
 		set_name(var_id, "spvBufferSizeConstants");
 		// This should never match anything.
 		set_decoration(var_id, Decoration::DescriptorSet, kBufferSizeBufferBinding);
-		set_decoration(var_id, DecorationBinding, msl_options.buffer_size_buffer_index);
+		set_decoration(var_id, Decoration::Binding, msl_options.buffer_size_buffer_index);
 		set_extended_decoration(var_id, SPIRVCrossDecorationResourceIndexPrimary, msl_options.buffer_size_buffer_index);
 		buffer_size_buffer_id = var_id;
 	}
@@ -1070,7 +1070,7 @@ void CompilerMSL::build_implicit_builtins()
 		set_name(var_id, "spvViewMask");
 		// This should never match anything.
 		set_decoration(var_id, Decoration::DescriptorSet, ~(4u));
-		set_decoration(var_id, DecorationBinding, msl_options.view_mask_buffer_index);
+		set_decoration(var_id, Decoration::Binding, msl_options.view_mask_buffer_index);
 		set_extended_decoration(var_id, SPIRVCrossDecorationResourceIndexPrimary, msl_options.view_mask_buffer_index);
 		view_mask_buffer_id = var_id;
 	}
@@ -1081,7 +1081,7 @@ void CompilerMSL::build_implicit_builtins()
 		set_name(var_id, "spvDynamicOffsets");
 		// This should never match anything.
 		set_decoration(var_id, Decoration::DescriptorSet, ~(5u));
-		set_decoration(var_id, DecorationBinding, msl_options.dynamic_offsets_buffer_index);
+		set_decoration(var_id, Decoration::Binding, msl_options.dynamic_offsets_buffer_index);
 		set_extended_decoration(var_id, SPIRVCrossDecorationResourceIndexPrimary,
 		                        msl_options.dynamic_offsets_buffer_index);
 		dynamic_offsets_buffer_id = var_id;
@@ -1609,7 +1609,7 @@ void CompilerMSL::emit_entry_point_declarations()
 		auto name = to_name(var_id);
 
 		uint32_t desc_set = get_decoration(var_id, Decoration::DescriptorSet);
-		uint32_t desc_binding = get_decoration(var_id, DecorationBinding);
+		uint32_t desc_binding = get_decoration(var_id, Decoration::Binding);
 		auto alias_name = join("spvBufferAliasSet", desc_set, "Binding", desc_binding);
 
 		statement(addr_space, " auto& ", to_restrict(var_id, true),
@@ -4601,20 +4601,20 @@ uint32_t CompilerMSL::add_interface_block(StorageClass storage, bool patch)
 			set<SPIRType>(type_id, type);
 			if (input.second.vecsize > 1)
 			{
-				type.op = OpTypeVector;
+				type.op = Op::OpTypeVector;
 				type.vecsize = input.second.vecsize;
 				set<SPIRType>(vec_type_id, type);
 				type_id = vec_type_id;
 			}
 
-			type.op = OpTypeArray;
+			type.op = Op::OpTypeArray;
 			type.array.push_back(0);
 			type.array_size_literal.push_back(true);
 			type.parent_type = type_id;
 			set<SPIRType>(array_type_id, type);
 			type.self = type_id;
 
-			type.op = OpTypePointer;
+			type.op = Op::OpTypePointer;
 			type.pointer = true;
 			type.pointer_depth++;
 			type.parent_type = array_type_id;
@@ -4669,7 +4669,7 @@ uint32_t CompilerMSL::add_interface_block(StorageClass storage, bool patch)
 			set<SPIRType>(type_id, type);
 			if (output.second.vecsize > 1)
 			{
-				type.op = OpTypeVector;
+				type.op = Op::OpTypeVector;
 				type.vecsize = output.second.vecsize;
 				set<SPIRType>(vec_type_id, type);
 				type_id = vec_type_id;
@@ -4677,14 +4677,14 @@ uint32_t CompilerMSL::add_interface_block(StorageClass storage, bool patch)
 
 			if (is_tesc_shader())
 			{
-				type.op = OpTypeArray;
+				type.op = Op::OpTypeArray;
 				type.array.push_back(0);
 				type.array_size_literal.push_back(true);
 				type.parent_type = type_id;
 				set<SPIRType>(array_type_id, type);
 			}
 
-			type.op = OpTypePointer;
+			type.op = Op::OpTypePointer;
 			type.pointer = true;
 			type.pointer_depth++;
 			type.parent_type = is_tesc_shader() ? array_type_id : type_id;
@@ -4771,7 +4771,7 @@ uint32_t CompilerMSL::add_interface_block_pointer(uint32_t ib_var_id, StorageCla
 		// do the same with our struct here.
 		uint32_t ib_ptr_type_id = next_id++;
 		auto &ib_ptr_type = set<SPIRType>(ib_ptr_type_id, ib_type);
-		ib_ptr_type.op = OpTypePointer;
+		ib_ptr_type.op = Op::OpTypePointer;
 		ib_ptr_type.parent_type = ib_ptr_type.type_alias = ib_type.self;
 		ib_ptr_type.pointer = true;
 		ib_ptr_type.pointer_depth++;
@@ -4879,7 +4879,7 @@ uint32_t CompilerMSL::ensure_correct_builtin_type(uint32_t type_id, BuiltIn buil
 
 		uint32_t ptr_type_id = next_id++;
 		auto &ptr_type = set<SPIRType>(ptr_type_id, base_type);
-		ptr_type.op = spv::OpTypePointer;
+		ptr_type.op = spv::Op::OpTypePointer;
 		ptr_type.pointer = true;
 		ptr_type.pointer_depth++;
 		ptr_type.storage = type.storage;
@@ -5369,7 +5369,7 @@ void CompilerMSL::ensure_member_packing_rules_msl(SPIRType &ib_type, uint32_t in
 			{
 				type.columns = 1;
 				assert(type.array.empty());
-				type.op = OpTypeArray;
+				type.op = Op::OpTypeArray;
 				type.array.push_back(1);
 				type.array_size_literal.push_back(true);
 			}
@@ -5386,7 +5386,7 @@ void CompilerMSL::ensure_member_packing_rules_msl(SPIRType &ib_type, uint32_t in
 				type.vecsize = type.columns;
 				type.columns = 1;
 				assert(type.array.empty());
-				type.op = OpTypeArray;
+				type.op = Op::OpTypeArray;
 				type.array.push_back(1);
 				type.array_size_literal.push_back(true);
 			}
@@ -14629,7 +14629,7 @@ const MSLConstexprSampler *CompilerMSL::find_constexpr_sampler(uint32_t id) cons
 	// Try by binding.
 	{
 		uint32_t desc_set = get_decoration(id, Decoration::DescriptorSet);
-		uint32_t binding = get_decoration(id, DecorationBinding);
+		uint32_t binding = get_decoration(id, Decoration::Binding);
 
 		auto itr = constexpr_samplers_by_binding.find({ desc_set, binding });
 		if (itr != end(constexpr_samplers_by_binding))
@@ -14694,8 +14694,8 @@ void CompilerMSL::entry_point_args_discrete_descriptors(string &ep_args)
 				{
 					if (get_decoration(resource.var->self, Decoration::DescriptorSet) ==
 					    get_decoration(var_id, Decoration::DescriptorSet) &&
-					    get_decoration(resource.var->self, DecorationBinding) ==
-					    get_decoration(var_id, DecorationBinding) &&
+					    get_decoration(resource.var->self, Decoration::Binding) ==
+					    get_decoration(var_id, Decoration::Binding) &&
 					    resource.basetype == SPIRType::Struct && type.basetype == SPIRType::Struct &&
 					    (resource.var->storage == StorageClass::Uniform ||
 					     resource.var->storage == StorageClass::StorageBuffer))
@@ -14792,7 +14792,7 @@ void CompilerMSL::entry_point_args_discrete_descriptors(string &ep_args)
 					auto primary_name = join("spvBufferAliasSet",
 					                         get_decoration(var_id, Decoration::DescriptorSet),
 					                         "Binding",
-					                         get_decoration(var_id, DecorationBinding));
+					                         get_decoration(var_id, Decoration::Binding));
 
 					// Declare the primary alias as void*
 					if (!ep_args.empty())
@@ -15660,9 +15660,9 @@ uint32_t CompilerMSL::get_metal_resource_index(SPIRVariable &var, SPIRType::Base
 	{
 		// Allow user to enable decoration binding.
 		// If there is no explicit mapping of bindings to MSL, use the declared binding as a fallback.
-		if (has_decoration(var.self, DecorationBinding))
+		if (has_decoration(var.self, Decoration::Binding))
 		{
-			var_binding = get_decoration(var.self, DecorationBinding);
+			var_binding = get_decoration(var.self, Decoration::Binding);
 			// Avoid emitting sentinel bindings.
 			if (var_binding < 0x80000000u)
 				return var_binding;
@@ -19456,7 +19456,7 @@ void CompilerMSL::analyze_argument_buffers()
 				}
 			}
 
-			uint32_t binding = get_decoration(var_id, DecorationBinding);
+			uint32_t binding = get_decoration(var_id, Decoration::Binding);
 			if (type.basetype == SPIRType::SampledImage)
 			{
 				add_resource_name(var_id);
@@ -19545,7 +19545,7 @@ void CompilerMSL::analyze_argument_buffers()
 				auto &var = set<SPIRVariable>(var_id, uint_ptr_type_id, StorageClass::UniformConstant);
 				set_name(var_id, "spvSwizzleConstants");
 				set_decoration(var_id, Decoration::DescriptorSet, desc_set);
-				set_decoration(var_id, DecorationBinding, kSwizzleBufferBinding);
+				set_decoration(var_id, Decoration::Binding, kSwizzleBufferBinding);
 				resources_in_set[desc_set].push_back(
 				    { &var, to_name(var_id), SPIRType::UInt, get_metal_resource_index(var, SPIRType::UInt), 1, 0, 0 });
 			}
@@ -19556,7 +19556,7 @@ void CompilerMSL::analyze_argument_buffers()
 				auto &var = set<SPIRVariable>(var_id, uint_ptr_type_id, StorageClass::UniformConstant);
 				set_name(var_id, "spvBufferSizeConstants");
 				set_decoration(var_id, Decoration::DescriptorSet, desc_set);
-				set_decoration(var_id, DecorationBinding, kBufferSizeBufferBinding);
+				set_decoration(var_id, Decoration::Binding, kBufferSizeBufferBinding);
 				resources_in_set[desc_set].push_back(
 				    { &var, to_name(var_id), SPIRType::UInt, get_metal_resource_index(var, SPIRType::UInt), 1, 0, 0 });
 			}
@@ -19606,7 +19606,7 @@ void CompilerMSL::analyze_argument_buffers()
 
 		auto &ptr_type = set<SPIRType>(ptr_type_id, OpTypePointer);
 		ptr_type = buffer_type;
-		ptr_type.op = spv::OpTypePointer;
+		ptr_type.op = spv::Op::OpTypePointer;
 		ptr_type.pointer = true;
 		ptr_type.pointer_depth++;
 		ptr_type.parent_type = type_id;
@@ -19738,7 +19738,7 @@ void CompilerMSL::analyze_argument_buffers()
 			}
 			else
 			{
-				uint32_t binding = get_decoration(var.self, DecorationBinding);
+				uint32_t binding = get_decoration(var.self, Decoration::Binding);
 				SetBindingPair pair = { desc_set, binding };
 
 				if (resource.basetype == SPIRType::Image || resource.basetype == SPIRType::Sampler ||
@@ -19789,7 +19789,7 @@ void CompilerMSL::analyze_argument_buffers()
 					atomic_type.vecsize = 1;
 					set<SPIRType>(atomic_type_id, atomic_type);
 
-					atomic_type.op = Op::OpTypePointer;
+					atomic_type.op = Op::Op::OpTypePointer;
 					atomic_type.pointer = true;
 					atomic_type.pointer_depth++;
 					atomic_type.parent_type = atomic_type_id;
@@ -19880,7 +19880,7 @@ void CompilerMSL::add_argument_buffer_padding_buffer_type(SPIRType &struct_type,
 		uint32_t ptr_type_id = buff_type_id + 1;
 		auto &ptr_type = set<SPIRType>(ptr_type_id, OpTypePointer);
 		ptr_type = buff_type;
-		ptr_type.op = spv::OpTypePointer;
+		ptr_type.op = spv::Op::OpTypePointer;
 		ptr_type.pointer = true;
 		ptr_type.pointer_depth++;
 		ptr_type.parent_type = buff_type_id;
@@ -19949,7 +19949,7 @@ void CompilerMSL::add_argument_buffer_padding_type(uint32_t mbr_type_id, SPIRTyp
 	{
 		uint32_t ary_type_id = ir.increase_bound_by(1);
 		auto &ary_type = set<SPIRType>(ary_type_id, get<SPIRType>(type_id));
-		ary_type.op = OpTypeArray;
+		ary_type.op = Op::OpTypeArray;
 		ary_type.array.push_back(count);
 		ary_type.array_size_literal.push_back(true);
 		ary_type.parent_type = type_id;
