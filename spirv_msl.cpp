@@ -207,7 +207,7 @@ uint32_t CompilerMSL::get_resource_array_size(const SPIRType &type, uint32_t id)
 
 	// If we have argument buffers, we need to honor the ABI by using the correct array size
 	// from the layout. Only use shader declared size if we're not using argument buffers.
-	uint32_t desc_set = get_decoration(id, DecorationDescriptorSet);
+	uint32_t desc_set = get_decoration(id, Decoration::DescriptorSet);
 	if (!descriptor_set_is_argument_buffer(desc_set) && array_size)
 		return array_size;
 
@@ -849,7 +849,7 @@ void CompilerMSL::build_implicit_builtins()
 
 				set<SPIRVariable>(var_id, type_id, StorageClass::Uniform);
 				// This should never match anything.
-				set_decoration(var_id, DecorationDescriptorSet, ~(5u));
+				set_decoration(var_id, Decoration::DescriptorSet, ~(5u));
 				set_decoration(var_id, DecorationBinding, msl_options.indirect_params_buffer_index);
 				set_extended_decoration(var_id, SPIRVCrossDecorationResourceIndexPrimary,
 				                        msl_options.indirect_params_buffer_index);
@@ -1047,7 +1047,7 @@ void CompilerMSL::build_implicit_builtins()
 		uint32_t var_id = build_constant_uint_array_pointer();
 		set_name(var_id, "spvSwizzleConstants");
 		// This should never match anything.
-		set_decoration(var_id, DecorationDescriptorSet, kSwizzleBufferBinding);
+		set_decoration(var_id, Decoration::DescriptorSet, kSwizzleBufferBinding);
 		set_decoration(var_id, DecorationBinding, msl_options.swizzle_buffer_index);
 		set_extended_decoration(var_id, SPIRVCrossDecorationResourceIndexPrimary, msl_options.swizzle_buffer_index);
 		swizzle_buffer_id = var_id;
@@ -1058,7 +1058,7 @@ void CompilerMSL::build_implicit_builtins()
 		uint32_t var_id = build_constant_uint_array_pointer();
 		set_name(var_id, "spvBufferSizeConstants");
 		// This should never match anything.
-		set_decoration(var_id, DecorationDescriptorSet, kBufferSizeBufferBinding);
+		set_decoration(var_id, Decoration::DescriptorSet, kBufferSizeBufferBinding);
 		set_decoration(var_id, DecorationBinding, msl_options.buffer_size_buffer_index);
 		set_extended_decoration(var_id, SPIRVCrossDecorationResourceIndexPrimary, msl_options.buffer_size_buffer_index);
 		buffer_size_buffer_id = var_id;
@@ -1069,7 +1069,7 @@ void CompilerMSL::build_implicit_builtins()
 		uint32_t var_id = build_constant_uint_array_pointer();
 		set_name(var_id, "spvViewMask");
 		// This should never match anything.
-		set_decoration(var_id, DecorationDescriptorSet, ~(4u));
+		set_decoration(var_id, Decoration::DescriptorSet, ~(4u));
 		set_decoration(var_id, DecorationBinding, msl_options.view_mask_buffer_index);
 		set_extended_decoration(var_id, SPIRVCrossDecorationResourceIndexPrimary, msl_options.view_mask_buffer_index);
 		view_mask_buffer_id = var_id;
@@ -1080,7 +1080,7 @@ void CompilerMSL::build_implicit_builtins()
 		uint32_t var_id = build_constant_uint_array_pointer();
 		set_name(var_id, "spvDynamicOffsets");
 		// This should never match anything.
-		set_decoration(var_id, DecorationDescriptorSet, ~(5u));
+		set_decoration(var_id, Decoration::DescriptorSet, ~(5u));
 		set_decoration(var_id, DecorationBinding, msl_options.dynamic_offsets_buffer_index);
 		set_extended_decoration(var_id, SPIRVCrossDecorationResourceIndexPrimary,
 		                        msl_options.dynamic_offsets_buffer_index);
@@ -1504,7 +1504,7 @@ void CompilerMSL::emit_entry_point_declarations()
 		uint32_t var_id = var.self;
 		const auto &type = get_variable_data_type(var);
 		string name = to_name(var.self);
-		uint32_t desc_set = get_decoration(var.self, DecorationDescriptorSet);
+		uint32_t desc_set = get_decoration(var.self, Decoration::DescriptorSet);
 		uint32_t arg_id = argument_buffer_ids[desc_set];
 		uint32_t base_index = dynamic_buffer.second.first;
 
@@ -1557,7 +1557,7 @@ void CompilerMSL::emit_entry_point_declarations()
 			}
 
 			string resource_name;
-			if (descriptor_set_is_argument_buffer(get_decoration(var.self, DecorationDescriptorSet)))
+			if (descriptor_set_is_argument_buffer(get_decoration(var.self, Decoration::DescriptorSet)))
 				resource_name = ir.meta[var.self].decoration.qualified_alias;
 			else
 				resource_name = name + "_";
@@ -1608,7 +1608,7 @@ void CompilerMSL::emit_entry_point_declarations()
 		auto addr_space = get_argument_address_space(var);
 		auto name = to_name(var_id);
 
-		uint32_t desc_set = get_decoration(var_id, DecorationDescriptorSet);
+		uint32_t desc_set = get_decoration(var_id, Decoration::DescriptorSet);
 		uint32_t desc_binding = get_decoration(var_id, DecorationBinding);
 		auto alias_name = join("spvBufferAliasSet", desc_set, "Binding", desc_binding);
 
@@ -2057,7 +2057,7 @@ void CompilerMSL::extract_global_variables_from_function(uint32_t func_id, std::
 
 				// Use Metal's native frame-buffer fetch API for subpass inputs.
 				auto &type = get<SPIRType>(ops[0]);
-				if (type.basetype == SPIRType::Image && type.image.dim == DimSubpassData &&
+				if (type.basetype == SPIRType::Image && type.image.dim == Dim::SubpassData &&
 				    (!msl_options.use_framebuffer_fetch_subpasses))
 				{
 					// Implicitly reads gl_FragCoord.
@@ -9702,7 +9702,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		uint32_t img_id = ops[2];
 		auto &type = expression_type(img_id);
 		auto *p_var = maybe_get_backing_variable(img_id);
-		if (type.image.dim != DimSubpassData)
+		if (type.image.dim != Dim::SubpassData)
 		{
 			if (p_var && has_decoration(p_var->self, DecorationNonReadable))
 			{
@@ -9736,7 +9736,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 
 			std::string coord = to_expression(ops[3]);
 			auto &type = expression_type(ops[2]);
-			if (type.image.dim == Dim2D)
+			if (type.image.dim == Dim::Dim2D)
 			{
 				coord = join("spvImage2DAtomicCoord(", coord, ", ", to_expression(ops[2]), ")");
 			}
@@ -9864,16 +9864,16 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		string expr = type_to_glsl(rslt_type) + "(";
 		expr += img_exp + ".get_width(" + lod + ")";
 
-		if (img_dim == Dim2D || img_dim == DimCube || img_dim == Dim3D)
+		if (img_dim == Dim::Dim2D || img_dim == Dim::Cube || img_dim == Dim::Dim3D)
 			expr += ", " + img_exp + ".get_height(" + lod + ")";
 
-		if (img_dim == Dim3D)
+		if (img_dim == Dim::Dim3D)
 			expr += ", " + img_exp + ".get_depth(" + lod + ")";
 
 		if (img_is_array)
 		{
 			expr += ", " + img_exp + ".get_array_size()";
-			if (img_dim == DimCube && msl_options.emulate_cube_array)
+			if (img_dim == Dim::Cube && msl_options.emulate_cube_array)
 				expr += " / 6";
 		}
 
@@ -9903,16 +9903,16 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 
 		switch (image_type.image.dim)
 		{
-		case Dim1D:
+		case Dim::Dim1D:
 			if (!msl_options.texture_1D_as_2D)
 				SPIRV_CROSS_THROW("ImageQueryLod is not supported on 1D textures.");
 			[[fallthrough]];
-		case Dim2D:
+		case Dim::Dim2D:
 			if (coord_type.vecsize > 2)
 				coord_expr = enclose_expression(coord_expr) + ".xy";
 			break;
-		case DimCube:
-		case Dim3D:
+		case Dim::Cube:
+		case Dim::Dim3D:
 			if (coord_type.vecsize > 3)
 				coord_expr = enclose_expression(coord_expr) + ".xyz";
 			break;
@@ -10610,7 +10610,7 @@ void CompilerMSL::emit_texture_op(const Instruction &i, bool sparse)
 		auto &imgtype = get<SPIRType>(type.self);
 
 		// Use Metal's native frame-buffer fetch API for subpass inputs.
-		if (imgtype.image.dim == DimSubpassData)
+		if (imgtype.image.dim == Dim::SubpassData)
 		{
 			// Subpass inputs cannot be invalidated,
 			// so just forward the expression directly.
@@ -11077,21 +11077,21 @@ void CompilerMSL::emit_atomic_func_op(uint32_t result_type, uint32_t result_id, 
 			{
 				switch (res_type->image.dim)
 				{
-				case Dim1D:
+				case Dim::Dim1D:
 					if (msl_options.texture_1D_as_2D)
 						exp += join("uint2(", coord, ".x, 0), ", coord, ".y");
 					else
 						exp += join(coord, ".x, ", coord, ".y");
 
 					break;
-				case Dim2D:
+				case Dim::Dim2D:
 					exp += join(coord, ".xy, ", coord, ".z");
 					break;
 				default:
 					SPIRV_CROSS_THROW("Cannot do atomics on Cube textures.");
 				}
 			}
-			else if (ptr_type.storage == StorageClassImage && res_type->image.dim == Dim1D && msl_options.texture_1D_as_2D)
+			else if (ptr_type.storage == StorageClassImage && res_type->image.dim == Dim::Dim1D && msl_options.texture_1D_as_2D)
 				exp += join("uint2(", coord, ", 0)");
 			else
 				exp += coord;
@@ -11839,7 +11839,7 @@ void CompilerMSL::emit_function_prototype(SPIRFunction &func, const Bitset &)
 				decl += join(", ", argument_decl(arg), plane_name_suffix, i);
 
 			// Manufacture automatic sampler arg for SampledImage texture
-			if (arg_type.image.dim != DimBuffer)
+			if (arg_type.image.dim != Dim::Buffer)
 			{
 				if (arg_type.array.empty() || (var ? is_var_runtime_size_array(*var) : is_runtime_size_array(arg_type)))
 				{
@@ -12144,7 +12144,7 @@ string CompilerMSL::to_function_args(const TextureFunctionArguments &args, bool 
 	switch (imgtype.image.dim)
 	{
 
-	case Dim1D:
+	case Dim::Dim1D:
 		if (coord_type.vecsize > 1)
 			tex_coords = enclose_expression(tex_coords) + ".x";
 
@@ -12164,7 +12164,7 @@ string CompilerMSL::to_function_args(const TextureFunctionArguments &args, bool 
 		alt_coord_component = 1;
 		break;
 
-	case DimBuffer:
+	case Dim::Buffer:
 		if (coord_type.vecsize > 1)
 			tex_coords = enclose_expression(tex_coords) + ".x";
 
@@ -12193,14 +12193,14 @@ string CompilerMSL::to_function_args(const TextureFunctionArguments &args, bool 
 		alt_coord_component = 1;
 		break;
 
-	case DimSubpassData:
+	case Dim::SubpassData:
 		// If we're using Metal's native frame-buffer fetch API for subpass inputs,
 		// this path will not be hit.
 		tex_coords = "uint2(gl_FragCoord.xy)";
 		alt_coord_component = 2;
 		break;
 
-	case Dim2D:
+	case Dim::Dim2D:
 		if (coord_type.vecsize > 2)
 			tex_coords = enclose_expression(tex_coords) + ".xy";
 
@@ -12212,7 +12212,7 @@ string CompilerMSL::to_function_args(const TextureFunctionArguments &args, bool 
 		alt_coord_component = 2;
 		break;
 
-	case Dim3D:
+	case Dim::Dim3D:
 		if (coord_type.vecsize > 3)
 			tex_coords = enclose_expression(tex_coords) + ".xyz";
 
@@ -12224,7 +12224,7 @@ string CompilerMSL::to_function_args(const TextureFunctionArguments &args, bool 
 		alt_coord_component = 3;
 		break;
 
-	case DimCube:
+	case Dim::Cube:
 		if (args.base.is_fetch)
 		{
 			is_cube_fetch = true;
@@ -12252,7 +12252,7 @@ string CompilerMSL::to_function_args(const TextureFunctionArguments &args, bool 
 		// Fetch offsets must be applied directly to the coordinate.
 		forward = forward && should_forward(args.offset);
 		auto &type = expression_type(args.offset);
-		if (imgtype.image.dim == Dim1D && msl_options.texture_1D_as_2D)
+		if (imgtype.image.dim == Dim::Dim1D && msl_options.texture_1D_as_2D)
 		{
 			if (type.basetype != SPIRType::UInt)
 				tex_coords += join(" + uint2(", bitcast_expression(SPIRType::UInt, args.offset), ", 0)");
@@ -12280,7 +12280,7 @@ string CompilerMSL::to_function_args(const TextureFunctionArguments &args, bool 
 	if (!farg_str.empty())
 		farg_str += ", ";
 
-	if (imgtype.image.dim == DimCube && imgtype.image.arrayed && msl_options.emulate_cube_array)
+	if (imgtype.image.dim == Dim::Cube && imgtype.image.arrayed && msl_options.emulate_cube_array)
 	{
 		farg_str += "spvCubemapTo2DArrayFace(" + tex_coords + ").xy";
 
@@ -12313,7 +12313,7 @@ string CompilerMSL::to_function_args(const TextureFunctionArguments &args, bool 
 		if (imgtype.image.arrayed)
 		{
 			// Special case for cube arrays, face and layer are packed in one dimension.
-			if (imgtype.image.dim == DimCube && args.base.is_fetch)
+			if (imgtype.image.dim == Dim::Cube && args.base.is_fetch)
 			{
 				farg_str += ", uint(" + to_extract_component_expression(args.coord, 2) + ") / 6u";
 			}
@@ -12323,7 +12323,7 @@ string CompilerMSL::to_function_args(const TextureFunctionArguments &args, bool 
 				    ", uint(" +
 				    round_fp_tex_coords(to_extract_component_expression(args.coord, alt_coord_component), coord_is_fp) +
 				    ")";
-				if (imgtype.image.dim == DimSubpassData)
+				if (imgtype.image.dim == Dim::SubpassData)
 				{
 					if (msl_options.multiview)
 						farg_str += " + gl_ViewIndex";
@@ -12332,7 +12332,7 @@ string CompilerMSL::to_function_args(const TextureFunctionArguments &args, bool 
 				}
 			}
 		}
-		else if (imgtype.image.dim == DimSubpassData)
+		else if (imgtype.image.dim == Dim::SubpassData)
 		{
 			if (msl_options.multiview)
 				farg_str += ", gl_ViewIndex";
@@ -12402,14 +12402,14 @@ string CompilerMSL::to_function_args(const TextureFunctionArguments &args, bool 
 
 	// LOD Options
 	// Metal does not support LOD for 1D textures.
-	if (bias && (imgtype.image.dim != Dim1D || msl_options.texture_1D_as_2D))
+	if (bias && (imgtype.image.dim != Dim::Dim1D || msl_options.texture_1D_as_2D))
 	{
 		forward = forward && should_forward(bias);
 		farg_str += ", bias(" + to_unpacked_expression(bias) + ")";
 	}
 
 	// Metal does not support LOD for 1D textures.
-	if (lod && (imgtype.image.dim != Dim1D || msl_options.texture_1D_as_2D))
+	if (lod && (imgtype.image.dim != Dim::Dim1D || msl_options.texture_1D_as_2D))
 	{
 		forward = forward && should_forward(lod);
 		if (args.base.is_fetch)
@@ -12437,15 +12437,15 @@ string CompilerMSL::to_function_args(const TextureFunctionArguments &args, bool 
 				base_img = combined->image;
 			switch (imgtype.image.dim)
 			{
-			case Dim1D:
+			case Dim::Dim1D:
 				grad_opt = "gradient2d";
 				extent = join("float2(", to_expression(base_img), ".get_width(), 1.0)");
 				break;
-			case Dim2D:
+			case Dim::Dim2D:
 				grad_opt = "gradient2d";
 				extent = join("float2(", to_expression(base_img), ".get_width(), ", to_expression(base_img), ".get_height())");
 				break;
-			case DimCube:
+			case Dim::Cube:
 				if (imgtype.image.arrayed && msl_options.emulate_cube_array)
 				{
 					grad_opt = "gradient2d";
@@ -12479,8 +12479,8 @@ string CompilerMSL::to_function_args(const TextureFunctionArguments &args, bool 
 			farg_str += ", level(" + to_unpacked_expression(lod) + ")";
 		}
 	}
-	else if (args.base.is_fetch && !lod && (imgtype.image.dim != Dim1D || msl_options.texture_1D_as_2D) &&
-	         imgtype.image.dim != DimBuffer && !imgtype.image.ms && imgtype.image.sampled != 2)
+	else if (args.base.is_fetch && !lod && (imgtype.image.dim != Dim::Dim1D || msl_options.texture_1D_as_2D) &&
+	         imgtype.image.dim != Dim::Buffer && !imgtype.image.ms && imgtype.image.sampled != 2)
 	{
 		// Lod argument is optional in OpImageFetch, but we require a LOD value, pick 0 as the default.
 		// Check for sampled type as well, because is_fetch is also used for OpImageRead in MSL.
@@ -12488,21 +12488,21 @@ string CompilerMSL::to_function_args(const TextureFunctionArguments &args, bool 
 	}
 
 	// Metal does not support LOD for 1D textures.
-	if ((grad_x || grad_y) && (imgtype.image.dim != Dim1D || msl_options.texture_1D_as_2D))
+	if ((grad_x || grad_y) && (imgtype.image.dim != Dim::Dim1D || msl_options.texture_1D_as_2D))
 	{
 		forward = forward && should_forward(grad_x);
 		forward = forward && should_forward(grad_y);
 		string grad_opt, grad_coord;
 		switch (imgtype.image.dim)
 		{
-		case Dim1D:
-		case Dim2D:
+		case Dim::Dim1D:
+		case Dim::Dim2D:
 			grad_opt = "gradient2d";
 			break;
-		case Dim3D:
+		case Dim::Dim3D:
 			grad_opt = "gradient3d";
 			break;
-		case DimCube:
+		case Dim::Cube:
 			if (imgtype.image.arrayed && msl_options.emulate_cube_array)
 			{
 				grad_opt = "gradient2d";
@@ -12548,7 +12548,7 @@ string CompilerMSL::to_function_args(const TextureFunctionArguments &args, bool 
 	{
 		switch (imgtype.image.dim)
 		{
-		case Dim1D:
+		case Dim::Dim1D:
 			if (!msl_options.texture_1D_as_2D)
 				break;
 			if (offset_type->vecsize > 1)
@@ -12557,14 +12557,14 @@ string CompilerMSL::to_function_args(const TextureFunctionArguments &args, bool 
 			farg_str += join(", int2(", offset_expr, ", 0)");
 			break;
 
-		case Dim2D:
+		case Dim::Dim2D:
 			if (offset_type->vecsize > 2)
 				offset_expr = enclose_expression(offset_expr) + ".xy";
 
 			farg_str += ", " + offset_expr;
 			break;
 
-		case Dim3D:
+		case Dim::Dim3D:
 			if (offset_type->vecsize > 3)
 				offset_expr = enclose_expression(offset_expr) + ".xyz";
 
@@ -12579,7 +12579,7 @@ string CompilerMSL::to_function_args(const TextureFunctionArguments &args, bool 
 	if (args.component && !args.has_array_offsets)
 	{
 		// If 2D has gather component, ensure it also has an offset arg
-		if (imgtype.image.dim == Dim2D && offset_expr.empty())
+		if (imgtype.image.dim == Dim::Dim2D && offset_expr.empty())
 			farg_str += ", int2(0)";
 
 		if (!msl_options.swizzle_texture_samples || is_dynamic_img_sampler)
@@ -12917,7 +12917,7 @@ string CompilerMSL::to_func_call_arg(const SPIRFunction::Parameter &arg, uint32_
 			for (uint32_t i = 1; i < planes; i++)
 				arg_str += join(", ", CompilerGLSL::to_func_call_arg(arg, id), plane_name_suffix, i);
 			// Manufacture automatic sampler arg if the arg is a SampledImage texture.
-			if (type.image.dim != DimBuffer)
+			if (type.image.dim != Dim::Buffer)
 				arg_str += ", " + to_sampler_expression(var_id ? var_id : id);
 
 			// Add sampler Y'CbCr conversion info if we have it
@@ -14628,7 +14628,7 @@ const MSLConstexprSampler *CompilerMSL::find_constexpr_sampler(uint32_t id) cons
 
 	// Try by binding.
 	{
-		uint32_t desc_set = get_decoration(id, DecorationDescriptorSet);
+		uint32_t desc_set = get_decoration(id, Decoration::DescriptorSet);
 		uint32_t binding = get_decoration(id, DecorationBinding);
 
 		auto itr = constexpr_samplers_by_binding.find({ desc_set, binding });
@@ -14664,7 +14664,7 @@ void CompilerMSL::entry_point_args_discrete_descriptors(string &ep_args)
 		    !is_hidden_variable(var))
 		{
 			auto &type = get_variable_data_type(var);
-			uint32_t desc_set = get_decoration(var_id, DecorationDescriptorSet);
+			uint32_t desc_set = get_decoration(var_id, Decoration::DescriptorSet);
 
 			if (is_supported_argument_buffer_type(type) && var.storage != StorageClassPushConstant)
 			{
@@ -14692,8 +14692,8 @@ void CompilerMSL::entry_point_args_discrete_descriptors(string &ep_args)
 			{
 				for (auto &resource : resources)
 				{
-					if (get_decoration(resource.var->self, DecorationDescriptorSet) ==
-					    get_decoration(var_id, DecorationDescriptorSet) &&
+					if (get_decoration(resource.var->self, Decoration::DescriptorSet) ==
+					    get_decoration(var_id, Decoration::DescriptorSet) &&
 					    get_decoration(resource.var->self, DecorationBinding) ==
 					    get_decoration(var_id, DecorationBinding) &&
 					    resource.basetype == SPIRType::Struct && type.basetype == SPIRType::Struct &&
@@ -14743,7 +14743,7 @@ void CompilerMSL::entry_point_args_discrete_descriptors(string &ep_args)
 					resources.push_back({&var, discrete_descriptor_alias, to_name(var_id), SPIRType::Image,
 					                     get_metal_resource_index(var, SPIRType::Image, i), i, secondary_index });
 
-				if (type.image.dim != DimBuffer && !constexpr_sampler)
+				if (type.image.dim != Dim::Buffer && !constexpr_sampler)
 				{
 					resources.push_back({&var, discrete_descriptor_alias, to_sampler_expression(var_id), SPIRType::Sampler,
 					                     get_metal_resource_index(var, SPIRType::Sampler), 0, 0 });
@@ -14790,7 +14790,7 @@ void CompilerMSL::entry_point_args_discrete_descriptors(string &ep_args)
 				if (r.var == r.discrete_descriptor_alias)
 				{
 					auto primary_name = join("spvBufferAliasSet",
-					                         get_decoration(var_id, DecorationDescriptorSet),
+					                         get_decoration(var_id, Decoration::DescriptorSet),
 					                         "Binding",
 					                         get_decoration(var_id, DecorationBinding));
 
@@ -15015,7 +15015,7 @@ void CompilerMSL::fix_up_shader_inputs_outputs()
 				entry_func.fixup_hooks_in.push_back([this, &type, &var, var_id]() {
 					bool is_array_type = !type.array.empty();
 
-					uint32_t desc_set = get_decoration(var_id, DecorationDescriptorSet);
+					uint32_t desc_set = get_decoration(var_id, Decoration::DescriptorSet);
 					if (descriptor_set_is_argument_buffer(desc_set))
 					{
 						statement("constant uint", is_array_type ? "* " : "& ", to_swizzle_expression(var_id),
@@ -15043,7 +15043,7 @@ void CompilerMSL::fix_up_shader_inputs_outputs()
 				    {
 					    bool is_array_type = !type.array.empty() && !is_var_runtime_size_array(var);
 
-					    uint32_t desc_set = get_decoration(var_id, DecorationDescriptorSet);
+					    uint32_t desc_set = get_decoration(var_id, Decoration::DescriptorSet);
 					    if (descriptor_set_is_argument_buffer(desc_set))
 					    {
 						    statement("constant uint", is_array_type ? "* " : "& ", to_buffer_size_expression(var_id),
@@ -15721,7 +15721,7 @@ uint32_t CompilerMSL::get_metal_resource_index(SPIRVariable &var, SPIRType::Base
 
 bool CompilerMSL::type_is_msl_framebuffer_fetch(const SPIRType &type) const
 {
-	return type.basetype == SPIRType::Image && type.image.dim == DimSubpassData &&
+	return type.basetype == SPIRType::Image && type.image.dim == Dim::SubpassData &&
 	       msl_options.use_framebuffer_fetch_subpasses;
 }
 
@@ -15733,7 +15733,7 @@ const char *CompilerMSL::descriptor_address_space(uint32_t id, StorageClass stor
 		                                   storage == StorageClass::StorageBuffer ||
 		                                   storage == StorageClass::UniformConstant;
 
-		uint32_t desc_set = get_decoration(id, DecorationDescriptorSet);
+		uint32_t desc_set = get_decoration(id, Decoration::DescriptorSet);
 		if (storage_class_is_descriptor && descriptor_set_is_argument_buffer(desc_set))
 		{
 			// An awkward case where we need to emit *more* address space declarations (yay!).
@@ -15797,7 +15797,7 @@ string CompilerMSL::argument_decl(const SPIRFunction::Parameter &arg)
 	// Unfortunately, this is necessary to properly support passing around
 	// combined image-samplers with Y'CbCr conversions on them.
 	bool is_dynamic_img_sampler = !arg.alias_global_variable && type.basetype == SPIRType::SampledImage &&
-	                              type.image.dim == Dim2D && type_is_floating_point(get<SPIRType>(type.image.type)) &&
+	                              type.image.dim == Dim::Dim2D && type_is_floating_point(get<SPIRType>(type.image.type)) &&
 	                              spv_function_implementations.count(SPVFuncImplDynamicImageSampler);
 
 	// Allow Metal to use the array<T> template to make arrays a value type
@@ -16895,9 +16895,9 @@ string CompilerMSL::image_type_glsl(const SPIRType &type, uint32_t id, bool memb
 	{
 		switch (img_type.dim)
 		{
-		case Dim1D:
-		case Dim2D:
-			if (img_type.dim == Dim1D && !msl_options.texture_1D_as_2D)
+		case Dim::Dim1D:
+		case Dim::Dim2D:
+			if (img_type.dim == Dim::Dim1D && !msl_options.texture_1D_as_2D)
 			{
 				// Use a native Metal 1D texture
 				img_type_name += "depth1d_unsupported_by_metal";
@@ -16917,10 +16917,10 @@ string CompilerMSL::image_type_glsl(const SPIRType &type, uint32_t id, bool memb
 			else
 				img_type_name += "depth2d";
 			break;
-		case Dim3D:
+		case Dim::Dim3D:
 			img_type_name += "depth3d_unsupported_by_metal";
 			break;
-		case DimCube:
+		case Dim::Cube:
 			if (!msl_options.emulate_cube_array)
 				img_type_name += (img_type.arrayed ? "depthcube_array" : "depthcube");
 			else
@@ -16935,7 +16935,7 @@ string CompilerMSL::image_type_glsl(const SPIRType &type, uint32_t id, bool memb
 	{
 		switch (img_type.dim)
 		{
-		case DimBuffer:
+		case Dim::Buffer:
 			if (img_type.ms || img_type.arrayed)
 				SPIRV_CROSS_THROW("Cannot use texel buffers with multisampling or array layers.");
 
@@ -16948,13 +16948,13 @@ string CompilerMSL::image_type_glsl(const SPIRType &type, uint32_t id, bool memb
 			else
 				img_type_name += "texture2d";
 			break;
-		case Dim1D:
-		case Dim2D:
-		case DimSubpassData:
+		case Dim::Dim1D:
+		case Dim::Dim2D:
+		case Dim::SubpassData:
 		{
 			bool subpass_array =
-			    img_type.dim == DimSubpassData && (msl_options.multiview || msl_options.arrayed_subpass_input);
-			if (img_type.dim == Dim1D && !msl_options.texture_1D_as_2D)
+			    img_type.dim == Dim::SubpassData && (msl_options.multiview || msl_options.arrayed_subpass_input);
+			if (img_type.dim == Dim::Dim1D && !msl_options.texture_1D_as_2D)
 			{
 				// Use a native Metal 1D texture
 				img_type_name += (img_type.arrayed ? "texture1d_array" : "texture1d");
@@ -16982,10 +16982,10 @@ string CompilerMSL::image_type_glsl(const SPIRType &type, uint32_t id, bool memb
 				img_type_name += "texture2d";
 			break;
 		}
-		case Dim3D:
+		case Dim::Dim3D:
 			img_type_name += "texture3d";
 			break;
-		case DimCube:
+		case Dim::Cube:
 			if (!msl_options.emulate_cube_array)
 				img_type_name += (img_type.arrayed ? "texturecube_array" : "texturecube");
 			else
@@ -17004,7 +17004,7 @@ string CompilerMSL::image_type_glsl(const SPIRType &type, uint32_t id, bool memb
 	// For unsampled images, append the sample/read/write access qualifier.
 	// For kernel images, the access qualifier my be supplied directly by SPIR-V.
 	// Otherwise it may be set based on whether the image is read from or written to within the shader.
-	if (type.basetype == SPIRType::Image && type.image.sampled == 2 && type.image.dim != DimSubpassData)
+	if (type.basetype == SPIRType::Image && type.image.sampled == 2 && type.image.dim != Dim::SubpassData)
 	{
 		auto *p_var = maybe_get_backing_variable(id);
 		if (p_var && p_var->basevariable)
@@ -18752,7 +18752,7 @@ CompilerMSL::SPVFuncImpl CompilerMSL::OpCodePreprocessor::get_spv_func_impl(Op o
 		if (it != image_pointers_emulated.end())
 		{
 			uint32_t tid = compiler.get<SPIRVariable>(it->second).basetype;
-			if (tid && compiler.get<SPIRType>(tid).image.dim == Dim2D)
+			if (tid && compiler.get<SPIRType>(tid).image.dim == Dim::Dim2D)
 				return SPVFuncImplImage2DAtomicCoords;
 		}
 		break;
@@ -18764,7 +18764,7 @@ CompilerMSL::SPVFuncImpl CompilerMSL::OpCodePreprocessor::get_spv_func_impl(Op o
 	{
 		// Retrieve the image type, and if it's a Buffer, emit a texel coordinate function
 		uint32_t tid = result_types[args[opcode == OpImageWrite ? 0 : 2]];
-		if (tid && compiler.get<SPIRType>(tid).image.dim == DimBuffer && !compiler.msl_options.texture_buffer_native)
+		if (tid && compiler.get<SPIRType>(tid).image.dim == Dim::Buffer && !compiler.msl_options.texture_buffer_native)
 			return SPVFuncImplTexelBufferCoords;
 		break;
 	}
@@ -19434,7 +19434,7 @@ void CompilerMSL::analyze_argument_buffers()
 		     var.storage == StorageClass::StorageBuffer) &&
 		    !is_hidden_variable(var))
 		{
-			uint32_t desc_set = get_decoration(self, DecorationDescriptorSet);
+			uint32_t desc_set = get_decoration(self, Decoration::DescriptorSet);
 			// Ignore if it's part of a push descriptor set.
 			if (!descriptor_set_is_argument_buffer(desc_set))
 				return;
@@ -19472,7 +19472,7 @@ void CompilerMSL::analyze_argument_buffers()
 					    { &var, to_name(var_id), SPIRType::Image, image_resource_index, plane_count, i, 0 });
 				}
 
-				if (type.image.dim != DimBuffer && !constexpr_sampler)
+				if (type.image.dim != Dim::Buffer && !constexpr_sampler)
 				{
 					uint32_t sampler_resource_index = get_metal_resource_index(var, SPIRType::Sampler);
 					resources_in_set[desc_set].push_back(
@@ -19544,7 +19544,7 @@ void CompilerMSL::analyze_argument_buffers()
 				uint32_t var_id = ir.increase_bound_by(1);
 				auto &var = set<SPIRVariable>(var_id, uint_ptr_type_id, StorageClass::UniformConstant);
 				set_name(var_id, "spvSwizzleConstants");
-				set_decoration(var_id, DecorationDescriptorSet, desc_set);
+				set_decoration(var_id, Decoration::DescriptorSet, desc_set);
 				set_decoration(var_id, DecorationBinding, kSwizzleBufferBinding);
 				resources_in_set[desc_set].push_back(
 				    { &var, to_name(var_id), SPIRType::UInt, get_metal_resource_index(var, SPIRType::UInt), 1, 0, 0 });
@@ -19555,7 +19555,7 @@ void CompilerMSL::analyze_argument_buffers()
 				uint32_t var_id = ir.increase_bound_by(1);
 				auto &var = set<SPIRVariable>(var_id, uint_ptr_type_id, StorageClass::UniformConstant);
 				set_name(var_id, "spvBufferSizeConstants");
-				set_decoration(var_id, DecorationDescriptorSet, desc_set);
+				set_decoration(var_id, Decoration::DescriptorSet, desc_set);
 				set_decoration(var_id, DecorationBinding, kBufferSizeBufferBinding);
 				resources_in_set[desc_set].push_back(
 				    { &var, to_name(var_id), SPIRType::UInt, get_metal_resource_index(var, SPIRType::UInt), 1, 0, 0 });
@@ -19567,7 +19567,7 @@ void CompilerMSL::analyze_argument_buffers()
 	for (uint32_t var_id : inline_block_vars)
 	{
 		auto &var = get<SPIRVariable>(var_id);
-		uint32_t desc_set = get_decoration(var_id, DecorationDescriptorSet);
+		uint32_t desc_set = get_decoration(var_id, Decoration::DescriptorSet);
 		add_resource_name(var_id);
 		resources_in_set[desc_set].push_back(
 		    { &var, to_name(var_id), SPIRType::Struct, get_metal_resource_index(var, SPIRType::Struct), 1, 0, 0 });
@@ -19908,13 +19908,13 @@ void CompilerMSL::add_argument_buffer_padding_image_type(SPIRType &struct_type, 
 		img_type.storage = StorageClass::UniformConstant;
 
 		img_type.image.type = base_type_id;
-		img_type.image.dim = Dim2D;
+		img_type.image.dim = Dim::Dim2D;
 		img_type.image.depth = false;
 		img_type.image.arrayed = false;
 		img_type.image.ms = false;
 		img_type.image.sampled = 1;
 		img_type.image.format = ImageFormat::Unknown;
-		img_type.image.access = AccessQualifierMax;
+		img_type.image.access = AccessQualifier::Max;
 
 		argument_buffer_padding_image_type_id = img_type_id;
 	}
@@ -19968,10 +19968,10 @@ void CompilerMSL::activate_argument_buffer_resources()
 {
 	// For ABI compatibility, force-enable all resources which are part of argument buffers.
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t self, const SPIRVariable &) {
-		if (!has_decoration(self, DecorationDescriptorSet))
+		if (!has_decoration(self, Decoration::DescriptorSet))
 			return;
 
-		uint32_t desc_set = get_decoration(self, DecorationDescriptorSet);
+		uint32_t desc_set = get_decoration(self, Decoration::DescriptorSet);
 		if (descriptor_set_is_argument_buffer(desc_set))
 			add_active_interface_variable(self);
 	});
