@@ -943,7 +943,7 @@ void CompilerMSL::build_implicit_builtins()
 				// Create gl_WorkgroupSize.
 				uint32_t type_id = build_extended_vector_type(get_uint_type_id(), 3);
 				// If we have LocalSize or LocalSizeId, use those to define the workgroup size.
-				if (execution.flags.get(ExecutionModeLocalSizeId))
+				if (execution.flags.get(ExecutionMode::LocalSizeId))
 				{
 					const SPIRConstant *init[] = { &get<SPIRConstant>(execution.workgroup_size.id_x),
 						                           &get<SPIRConstant>(execution.workgroup_size.id_y),
@@ -952,7 +952,7 @@ void CompilerMSL::build_implicit_builtins()
 					set<SPIRConstant>(var_id, type_id, init, 3, specialized);
 					execution.workgroup_size.constant = var_id;
 				}
-				else if (execution.flags.get(ExecutionModeLocalSize))
+				else if (execution.flags.get(ExecutionMode::LocalSize))
 				{
 					uint32_t offset = ir.increase_bound_by(3);
 					const SPIRConstant *init[] = {
@@ -1716,7 +1716,7 @@ string CompilerMSL::compile()
 	capture_output_to_buffer = msl_options.capture_output_to_buffer;
 	is_rasterization_disabled = msl_options.disable_rasterization || capture_output_to_buffer;
 
-	if (is_mesh_shader() && !get_entry_point().flags.get(ExecutionModeOutputPoints))
+	if (is_mesh_shader() && !get_entry_point().flags.get(ExecutionMode::OutputPoints))
 		msl_options.enable_point_size_builtin = false;
 
 	// Initialize array here rather than constructor, MSVC 2013 workaround.
@@ -5770,9 +5770,9 @@ void CompilerMSL::emit_header()
 	// Floating point fast math compile declarations
 	if (msl_options.use_fast_math_pragmas && msl_options.supports_msl_version(3, 2))
 	{
-		uint32_t contract_mask = FPFastMathModeAllowContractMask;
-		uint32_t relax_mask = (FPFastMathModeNSZMask | FPFastMathModeAllowRecipMask | FPFastMathModeAllowReassocMask);
-		uint32_t fast_mask = (relax_mask | FPFastMathModeNotNaNMask | FPFastMathModeNotInfMask);
+		uint32_t contract_mask = FPFastMathModeMask::AllowContract;
+		uint32_t relax_mask = (FPFastMathModeMask::NSZ | FPFastMathModeMask::AllowRecip | FPFastMathModeMask::AllowReassoc);
+		uint32_t fast_mask = (relax_mask | FPFastMathModeMask::NotNaN | FPFastMathModeMask::NotIn);
 
 		// FP math mode
 		uint32_t fp_flags = get_fp_fast_math_flags(true);
@@ -8289,11 +8289,11 @@ void CompilerMSL::emit_resources()
 	{
 		auto &execution = get_entry_point();
 		const char *topology = "";
-		if (execution.flags.get(ExecutionModeOutputTrianglesEXT))
+		if (execution.flags.get(ExecutionMode::OutputTrianglesEXT))
 			topology = "topology::triangle";
-		else if (execution.flags.get(ExecutionModeOutputLinesEXT))
+		else if (execution.flags.get(ExecutionMode::OutputLinesEXT))
 			topology = "topology::line";
-		else if (execution.flags.get(ExecutionModeOutputPoints))
+		else if (execution.flags.get(ExecutionMode::OutputPoints))
 			topology = "topology::point";
 
 		const char *per_primitive = mesh_out_per_primitive ? "spvPerPrimitive" : "void";
@@ -11263,7 +11263,7 @@ void CompilerMSL::emit_glsl_op(uint32_t result_type, uint32_t id, uint32_t eop, 
 	auto &restype = get<SPIRType>(result_type);
 
 	// Only precise:: preserves NaN in trancendentals (supposedly, cannot find documentation for this).
-	const auto drop_nan_inf = FPFastMathModeNotInfMask | FPFastMathModeNotNaNMask;
+	const auto drop_nan_inf = FPFastMathModeMask::NotIn | FPFastMathModeMask::NotNaN;
 	bool preserve_nan = (get_fp_fast_math_flags_for_op(result_type, id) & drop_nan_inf) != drop_nan_inf;
 	const char *preserve_str = preserve_nan ? "precise" : "fast";
 
@@ -13462,7 +13462,7 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 				if (!msl_options.supports_msl_version(2, 0))
 					SPIRV_CROSS_THROW("ViewportIndex requires Metal 2.0.");
 				/* fallthrough */
-			case BuiltInPosition:
+			case BuiltIn::Position:
 			case BuiltIn::Layer:
 			case BuiltIn::CullPrimitiveEXT:
 			case BuiltIn::PrimitiveShadingRateKHR:
@@ -13933,7 +13933,7 @@ string CompilerMSL::func_type_decl(SPIRType &type)
 	case ExecutionModelTessellationEvaluation:
 		if (!msl_options.supports_msl_version(1, 2))
 			SPIRV_CROSS_THROW("Tessellation requires Metal 1.2.");
-		if (execution.flags.get(ExecutionModeIsolines))
+		if (execution.flags.get(ExecutionMode::Isolines))
 			SPIRV_CROSS_THROW("Metal does not support isoline tessellation.");
 		if (msl_options.is_ios())
 			entry_type = join("[[ patch(", is_tessellating_triangles() ? "triangle" : "quad", ") ]] vertex");
@@ -13947,7 +13947,7 @@ string CompilerMSL::func_type_decl(SPIRType &type)
 	case ExecutionModelTessellationControl:
 		if (!msl_options.supports_msl_version(1, 2))
 			SPIRV_CROSS_THROW("Tessellation requires Metal 1.2.");
-		if (execution.flags.get(ExecutionModeIsolines))
+		if (execution.flags.get(ExecutionMode::Isolines))
 			SPIRV_CROSS_THROW("Metal does not support isoline tessellation.");
 		/* fallthrough */
 	case ExecutionModel::GLCompute:
@@ -13986,7 +13986,7 @@ bool CompilerMSL::is_mesh_shader() const
 bool CompilerMSL::uses_explicit_early_fragment_test()
 {
 	auto &ep_flags = get_entry_point().flags;
-	return ep_flags.get(ExecutionModeEarlyFragmentTests) || ep_flags.get(ExecutionModePostDepthCoverage);
+	return ep_flags.get(ExecutionMode::EarlyFragmentTests) || ep_flags.get(ExecutionMode::PostDepthCoverage);
 }
 
 // In MSL, address space qualifiers are required for all pointer or reference variables
@@ -14222,7 +14222,7 @@ bool CompilerMSL::is_direct_input_builtin(BuiltIn bi_type)
 	case BuiltIn::BaseInstance:
 		return get_execution_model() != ExecutionModel::Vertex || !msl_options.vertex_for_tessellation;
 	// Tess. control function in
-	case BuiltInPosition:
+	case BuiltIn::Position:
 	case BuiltIn::PointSize:
 	case BuiltIn::ClipDistance:
 	case BuiltIn::CullDistance:
@@ -14316,13 +14316,13 @@ void CompilerMSL::entry_point_args_builtin(string &ep_args)
 				builtin_declaration = true;
 
 				// Handle different MSL gl_TessCoord types. (float2, float3)
-				if (bi_type == BuiltIn::TessCoord && get_entry_point().flags.get(ExecutionModeQuads))
+				if (bi_type == BuiltIn::TessCoord && get_entry_point().flags.get(ExecutionMode::Quads))
 					ep_args += "float2 " + to_expression(var_id) + "In";
 				else
 					ep_args += builtin_type_decl(bi_type, var_id) + " " + to_expression(var_id);
 
 				ep_args += string(" [[") + builtin_qualifier(bi_type);
-				if (bi_type == BuiltIn::SampleMask && get_entry_point().flags.get(ExecutionModePostDepthCoverage))
+				if (bi_type == BuiltIn::SampleMask && get_entry_point().flags.get(ExecutionMode::PostDepthCoverage))
 				{
 					if (!msl_options.supports_msl_version(2))
 						SPIRV_CROSS_THROW("Post-depth coverage requires MSL 2.0.");
@@ -15158,7 +15158,7 @@ void CompilerMSL::fix_up_shader_inputs_outputs()
 				}
 				break;
 			case BuiltIn::TessCoord:
-				if (get_entry_point().flags.get(ExecutionModeQuads))
+				if (get_entry_point().flags.get(ExecutionMode::Quads))
 				{
 					// The entry point will only have a float2 TessCoord variable.
 					// Pad to float3.
@@ -17647,7 +17647,7 @@ string CompilerMSL::builtin_to_glsl(BuiltIn builtin, StorageClass storage)
 		    (builtin == BuiltIn::FragStencilRefEXT && !msl_options.enable_frag_stencil_ref_builtin))
 			break;
 		/* fallthrough */
-	case BuiltInPosition:
+	case BuiltIn::Position:
 	case BuiltIn::PointSize:
 	case BuiltIn::ClipDistance:
 	case BuiltIn::CullDistance:
@@ -17753,7 +17753,7 @@ string CompilerMSL::builtin_qualifier(BuiltIn builtin)
 		return "cull_distance";
 	case BuiltIn::PointSize:
 		return "point_size";
-	case BuiltInPosition:
+	case BuiltIn::Position:
 		if (position_invariant)
 		{
 			if (!msl_options.supports_msl_version(2, 1))
@@ -17837,9 +17837,9 @@ string CompilerMSL::builtin_qualifier(BuiltIn builtin)
 
 	// Fragment function out
 	case BuiltIn::FragDepth:
-		if (execution.flags.get(ExecutionModeDepthGreater))
+		if (execution.flags.get(ExecutionMode::DepthGreater))
 			return "depth(greater)";
-		else if (execution.flags.get(ExecutionModeDepthLess))
+		else if (execution.flags.get(ExecutionMode::DepthLess))
 			return "depth(less)";
 		else
 			return "depth(any)";
@@ -17972,7 +17972,7 @@ string CompilerMSL::builtin_type_decl(BuiltIn builtin, uint32_t id)
 		return "float";
 	case BuiltIn::PointSize:
 		return "float";
-	case BuiltInPosition:
+	case BuiltIn::Position:
 		return "float4";
 	case BuiltIn::Layer:
 		return "uint";
@@ -20003,11 +20003,11 @@ uint32_t CompilerMSL::get_fp_fast_math_flags(bool incl_ops) const
 	uint32_t fp_flags = ~0;
 	auto &ep = get_entry_point();
 
-	if (ep.flags.get(ExecutionModeSignedZeroInfNanPreserve))
-		fp_flags &= ~(FPFastMathModeNSZMask | FPFastMathModeNotInfMask | FPFastMathModeNotNaNMask);
+	if (ep.flags.get(ExecutionMode::SignedZeroInfNanPreserve))
+		fp_flags &= ~(FPFastMathModeMask::NSZ | FPFastMathModeMask::NotIn | FPFastMathModeMask::NotNaN);
 
-	if (ep.flags.get(ExecutionModeContractionOff))
-		fp_flags &= ~(FPFastMathModeAllowContractMask);
+	if (ep.flags.get(ExecutionMode::ContractionOff))
+		fp_flags &= ~(FPFastMathModeMask::AllowContract);
 
 	for (auto &fp_pair : ep.fp_fast_math_defaults)
 		if (fp_pair.second)
@@ -20043,7 +20043,7 @@ void CompilerMSL::emit_mesh_entry_point()
 
 	// Push call to original 'main'
 	Instruction ix = {};
-	ix.op = OpFunctionCall;
+	ix.op = Op::OpFunctionCall;
 	ix.offset = uint32_t(ir.spirv.size());
 	ix.length = 3;
 
@@ -20121,7 +20121,7 @@ void CompilerMSL::emit_mesh_outputs()
 
 				switch (builtin)
 				{
-				case BuiltInPosition:
+				case BuiltIn::Position:
 				case BuiltIn::PointSize:
 				case BuiltIn::ClipDistance:
 				case BuiltIn::CullDistance:
@@ -20170,13 +20170,13 @@ void CompilerMSL::emit_mesh_outputs()
 
 		if (builtin_mesh_primitive_indices_id != 0)
 		{
-			if (mode.flags.get(ExecutionModeOutputTrianglesEXT))
+			if (mode.flags.get(ExecutionMode::OutputTrianglesEXT))
 			{
 				statement("spvMesh.set_index(spvPI * 3u + 0u, gl_PrimitiveTriangleIndicesEXT[spvPI].x);");
 				statement("spvMesh.set_index(spvPI * 3u + 1u, gl_PrimitiveTriangleIndicesEXT[spvPI].y);");
 				statement("spvMesh.set_index(spvPI * 3u + 2u, gl_PrimitiveTriangleIndicesEXT[spvPI].z);");
 			}
-			else if (mode.flags.get(ExecutionModeOutputLinesEXT))
+			else if (mode.flags.get(ExecutionMode::OutputLinesEXT))
 			{
 				statement("spvMesh.set_index(spvPI * 2u + 0u, gl_PrimitiveLineIndicesEXT[spvPI].x);");
 				statement("spvMesh.set_index(spvPI * 2u + 1u, gl_PrimitiveLineIndicesEXT[spvPI].y);");
