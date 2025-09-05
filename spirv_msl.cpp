@@ -249,27 +249,27 @@ bool CompilerMSL::builtin_translates_to_nonarray(spv::BuiltIn builtin) const
 
 void CompilerMSL::build_implicit_builtins()
 {
-	bool need_sample_pos = active_input_builtins.get(BuiltIn::SamplePosition);
+	bool need_sample_pos = active_input_builtins.get(static_cast<uint32_t>(BuiltIn::SamplePosition));
 	bool need_vertex_params = capture_output_to_buffer && get_execution_model() == ExecutionModel::Vertex &&
 	                          !msl_options.vertex_for_tessellation;
 	bool need_tesc_params = is_tesc_shader();
 	bool need_tese_params = is_tese_shader() && msl_options.raw_buffer_tese_input;
 	bool need_subgroup_mask =
-	    active_input_builtins.get(BuiltIn::SubgroupEqMask) || active_input_builtins.get(BuiltIn::SubgroupGeMask) ||
-	    active_input_builtins.get(BuiltIn::SubgroupGtMask) || active_input_builtins.get(BuiltIn::SubgroupLeMask) ||
-	    active_input_builtins.get(BuiltIn::SubgroupLtMask);
-	bool need_subgroup_ge_mask = !msl_options.is_ios() && (active_input_builtins.get(BuiltIn::SubgroupGeMask) ||
-	                                                       active_input_builtins.get(BuiltIn::SubgroupGtMask));
+	    active_input_builtins.get(BuiltIn::SubgroupEqMask) || active_input_builtins.get(static_cast<uint32_t>(BuiltIn::SubgroupGeMask)) ||
+	    active_input_builtins.get(static_cast<uint32_t>(BuiltIn::SubgroupGtMask)) || active_input_builtins.get(BuiltIn::SubgroupLeMask) ||
+	    active_input_builtins.get(static_cast<uint32_t>(BuiltIn::SubgroupLtMask));
+	bool need_subgroup_ge_mask = !msl_options.is_ios() && (active_input_builtins.get(static_cast<uint32_t>(BuiltIn::SubgroupGeMask)) ||
+	                                                       active_input_builtins.get(static_cast<uint32_t>(BuiltIn::SubgroupGtMask)));
 	bool need_multiview = get_execution_model() == ExecutionModel::Vertex && !msl_options.view_index_from_device_index &&
 	                      msl_options.multiview_layered_rendering &&
-	                      (msl_options.multiview || active_input_builtins.get(BuiltIn::ViewIndex));
+	                      (msl_options.multiview || active_input_builtins.get(static_cast<uint32_t>(BuiltIn::ViewIndex)));
 	bool need_dispatch_base =
 	    msl_options.dispatch_base && get_execution_model() == ExecutionModel::GLCompute &&
-	    (active_input_builtins.get(BuiltIn::WorkgroupId) || active_input_builtins.get(BuiltIn::GlobalInvocationId));
+	    (active_input_builtins.get(BuiltIn::WorkgroupId) || active_input_builtins.get(static_cast<uint32_t>(BuiltIn::GlobalInvocationId)));
 	bool need_grid_params = get_execution_model() == ExecutionModel::Vertex && msl_options.vertex_for_tessellation;
 	bool need_vertex_base_params =
 	    need_grid_params &&
-	    (active_input_builtins.get(BuiltIn::VertexId) || active_input_builtins.get(BuiltIn::VertexIndex) ||
+	    (active_input_builtins.get(static_cast<uint32_t>(BuiltIn::VertexId)) || active_input_builtins.get(static_cast<uint32_t>(BuiltIn::VertexIndex)) ||
 	     active_input_builtins.get(BuiltIn::BaseVertex) || active_input_builtins.get(BuiltIn::InstanceId) ||
 	     active_input_builtins.get(BuiltIn::InstanceIndex) || active_input_builtins.get(BuiltIn::BaseInstance));
 	bool need_local_invocation_index =
@@ -14402,7 +14402,7 @@ void CompilerMSL::entry_point_args_builtin(string &ep_args)
 		}
 
 		if (get_execution_model() == ExecutionModel::Vertex && msl_options.vertex_for_tessellation &&
-		    (active_input_builtins.get(BuiltIn::VertexIndex) || active_input_builtins.get(BuiltIn::VertexId)) &&
+		    (active_input_builtins.get(static_cast<uint32_t>(BuiltIn::VertexIndex)) || active_input_builtins.get(static_cast<uint32_t>(BuiltIn::VertexId))) &&
 		    msl_options.vertex_index_type != Options::IndexType::None)
 		{
 			// Add the index buffer so we can set gl_VertexIndex correctly.
@@ -15490,7 +15490,7 @@ void CompilerMSL::fix_up_shader_inputs_outputs()
 				});
 				break;
 			case BuiltIn::GlobalInvocationId:
-				if (!msl_options.dispatch_base || !active_input_builtins.get(BuiltIn::GlobalInvocationId))
+				if (!msl_options.dispatch_base || !active_input_builtins.get(static_cast<uint32_t>(BuiltIn::GlobalInvocationId)))
 					break;
 
 				// GlobalInvocationId is defined as LocalInvocationId + WorkgroupId * WorkgroupSize.
