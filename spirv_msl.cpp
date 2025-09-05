@@ -59,15 +59,15 @@ CompilerMSL::CompilerMSL(ParsedIR &&ir_)
 void CompilerMSL::add_msl_shader_input(const MSLShaderInterfaceVariable &si)
 {
 	inputs_by_location[{si.location, si.component}] = si;
-	if (si.builtin != BuiltIn::Max && !inputs_by_builtin.count(si.builtin))
-		inputs_by_builtin[si.builtin] = si;
+	if (si.builtin != BuiltIn::Max && !inputs_by_builtin.count(static_cast<uint32_t>(si.builtin)))
+		inputs_by_builtin[static_cast<uint32_t>(si.builtin)] = si;
 }
 
 void CompilerMSL::add_msl_shader_output(const MSLShaderInterfaceVariable &so)
 {
 	outputs_by_location[{so.location, so.component}] = so;
-	if (so.builtin != BuiltIn::Max && !outputs_by_builtin.count(so.builtin))
-		outputs_by_builtin[so.builtin] = so;
+	if (so.builtin != BuiltIn::Max && !outputs_by_builtin.count(static_cast<uint32_t>(so.builtin)))
+		outputs_by_builtin[static_cast<uint32_t>(so.builtin)] = so;
 }
 
 void CompilerMSL::add_msl_resource_binding(const MSLResourceBinding &binding)
@@ -166,7 +166,7 @@ bool CompilerMSL::is_msl_shader_output_used(uint32_t location)
 
 uint32_t CompilerMSL::get_automatic_builtin_input_location(spv::BuiltIn builtin) const
 {
-	auto itr = builtin_to_automatic_input_location.find(builtin);
+	auto itr = builtin_to_automatic_input_location.find(static_cast<uint32_t>(builtin));
 	if (itr == builtin_to_automatic_input_location.end())
 		return k_unknown_location;
 	else
@@ -175,7 +175,7 @@ uint32_t CompilerMSL::get_automatic_builtin_input_location(spv::BuiltIn builtin)
 
 uint32_t CompilerMSL::get_automatic_builtin_output_location(spv::BuiltIn builtin) const
 {
-	auto itr = builtin_to_automatic_output_location.find(builtin);
+	auto itr = builtin_to_automatic_output_location.find(static_cast<uint32_t>(builtin));
 	if (itr == builtin_to_automatic_output_location.end())
 		return k_unknown_location;
 	else
