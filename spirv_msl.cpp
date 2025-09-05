@@ -275,7 +275,7 @@ void CompilerMSL::build_implicit_builtins()
 	bool need_local_invocation_index =
 		(msl_options.emulate_subgroups && active_input_builtins.get(BuiltIn::SubgroupId)) || is_mesh_shader() ||
 		needs_workgroup_zero_init || needs_local_invocation_index;
-	bool need_workgroup_size = msl_options.emulate_subgroups && active_input_builtins.get(BuiltInNumSubgroups);
+	bool need_workgroup_size = msl_options.emulate_subgroups && active_input_builtins.get(BuiltIn::NumSubgroups);
 	bool force_frag_depth_passthrough =
 	    get_execution_model() == ExecutionModel::Fragment && !uses_explicit_early_fragment_test() && need_subpass_input &&
 	    msl_options.enable_frag_depth_builtin && msl_options.input_attachment_is_ds_attachment;
@@ -456,17 +456,17 @@ void CompilerMSL::build_implicit_builtins()
 				tess_level_inner_var_id = var.self;
 			}
 
-			if ((need_subgroup_mask || needs_subgroup_invocation_id) && builtin == BuiltInSubgroupLocalInvocationId)
+			if ((need_subgroup_mask || needs_subgroup_invocation_id) && builtin == BuiltIn::SubgroupLocalInvocationId)
 			{
 				builtin_subgroup_invocation_id_id = var.self;
-				mark_implicit_builtin(StorageClass::Input, BuiltInSubgroupLocalInvocationId, var.self);
+				mark_implicit_builtin(StorageClass::Input, BuiltIn::SubgroupLocalInvocationId, var.self);
 				has_subgroup_invocation_id = true;
 			}
 
-			if ((need_subgroup_ge_mask || needs_subgroup_size) && builtin == BuiltInSubgroupSize)
+			if ((need_subgroup_ge_mask || needs_subgroup_size) && builtin == BuiltIn::SubgroupSize)
 			{
 				builtin_subgroup_size_id = var.self;
-				mark_implicit_builtin(StorageClass::Input, BuiltInSubgroupSize, var.self);
+				mark_implicit_builtin(StorageClass::Input, BuiltIn::SubgroupSize, var.self);
 				has_subgroup_size = true;
 			}
 
@@ -496,24 +496,24 @@ void CompilerMSL::build_implicit_builtins()
 				}
 			}
 
-			if (needs_helper_invocation && builtin == BuiltInHelperInvocation)
+			if (needs_helper_invocation && builtin == BuiltIn::HelperInvocation)
 			{
 				builtin_helper_invocation_id = var.self;
-				mark_implicit_builtin(StorageClass::Input, BuiltInHelperInvocation, var.self);
+				mark_implicit_builtin(StorageClass::Input, BuiltIn::HelperInvocation, var.self);
 				has_helper_invocation = true;
 			}
 
-			if (need_local_invocation_index && builtin == BuiltInLocalInvocationIndex)
+			if (need_local_invocation_index && builtin == BuiltIn::LocalInvocationIndex)
 			{
 				builtin_local_invocation_index_id = var.self;
-				mark_implicit_builtin(StorageClass::Input, BuiltInLocalInvocationIndex, var.self);
+				mark_implicit_builtin(StorageClass::Input, BuiltIn::LocalInvocationIndex, var.self);
 				has_local_invocation_index = true;
 			}
 
-			if (need_workgroup_size && builtin == BuiltInWorkgroupSize)
+			if (need_workgroup_size && builtin == BuiltIn::WorkgroupSize)
 			{
 				builtin_workgroup_size_id = var.self;
-				mark_implicit_builtin(StorageClass::Input, BuiltInWorkgroupSize, var.self);
+				mark_implicit_builtin(StorageClass::Input, BuiltIn::WorkgroupSize, var.self);
 				has_workgroup_size = true;
 			}
 
@@ -793,9 +793,9 @@ void CompilerMSL::build_implicit_builtins()
 			ptr_type.self = get_uint_type_id();
 
 			set<SPIRVariable>(var_id, type_ptr_id, StorageClass::Input);
-			set_decoration(var_id, Decoration::BuiltIn, BuiltInSubgroupLocalInvocationId);
+			set_decoration(var_id, Decoration::BuiltIn, BuiltIn::SubgroupLocalInvocationId);
 			builtin_subgroup_invocation_id_id = var_id;
-			mark_implicit_builtin(StorageClass::Input, BuiltInSubgroupLocalInvocationId, var_id);
+			mark_implicit_builtin(StorageClass::Input, BuiltIn::SubgroupLocalInvocationId, var_id);
 		}
 
 		if (!has_subgroup_size && (need_subgroup_ge_mask || needs_subgroup_size))
@@ -815,9 +815,9 @@ void CompilerMSL::build_implicit_builtins()
 			ptr_type.self = get_uint_type_id();
 
 			set<SPIRVariable>(var_id, type_ptr_id, StorageClass::Input);
-			set_decoration(var_id, Decoration::BuiltIn, BuiltInSubgroupSize);
+			set_decoration(var_id, Decoration::BuiltIn, BuiltIn::SubgroupSize);
 			builtin_subgroup_size_id = var_id;
-			mark_implicit_builtin(StorageClass::Input, BuiltInSubgroupSize, var_id);
+			mark_implicit_builtin(StorageClass::Input, BuiltIn::SubgroupSize, var_id);
 		}
 
 		if (need_dispatch_base || need_vertex_base_params)
@@ -903,9 +903,9 @@ void CompilerMSL::build_implicit_builtins()
 			auto &ptr_in_type = set<SPIRType>(type_ptr_id, bool_type_ptr_in);
 			ptr_in_type.self = type_id;
 			set<SPIRVariable>(var_id, type_ptr_id, StorageClass::Input);
-			set_decoration(var_id, Decoration::BuiltIn, BuiltInHelperInvocation);
+			set_decoration(var_id, Decoration::BuiltIn, BuiltIn::HelperInvocation);
 			builtin_helper_invocation_id = var_id;
-			mark_implicit_builtin(StorageClass::Input, BuiltInHelperInvocation, var_id);
+			mark_implicit_builtin(StorageClass::Input, BuiltIn::HelperInvocation, var_id);
 		}
 
 		if (need_local_invocation_index && !has_local_invocation_index)
@@ -925,9 +925,9 @@ void CompilerMSL::build_implicit_builtins()
 			auto &ptr_type = set<SPIRType>(type_ptr_id, uint_type_ptr);
 			ptr_type.self = get_uint_type_id();
 			set<SPIRVariable>(var_id, type_ptr_id, StorageClass::Input);
-			set_decoration(var_id, Decoration::BuiltIn, BuiltInLocalInvocationIndex);
+			set_decoration(var_id, Decoration::BuiltIn, BuiltIn::LocalInvocationIndex);
 			builtin_local_invocation_index_id = var_id;
-			mark_implicit_builtin(StorageClass::Input, BuiltInLocalInvocationIndex, var_id);
+			mark_implicit_builtin(StorageClass::Input, BuiltIn::LocalInvocationIndex, var_id);
 		}
 
 		if (need_workgroup_size && !has_workgroup_size)
@@ -943,7 +943,7 @@ void CompilerMSL::build_implicit_builtins()
 				// Create gl_WorkgroupSize.
 				uint32_t type_id = build_extended_vector_type(get_uint_type_id(), 3);
 				// If we have LocalSize or LocalSizeId, use those to define the workgroup size.
-				if (execution.flags.get(ExecutionMode::LocalSizeId))
+				if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::LocalSizeId)))
 				{
 					const SPIRConstant *init[] = { &get<SPIRConstant>(execution.workgroup_size.id_x),
 						                           &get<SPIRConstant>(execution.workgroup_size.id_y),
@@ -976,9 +976,9 @@ void CompilerMSL::build_implicit_builtins()
 					auto &ptr_type = set<SPIRType>(type_ptr_id, uint_type_ptr);
 					ptr_type.self = type_id;
 					set<SPIRVariable>(var_id, type_ptr_id, StorageClass::Input);
-					mark_implicit_builtin(StorageClass::Input, BuiltInWorkgroupSize, var_id);
+					mark_implicit_builtin(StorageClass::Input, BuiltIn::WorkgroupSize, var_id);
 				}
-				set_decoration(var_id, Decoration::BuiltIn, BuiltInWorkgroupSize);
+				set_decoration(var_id, Decoration::BuiltIn, BuiltIn::WorkgroupSize);
 				builtin_workgroup_size_id = var_id;
 			}
 		}
@@ -1744,7 +1744,7 @@ string CompilerMSL::compile()
 
 	if (needs_manual_helper_invocation_updates() && needs_helper_invocation)
 	{
-		string builtin_helper_invocation = builtin_to_glsl(BuiltInHelperInvocation, StorageClass::Input);
+		string builtin_helper_invocation = builtin_to_glsl(BuiltIn::HelperInvocation, StorageClass::Input);
 		string discard_expr = join(builtin_helper_invocation, " = true, discard_fragment()");
 		if (msl_options.force_fragment_with_side_effects_execution)
 			discard_expr = join("!", builtin_helper_invocation, " ? (", discard_expr, ") : (void)0");
@@ -1906,7 +1906,7 @@ void CompilerMSL::preprocess_op_codes()
 	    (is_sample_rate() && (active_input_builtins.get(BuiltIn::FragCoord) ||
 	                          (need_subpass_input_ms && !msl_options.use_framebuffer_fetch_subpasses))))
 		needs_sample_id = true;
-	if (preproc.needs_helper_invocation || active_input_builtins.get(BuiltInHelperInvocation))
+	if (preproc.needs_helper_invocation || active_input_builtins.get(BuiltIn::HelperInvocation))
 		needs_helper_invocation = true;
 
 	// OpKill is removed by the parser, so we need to identify those by inspecting
@@ -1977,9 +1977,9 @@ void CompilerMSL::extract_global_variables_from_functions()
 		if (var.storage == StorageClass::Input && has_decoration(var.self, Decoration::BuiltIn))
 		{
 			auto bi_type = BuiltIn(get_decoration(var.self, Decoration::BuiltIn));
-			if (bi_type == BuiltInHelperInvocation && !needs_manual_helper_invocation_updates())
+			if (bi_type == BuiltIn::HelperInvocation && !needs_manual_helper_invocation_updates())
 				return;
-			if (bi_type == BuiltInHelperInvocation && needs_manual_helper_invocation_updates())
+			if (bi_type == BuiltIn::HelperInvocation && needs_manual_helper_invocation_updates())
 			{
 				if (msl_options.is_ios() && !msl_options.supports_msl_version(2, 3))
 					SPIRV_CROSS_THROW("simd_is_helper_thread() requires version 2.3 on iOS.");
@@ -1987,7 +1987,7 @@ void CompilerMSL::extract_global_variables_from_functions()
 					SPIRV_CROSS_THROW("simd_is_helper_thread() requires version 2.1 on macOS.");
 				// Make sure this is declared and initialized.
 				// Force this to have the proper name.
-				set_name(var.self, builtin_to_glsl(BuiltInHelperInvocation, StorageClass::Input));
+				set_name(var.self, builtin_to_glsl(BuiltIn::HelperInvocation, StorageClass::Input));
 				auto &entry_func = this->get<SPIRFunction>(ir.default_entry_point);
 				entry_func.add_local_variable(var.self);
 				vars_needing_early_declaration.push_back(var.self);
@@ -4219,7 +4219,7 @@ uint32_t CompilerMSL::add_interface_block(StorageClass storage, bool patch)
 
 		bool builtin_is_stage_in_out = builtin_is_gl_in_out ||
 		                               bi_type == BuiltIn::Layer || bi_type == BuiltIn::ViewportIndex ||
-		                               bi_type == BuiltInBaryCoordKHR || bi_type == BuiltInBaryCoordNoPerspKHR ||
+		                               bi_type == BuiltIn::BaryCoordKHR || bi_type == BuiltIn::BaryCoordNoPerspKHR ||
 		                               bi_type == BuiltIn::FragDepth ||
 		                               bi_type == BuiltIn::FragStencilRefEXT || bi_type == BuiltIn::SampleMask;
 
@@ -4275,7 +4275,7 @@ uint32_t CompilerMSL::add_interface_block(StorageClass storage, bool patch)
 		}
 
 		// Barycentric inputs must be emitted in stage-in, because they can have interpolation arguments.
-		if (is_active && (bi_type == BuiltInBaryCoordKHR || bi_type == BuiltInBaryCoordNoPerspKHR))
+		if (is_active && (bi_type == BuiltIn::BaryCoordKHR || bi_type == BuiltIn::BaryCoordNoPerspKHR))
 		{
 			if (has_seen_barycentric)
 				SPIRV_CROSS_THROW("Cannot declare both BaryCoordNV and BaryCoordNoPerspNV in same shader in MSL.");
@@ -8311,7 +8311,7 @@ void CompilerMSL::emit_specialization_constants_and_structs()
 	if (workgroup_size_id == 0 && is_mesh_shader())
 	{
 		auto &execution = get_entry_point();
-		statement("constant uint3 ", builtin_to_glsl(BuiltInWorkgroupSize, StorageClass::Workgroup),
+		statement("constant uint3 ", builtin_to_glsl(BuiltIn::WorkgroupSize, StorageClass::Workgroup),
 		          " [[maybe_unused]] = ", "uint3(", execution.workgroup_size.x, ", ", execution.workgroup_size.y, ", ",
 		          execution.workgroup_size.z, ");");
 		statement("");
@@ -8387,7 +8387,7 @@ void CompilerMSL::emit_specialization_constants_and_structs()
 				// TODO: This can be expressed as a [[threads_per_threadgroup]] input semantic, but we need to know
 				// the work group size at compile time in SPIR-V, and [[threads_per_threadgroup]] would need to be passed around as a global.
 				// The work group size may be a specialization constant.
-				statement("constant uint3 ", builtin_to_glsl(BuiltInWorkgroupSize, StorageClass::Workgroup),
+				statement("constant uint3 ", builtin_to_glsl(BuiltIn::WorkgroupSize, StorageClass::Workgroup),
 				          " [[maybe_unused]] = ", constant_expression(get<SPIRConstant>(workgroup_size_id)), ";");
 				emitted = true;
 			}
@@ -9821,7 +9821,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 
 		string expr;
 		if (needs_frag_discard_checks())
-			expr = join("(", builtin_to_glsl(BuiltInHelperInvocation, StorageClass::Input), " ? ((void)0) : ");
+			expr = join("(", builtin_to_glsl(BuiltIn::HelperInvocation, StorageClass::Input), " ? ((void)0) : ");
 		expr += join(to_expression(img_id), ".write(",
 		             remap_swizzle(store_type, texel_type.vecsize, to_expression(texel_id)), ", ",
 		             CompilerMSL::to_function_args(args, &forward), ")");
@@ -10022,7 +10022,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 				current_emitting_block->complex_continue = true;
 				force_recompile();
 			}
-			statement("if (!", builtin_to_glsl(BuiltInHelperInvocation, StorageClass::Input), ")");
+			statement("if (!", builtin_to_glsl(BuiltIn::HelperInvocation, StorageClass::Input), ")");
 			begin_scope();
 		}
 		if (!maybe_emit_array_assignment(ops[0], ops[1]))
@@ -10293,7 +10293,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		else if (msl_options.is_macos() && !msl_options.supports_msl_version(2, 1))
 			SPIRV_CROSS_THROW("simd_is_helper_thread() requires MSL 2.1 on macOS.");
 		emit_op(ops[0], ops[1],
-		        needs_manual_helper_invocation_updates() ? builtin_to_glsl(BuiltInHelperInvocation, StorageClass::Input) :
+		        needs_manual_helper_invocation_updates() ? builtin_to_glsl(BuiltIn::HelperInvocation, StorageClass::Input) :
 		                                                   "simd_is_helper_thread()",
 		        false);
 		break;
@@ -11027,11 +11027,11 @@ void CompilerMSL::emit_atomic_func_op(uint32_t result_type, uint32_t result_id, 
 			emit_uninitialized_temporary_expression(result_type, result_id);
 			if (vec4_temporary_id)
 				emit_uninitialized_temporary_expression(vec4_temporary_id + 1, vec4_temporary_id);
-			statement("if (!", builtin_to_glsl(BuiltInHelperInvocation, StorageClass::Input), ")");
+			statement("if (!", builtin_to_glsl(BuiltIn::HelperInvocation, StorageClass::Input), ")");
 			begin_scope();
 		}
 		else
-			exp = join("(!", builtin_to_glsl(BuiltInHelperInvocation, StorageClass::Input), " ? ");
+			exp = join("(!", builtin_to_glsl(BuiltIn::HelperInvocation, StorageClass::Input), " ? ");
 	}
 
 	if (use_native_image_atomic)
@@ -13512,8 +13512,8 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 				if (msl_options.multi_patch_workgroup)
 					return "";
 				return string(" [[") + builtin_qualifier(builtin) + "]]" + (mbr_type.array.empty() ? "" : " ");
-			case BuiltInSubgroupLocalInvocationId: // FIXME: Should work in any stage
-			case BuiltInSubgroupSize: // FIXME: Should work in any stage
+			case BuiltIn::SubgroupLocalInvocationId: // FIXME: Should work in any stage
+			case BuiltIn::SubgroupSize: // FIXME: Should work in any stage
 				if (msl_options.emulate_subgroups)
 					return "";
 				return string(" [[") + builtin_qualifier(builtin) + "]]" + (mbr_type.array.empty() ? "" : " ");
@@ -13597,14 +13597,14 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 				if (!msl_options.multiview || !msl_options.multiview_layered_rendering)
 					break;
 				/* fallthrough */
-			case BuiltInFrontFacing:
-			case BuiltInPointCoord:
+			case BuiltIn::FrontFacing:
+			case BuiltIn::PointCoord:
 			case BuiltIn::FragCoord:
 			case BuiltInSampleId:
 			case BuiltIn::SampleMask:
 			case BuiltIn::Layer:
-			case BuiltInBaryCoordKHR:
-			case BuiltInBaryCoordNoPerspKHR:
+			case BuiltIn::BaryCoordKHR:
+			case BuiltIn::BaryCoordNoPerspKHR:
 				quals = builtin_qualifier(builtin);
 				break;
 
@@ -13620,7 +13620,7 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 		else
 			quals = member_location_attribute_qualifier(type, index);
 
-		if (builtin == BuiltInBaryCoordKHR && has_member_decoration(type.self, index, DecorationNoPerspective))
+		if (builtin == BuiltIn::BaryCoordKHR && has_member_decoration(type.self, index, DecorationNoPerspective))
 		{
 			// NoPerspective is baked into the builtin type.
 			SPIRV_CROSS_THROW("NoPerspective decorations are not supported for BaryCoord inputs.");
@@ -13642,7 +13642,7 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 				if (!quals.empty())
 					quals += ", ";
 
-				if (builtin == BuiltInBaryCoordNoPerspKHR || builtin == BuiltInBaryCoordKHR)
+				if (builtin == BuiltIn::BaryCoordNoPerspKHR || builtin == BuiltIn::BaryCoordKHR)
 					SPIRV_CROSS_THROW("Centroid interpolation not supported for barycentrics in MSL.");
 
 				if (has_member_decoration(type.self, index, DecorationNoPerspective))
@@ -13655,7 +13655,7 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 				if (!quals.empty())
 					quals += ", ";
 
-				if (builtin == BuiltInBaryCoordNoPerspKHR || builtin == BuiltInBaryCoordKHR)
+				if (builtin == BuiltIn::BaryCoordNoPerspKHR || builtin == BuiltIn::BaryCoordKHR)
 					SPIRV_CROSS_THROW("Sample interpolation not supported for barycentrics in MSL.");
 
 				if (has_member_decoration(type.self, index, DecorationNoPerspective))
@@ -13663,13 +13663,13 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 				else
 					quals += "sample_perspective";
 			}
-			else if (has_member_decoration(type.self, index, DecorationNoPerspective) || builtin == BuiltInBaryCoordNoPerspKHR)
+			else if (has_member_decoration(type.self, index, DecorationNoPerspective) || builtin == BuiltIn::BaryCoordNoPerspKHR)
 			{
 				if (!quals.empty())
 					quals += ", ";
 				quals += "center_no_perspective";
 			}
-			else if (builtin == BuiltInBaryCoordKHR)
+			else if (builtin == BuiltIn::BaryCoordKHR)
 			{
 				if (!quals.empty())
 					quals += ", ";
@@ -13734,18 +13734,18 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 		{
 			switch (builtin)
 			{
-			case BuiltInNumSubgroups:
+			case BuiltIn::NumSubgroups:
 			case BuiltIn::SubgroupId:
-			case BuiltInSubgroupLocalInvocationId: // FIXME: Should work in any stage
-			case BuiltInSubgroupSize: // FIXME: Should work in any stage
+			case BuiltIn::SubgroupLocalInvocationId: // FIXME: Should work in any stage
+			case BuiltIn::SubgroupSize: // FIXME: Should work in any stage
 				if (msl_options.emulate_subgroups)
 					break;
 				/* fallthrough */
 			case BuiltIn::GlobalInvocationId:
 			case BuiltIn::WorkgroupId:
-			case BuiltInNumWorkgroups:
-			case BuiltInLocalInvocationId:
-			case BuiltInLocalInvocationIndex:
+			case BuiltIn::NumWorkgroups:
+			case BuiltIn::LocalInvocationId:
+			case BuiltIn::LocalInvocationIndex:
 				return string(" [[") + builtin_qualifier(builtin) + "]]";
 
 			default:
@@ -14237,16 +14237,16 @@ bool CompilerMSL::is_direct_input_builtin(BuiltIn bi_type)
 		return false;
 	// Fragment function in
 	case BuiltIn::SamplePosition:
-	case BuiltInHelperInvocation:
-	case BuiltInBaryCoordKHR:
-	case BuiltInBaryCoordNoPerspKHR:
+	case BuiltIn::HelperInvocation:
+	case BuiltIn::BaryCoordKHR:
+	case BuiltIn::BaryCoordNoPerspKHR:
 		return false;
 	case BuiltIn::ViewIndex:
 		return get_execution_model() == ExecutionModel::Fragment && msl_options.multiview &&
 		       msl_options.multiview_layered_rendering;
 	// Compute function in
 	case BuiltIn::SubgroupId:
-	case BuiltInNumSubgroups:
+	case BuiltIn::NumSubgroups:
 		return !msl_options.emulate_subgroups;
 	// Any stage function in
 	case BuiltInDeviceIndex:
@@ -14256,11 +14256,11 @@ bool CompilerMSL::is_direct_input_builtin(BuiltIn bi_type)
 	case BuiltIn::SubgroupLeMask:
 	case BuiltIn::SubgroupLtMask:
 		return false;
-	case BuiltInSubgroupSize:
+	case BuiltIn::SubgroupSize:
 		if (msl_options.fixed_subgroup_size != 0)
 			return false;
 		/* fallthrough */
-	case BuiltInSubgroupLocalInvocationId:
+	case BuiltIn::SubgroupLocalInvocationId:
 		return !msl_options.emulate_subgroups;
 	default:
 		return true;
@@ -15185,7 +15185,7 @@ void CompilerMSL::fix_up_shader_inputs_outputs()
 					          to_expression(builtin_local_invocation_index_id), ";");
 				});
 				break;
-			case BuiltInNumSubgroups:
+			case BuiltIn::NumSubgroups:
 				if (!msl_options.emulate_subgroups)
 					break;
 				// For subgroup emulation, this is the same as the workgroup size.
@@ -15199,14 +15199,14 @@ void CompilerMSL::fix_up_shader_inputs_outputs()
 					statement(builtin_type_decl(bi_type), " ", to_expression(var_id), " = ", size_expr, ";");
 				});
 				break;
-			case BuiltInSubgroupLocalInvocationId:
+			case BuiltIn::SubgroupLocalInvocationId:
 				if (!msl_options.emulate_subgroups)
 					break;
 				// For subgroup emulation, assume subgroups of size 1.
 				entry_func.fixup_hooks_in.push_back(
 				    [=]() { statement(builtin_type_decl(bi_type), " ", to_expression(var_id), " = 0;"); });
 				break;
-			case BuiltInSubgroupSize:
+			case BuiltIn::SubgroupSize:
 				if (msl_options.emulate_subgroups)
 				{
 					// For subgroup emulation, assume subgroups of size 1.
@@ -17679,8 +17679,8 @@ string CompilerMSL::builtin_to_glsl(BuiltIn builtin, StorageClass storage)
 			return stage_out_var_name + "." + CompilerGLSL::builtin_to_glsl(builtin, storage);
 		break;
 
-	case BuiltInBaryCoordKHR:
-	case BuiltInBaryCoordNoPerspKHR:
+	case BuiltIn::BaryCoordKHR:
+	case BuiltIn::BaryCoordNoPerspKHR:
 		if (storage == StorageClass::Input && current_function && (current_function->self == ir.default_entry_point))
 			return stage_in_var_name + "." + CompilerGLSL::builtin_to_glsl(builtin, storage);
 		break;
@@ -17703,7 +17703,7 @@ string CompilerMSL::builtin_to_glsl(BuiltIn builtin, StorageClass storage)
 		}
 		break;
 
-	case BuiltInHelperInvocation:
+	case BuiltIn::HelperInvocation:
 		if (needs_manual_helper_invocation_updates())
 			break;
 		if (msl_options.is_ios() && !msl_options.supports_msl_version(2, 3))
@@ -17815,9 +17815,9 @@ string CompilerMSL::builtin_qualifier(BuiltIn builtin)
 		return "position_in_patch";
 
 	// Fragment function in
-	case BuiltInFrontFacing:
+	case BuiltIn::FrontFacing:
 		return "front_facing";
-	case BuiltInPointCoord:
+	case BuiltIn::PointCoord:
 		return "point_coord";
 	case BuiltIn::FragCoord:
 		return "position";
@@ -17851,22 +17851,22 @@ string CompilerMSL::builtin_qualifier(BuiltIn builtin)
 	case BuiltIn::GlobalInvocationId:
 		return "thread_position_in_grid";
 
-	case BuiltInWorkgroupSize:
+	case BuiltIn::WorkgroupSize:
 		return "threads_per_threadgroup";
 
 	case BuiltIn::WorkgroupId:
 		return "threadgroup_position_in_grid";
 
-	case BuiltInNumWorkgroups:
+	case BuiltIn::NumWorkgroups:
 		return "threadgroups_per_grid";
 
-	case BuiltInLocalInvocationId:
+	case BuiltIn::LocalInvocationId:
 		return "thread_position_in_threadgroup";
 
-	case BuiltInLocalInvocationIndex:
+	case BuiltIn::LocalInvocationIndex:
 		return "thread_index_in_threadgroup";
 
-	case BuiltInSubgroupSize:
+	case BuiltIn::SubgroupSize:
 		if (msl_options.emulate_subgroups || msl_options.fixed_subgroup_size != 0)
 			// Shouldn't be reached.
 			SPIRV_CROSS_THROW("Emitting threads_per_simdgroup attribute with fixed subgroup size??");
@@ -17883,7 +17883,7 @@ string CompilerMSL::builtin_qualifier(BuiltIn builtin)
 			return "thread_execution_width";
 		}
 
-	case BuiltInNumSubgroups:
+	case BuiltIn::NumSubgroups:
 		if (msl_options.emulate_subgroups)
 			// Shouldn't be reached.
 			SPIRV_CROSS_THROW("NumSubgroups is handled specially with emulation.");
@@ -17899,7 +17899,7 @@ string CompilerMSL::builtin_qualifier(BuiltIn builtin)
 			SPIRV_CROSS_THROW("Subgroup builtins require Metal 2.0.");
 		return msl_options.use_quadgroup_operation() ? "quadgroup_index_in_threadgroup" : "simdgroup_index_in_threadgroup";
 
-	case BuiltInSubgroupLocalInvocationId:
+	case BuiltIn::SubgroupLocalInvocationId:
 		if (msl_options.emulate_subgroups)
 			// Shouldn't be reached.
 			SPIRV_CROSS_THROW("SubgroupLocalInvocationId is handled specially with emulation.");
@@ -17929,8 +17929,8 @@ string CompilerMSL::builtin_qualifier(BuiltIn builtin)
 		// Shouldn't be reached.
 		SPIRV_CROSS_THROW("Subgroup ballot masks are handled specially in MSL.");
 
-	case BuiltInBaryCoordKHR:
-	case BuiltInBaryCoordNoPerspKHR:
+	case BuiltIn::BaryCoordKHR:
+	case BuiltIn::BaryCoordNoPerspKHR:
 		if (msl_options.is_ios() && !msl_options.supports_msl_version(2, 3))
 			SPIRV_CROSS_THROW("Barycentrics are only supported in MSL 2.3 and above on iOS.");
 		else if (!msl_options.supports_msl_version(2, 2))
@@ -18004,9 +18004,9 @@ string CompilerMSL::builtin_type_decl(BuiltIn builtin, uint32_t id)
 		return "float3";
 
 	// Fragment function in
-	case BuiltInFrontFacing:
+	case BuiltIn::FrontFacing:
 		return "bool";
-	case BuiltInPointCoord:
+	case BuiltIn::PointCoord:
 		return "float2";
 	case BuiltIn::FragCoord:
 		return "float4";
@@ -18019,11 +18019,11 @@ string CompilerMSL::builtin_type_decl(BuiltIn builtin, uint32_t id)
 	case BuiltIn::ViewIndex:
 		return "uint";
 
-	case BuiltInHelperInvocation:
+	case BuiltIn::HelperInvocation:
 		return "bool";
 
-	case BuiltInBaryCoordKHR:
-	case BuiltInBaryCoordNoPerspKHR:
+	case BuiltIn::BaryCoordKHR:
+	case BuiltIn::BaryCoordNoPerspKHR:
 		// Use the type as declared, can be 1, 2 or 3 components.
 		return type_to_glsl(get_variable_data_type(get<SPIRVariable>(id)));
 
@@ -18036,16 +18036,16 @@ string CompilerMSL::builtin_type_decl(BuiltIn builtin, uint32_t id)
 
 	// Compute function in
 	case BuiltIn::GlobalInvocationId:
-	case BuiltInLocalInvocationId:
-	case BuiltInNumWorkgroups:
+	case BuiltIn::LocalInvocationId:
+	case BuiltIn::NumWorkgroups:
 	case BuiltIn::WorkgroupId:
-	case BuiltInWorkgroupSize:
+	case BuiltIn::WorkgroupSize:
 		return "uint3";
-	case BuiltInLocalInvocationIndex:
-	case BuiltInNumSubgroups:
+	case BuiltIn::LocalInvocationIndex:
+	case BuiltIn::NumSubgroups:
 	case BuiltIn::SubgroupId:
-	case BuiltInSubgroupSize:
-	case BuiltInSubgroupLocalInvocationId:
+	case BuiltIn::SubgroupSize:
+	case BuiltIn::SubgroupLocalInvocationId:
 		return "uint";
 	case BuiltIn::SubgroupEqMask:
 	case BuiltIn::SubgroupGeMask:
@@ -19073,17 +19073,17 @@ void CompilerMSL::cast_from_variable_load(uint32_t source_id, std::string &expr,
 	switch (builtin)
 	{
 	case BuiltIn::GlobalInvocationId:
-	case BuiltInLocalInvocationId:
+	case BuiltIn::LocalInvocationId:
 	case BuiltIn::WorkgroupId:
-	case BuiltInLocalInvocationIndex:
-	case BuiltInWorkgroupSize:
-	case BuiltInNumWorkgroups:
+	case BuiltIn::LocalInvocationIndex:
+	case BuiltIn::WorkgroupSize:
+	case BuiltIn::NumWorkgroups:
 	case BuiltIn::Layer:
 	case BuiltIn::ViewportIndex:
 	case BuiltIn::FragStencilRefEXT:
 	case BuiltIn::PrimitiveId:
-	case BuiltInSubgroupSize:
-	case BuiltInSubgroupLocalInvocationId:
+	case BuiltIn::SubgroupSize:
+	case BuiltIn::SubgroupLocalInvocationId:
 	case BuiltIn::ViewIndex:
 	case BuiltIn::VertexIndex:
 	case BuiltIn::InstanceIndex:
