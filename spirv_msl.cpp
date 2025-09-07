@@ -545,7 +545,7 @@ void CompilerMSL::build_implicit_builtins()
 				set<SPIRType>(type_id, vec4_type);
 
 				SPIRType vec4_type_ptr = vec4_type;
-				vec4_type_ptr.op = OpTypePointer;
+				vec4_type_ptr.op = Op::Op::OpTypePointer;
 				vec4_type_ptr.pointer = true;
 				vec4_type_ptr.pointer_depth++;
 				vec4_type_ptr.parent_type = type_id;
@@ -567,7 +567,7 @@ void CompilerMSL::build_implicit_builtins()
 
 				// Create gl_Layer.
 				SPIRType uint_type_ptr = get_uint_type();
-				uint_type_ptr.op = OpTypePointer;
+				uint_type_ptr.op = Op::OpTypePointer;
 				uint_type_ptr.pointer = true;
 				uint_type_ptr.pointer_depth++;
 				uint_type_ptr.parent_type = get_uint_type_id();
@@ -589,7 +589,7 @@ void CompilerMSL::build_implicit_builtins()
 
 				// Create gl_ViewIndex.
 				SPIRType uint_type_ptr = get_uint_type();
-				uint_type_ptr.op = OpTypePointer;
+				uint_type_ptr.op = Op::OpTypePointer;
 				uint_type_ptr.pointer = true;
 				uint_type_ptr.pointer_depth++;
 				uint_type_ptr.parent_type = get_uint_type_id();
@@ -612,7 +612,7 @@ void CompilerMSL::build_implicit_builtins()
 
 			// Create gl_SampleID.
 			SPIRType uint_type_ptr = get_uint_type();
-			uint_type_ptr.op = OpTypePointer;
+			uint_type_ptr.op = Op::OpTypePointer;
 			uint_type_ptr.pointer = true;
 			uint_type_ptr.pointer_depth++;
 			uint_type_ptr.parent_type = get_uint_type_id();
@@ -632,7 +632,7 @@ void CompilerMSL::build_implicit_builtins()
 			uint32_t type_ptr_id = ir.increase_bound_by(1);
 
 			SPIRType uint_type_ptr = get_uint_type();
-			uint_type_ptr.op = OpTypePointer;
+			uint_type_ptr.op = Op::OpTypePointer;
 			uint_type_ptr.pointer = true;
 			uint_type_ptr.pointer_depth++;
 			uint_type_ptr.parent_type = get_uint_type_id();
@@ -724,7 +724,7 @@ void CompilerMSL::build_implicit_builtins()
 			uint32_t type_ptr_id = ir.increase_bound_by(1);
 
 			SPIRType uint_type_ptr = get_uint_type();
-			uint_type_ptr.op = OpTypePointer;
+			uint_type_ptr.op = Op::OpTypePointer;
 			uint_type_ptr.pointer = true;
 			uint_type_ptr.pointer_depth++;
 			uint_type_ptr.parent_type = get_uint_type_id();
@@ -784,7 +784,7 @@ void CompilerMSL::build_implicit_builtins()
 
 			// Create gl_SubgroupInvocationID.
 			SPIRType uint_type_ptr = get_uint_type();
-			uint_type_ptr.op = OpTypePointer;
+			uint_type_ptr.op = Op::OpTypePointer;
 			uint_type_ptr.pointer = true;
 			uint_type_ptr.pointer_depth++;
 			uint_type_ptr.parent_type = get_uint_type_id();
@@ -806,7 +806,7 @@ void CompilerMSL::build_implicit_builtins()
 
 			// Create gl_SubgroupSize.
 			SPIRType uint_type_ptr = get_uint_type();
-			uint_type_ptr.op = OpTypePointer;
+			uint_type_ptr.op = Op::OpTypePointer;
 			uint_type_ptr.pointer = true;
 			uint_type_ptr.pointer_depth++;
 			uint_type_ptr.parent_type = get_uint_type_id();
@@ -916,7 +916,7 @@ void CompilerMSL::build_implicit_builtins()
 
 			// Create gl_LocalInvocationIndex.
 			SPIRType uint_type_ptr = get_uint_type();
-			uint_type_ptr.op = OpTypePointer;
+			uint_type_ptr.op = Op::OpTypePointer;
 			uint_type_ptr.pointer = true;
 			uint_type_ptr.pointer_depth++;
 			uint_type_ptr.parent_type = get_uint_type_id();
@@ -967,7 +967,7 @@ void CompilerMSL::build_implicit_builtins()
 				{
 					uint32_t type_ptr_id = ir.increase_bound_by(1);
 					SPIRType uint_type_ptr = get<SPIRType>(type_id);
-					uint_type_ptr.op = OpTypePointer;
+					uint_type_ptr.op = Op::OpTypePointer;
 					uint_type_ptr.pointer = true;
 					uint_type_ptr.pointer_depth++;
 					uint_type_ptr.parent_type = type_id;
@@ -1147,7 +1147,7 @@ void CompilerMSL::build_implicit_builtins()
 		set<SPIRType>(type_id, vec4_type);
 
 		SPIRType vec4_type_ptr = vec4_type;
-		vec4_type_ptr.op = OpTypePointer;
+		vec4_type_ptr.op = Op::Op::OpTypePointer;
 		vec4_type_ptr.pointer = true;
 		vec4_type_ptr.pointer_depth++;
 		vec4_type_ptr.parent_type = type_id;
@@ -1169,7 +1169,7 @@ void CompilerMSL::build_implicit_builtins()
 		// Create variable to store meshlet size.
 		uint32_t type_id = build_extended_vector_type(get_uint_type_id(), 2);
 		SPIRType uint_type_ptr = get<SPIRType>(type_id);
-		uint_type_ptr.op = OpTypePointer;
+		uint_type_ptr.op = Op::OpTypePointer;
 		uint_type_ptr.pointer = true;
 		uint_type_ptr.pointer_depth++;
 		uint_type_ptr.parent_type = type_id;
@@ -1194,7 +1194,7 @@ void CompilerMSL::build_implicit_builtins()
 		set<SPIRType>(type_id, mesh_grid_type);
 
 		SPIRType mesh_grid_type_ptr = mesh_grid_type;
-		mesh_grid_type_ptr.op = spv::OpTypePointer;
+		mesh_grid_type_ptr.op = spv::Op::OpTypePointer;
 		mesh_grid_type_ptr.pointer = true;
 		mesh_grid_type_ptr.pointer_depth++;
 		mesh_grid_type_ptr.parent_type = type_id;
