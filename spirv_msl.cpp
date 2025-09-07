@@ -351,7 +351,7 @@ void CompilerMSL::build_implicit_builtins()
 				}
 			}
 
-			if (builtin == static_cast<uint32_t>(BuiltIn::PointSize))
+			if (builtin == BuiltIn::PointSize)
 			{
 				has_point_size = true;
 				active_output_builtins.set(static_cast<uint32_t>(BuiltIn::PointSize));
@@ -396,7 +396,7 @@ void CompilerMSL::build_implicit_builtins()
 				}
 			}
 
-			if ((need_sample_pos || needs_sample_id) && builtin == static_cast<uint32_t>(BuiltInSampleId))
+			if ((need_sample_pos || needs_sample_id) && builtin == BuiltIn::SampleId)
 			{
 				builtin_sample_id_id = var.self;
 				mark_implicit_builtin(StorageClass::Input, BuiltInSampleId, var.self);
@@ -554,7 +554,7 @@ void CompilerMSL::build_implicit_builtins()
 				ptr_type.self = type_id;
 
 				set<SPIRVariable>(var_id, type_ptr_id, StorageClass::Input);
-				set_decoration(var_id, static_cast<uint32_t>(Decoration::BuiltIn), BuiltIn::FragCoord);
+				set_decoration(var_id, Decoration::BuiltIn, static_cast<uint32_t>(BuiltIn::FragCoord));
 				builtin_frag_coord_id = var_id;
 				mark_implicit_builtin(StorageClass::Input, BuiltIn::FragCoord, var_id);
 			}
@@ -576,7 +576,7 @@ void CompilerMSL::build_implicit_builtins()
 				ptr_type.self = get_uint_type_id();
 
 				set<SPIRVariable>(var_id, type_ptr_id, StorageClass::Input);
-				set_decoration(var_id, Decoration::BuiltIn, BuiltIn::Layer);
+				set_decoration(var_id, Decoration::BuiltIn, static_cast<uint32_t>(BuiltIn::Layer));
 				builtin_layer_id = var_id;
 				mark_implicit_builtin(StorageClass::Input, BuiltIn::Layer, var_id);
 			}
@@ -598,7 +598,7 @@ void CompilerMSL::build_implicit_builtins()
 				ptr_type.self = get_uint_type_id();
 
 				set<SPIRVariable>(var_id, type_ptr_id, StorageClass::Input);
-				set_decoration(var_id, Decoration::BuiltIn, BuiltIn::ViewIndex);
+				set_decoration(var_id, Decoration::BuiltIn, static_cast<uint32_t>(BuiltIn::ViewIndex));
 				builtin_view_idx_id = var_id;
 				mark_implicit_builtin(StorageClass::Input, BuiltIn::ViewIndex, var_id);
 			}
@@ -621,7 +621,7 @@ void CompilerMSL::build_implicit_builtins()
 			ptr_type.self = get_uint_type_id();
 
 			set<SPIRVariable>(var_id, type_ptr_id, StorageClass::Input);
-			set_decoration(var_id, Decoration::BuiltIn, BuiltInSampleId);
+			set_decoration(var_id, Decoration::BuiltIn, static_cast<uint32_t>(BuiltIn::SampleId));
 			builtin_sample_id_id = var_id;
 			mark_implicit_builtin(StorageClass::Input, BuiltInSampleId, var_id);
 		}
@@ -646,7 +646,7 @@ void CompilerMSL::build_implicit_builtins()
 
 				// Create gl_VertexIndex.
 				set<SPIRVariable>(var_id, type_ptr_id, StorageClass::Input);
-				set_decoration(var_id, Decoration::BuiltIn, BuiltIn::VertexIndex);
+				set_decoration(var_id, Decoration::BuiltIn, static_cast<uint32_t>(BuiltIn::VertexIndex));
 				builtin_vertex_idx_id = var_id;
 				mark_implicit_builtin(StorageClass::Input, BuiltIn::VertexIndex, var_id);
 			}
@@ -657,7 +657,7 @@ void CompilerMSL::build_implicit_builtins()
 
 				// Create gl_BaseVertex.
 				set<SPIRVariable>(var_id, type_ptr_id, StorageClass::Input);
-				set_decoration(var_id, Decoration::BuiltIn, BuiltIn::BaseVertex);
+				set_decoration(var_id, Decoration::BuiltIn, static_cast<uint32_t>(BuiltIn::BaseVertex));
 				builtin_base_vertex_id = var_id;
 				mark_implicit_builtin(StorageClass::Input, BuiltIn::BaseVertex, var_id);
 			}
@@ -668,7 +668,7 @@ void CompilerMSL::build_implicit_builtins()
 
 				// Create gl_InstanceIndex.
 				set<SPIRVariable>(var_id, type_ptr_id, StorageClass::Input);
-				set_decoration(var_id, Decoration::BuiltIn, BuiltIn::InstanceIndex);
+				set_decoration(var_id, Decoration::BuiltIn, static_cast<uint32_t>(BuiltIn::InstanceIndex));
 				builtin_instance_idx_id = var_id;
 				mark_implicit_builtin(StorageClass::Input, BuiltIn::InstanceIndex, var_id);
 			}
@@ -679,7 +679,7 @@ void CompilerMSL::build_implicit_builtins()
 
 				// Create gl_BaseInstance.
 				set<SPIRVariable>(var_id, type_ptr_id, StorageClass::Input);
-				set_decoration(var_id, Decoration::BuiltIn, BuiltIn::BaseInstance);
+				set_decoration(var_id, Decoration::BuiltIn, static_cast<uint32_t>(BuiltIn::BaseInstance));
 				builtin_base_instance_id = var_id;
 				mark_implicit_builtin(StorageClass::Input, BuiltIn::BaseInstance, var_id);
 			}
@@ -690,7 +690,7 @@ void CompilerMSL::build_implicit_builtins()
 
 				// Create gl_ViewIndex.
 				set<SPIRVariable>(var_id, type_ptr_id, StorageClass::Input);
-				set_decoration(var_id, Decoration::BuiltIn, BuiltIn::ViewIndex);
+				set_decoration(var_id, Decoration::BuiltIn, static_cast<uint32_t>(BuiltIn::ViewIndex));
 				builtin_view_idx_id = var_id;
 				mark_implicit_builtin(StorageClass::Input, BuiltIn::ViewIndex, var_id);
 			}
@@ -704,7 +704,7 @@ void CompilerMSL::build_implicit_builtins()
 			// gl_Layer is an output in vertex-pipeline shaders.
 			uint32_t type_ptr_out_id = ir.increase_bound_by(2);
 			SPIRType uint_type_ptr_out = get_uint_type();
-			uint_type_ptr_out.op = OpTypePointer;
+			uint_type_ptr_out.op = Op::OpTypePointer;
 			uint_type_ptr_out.pointer = true;
 			uint_type_ptr_out.pointer_depth++;
 			uint_type_ptr_out.parent_type = get_uint_type_id();
@@ -713,7 +713,7 @@ void CompilerMSL::build_implicit_builtins()
 			ptr_out_type.self = get_uint_type_id();
 			uint32_t var_id = type_ptr_out_id + 1;
 			set<SPIRVariable>(var_id, type_ptr_out_id, StorageClass::Output);
-			set_decoration(var_id, Decoration::BuiltIn, BuiltIn::Layer);
+			set_decoration(var_id, Decoration::BuiltIn, static_cast<uint32_t>(BuiltIn::Layer));
 			builtin_layer_id = var_id;
 			mark_implicit_builtin(StorageClass::Output, BuiltIn::Layer, var_id);
 		}
@@ -865,7 +865,7 @@ void CompilerMSL::build_implicit_builtins()
 
 			// Create gl_SampleMask.
 			SPIRType uint_type_ptr_out = get_uint_type();
-			uint_type_ptr_out.op = OpTypePointer;
+			uint_type_ptr_out.op = Op::OpTypePointer;
 			uint_type_ptr_out.pointer = true;
 			uint_type_ptr_out.pointer_depth++;
 			uint_type_ptr_out.parent_type = get_uint_type_id();
