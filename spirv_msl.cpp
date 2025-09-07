@@ -255,8 +255,8 @@ void CompilerMSL::build_implicit_builtins()
 	bool need_tesc_params = is_tesc_shader();
 	bool need_tese_params = is_tese_shader() && msl_options.raw_buffer_tese_input;
 	bool need_subgroup_mask =
-	    active_input_builtins.get(BuiltIn::SubgroupEqMask) || active_input_builtins.get(static_cast<uint32_t>(BuiltIn::SubgroupGeMask)) ||
-	    active_input_builtins.get(static_cast<uint32_t>(BuiltIn::SubgroupGtMask)) || active_input_builtins.get(BuiltIn::SubgroupLeMask) ||
+	    active_input_builtins.get(static_cast<uint32_t>(BuiltIn::SubgroupEqMask) || active_input_builtins.get(static_cast<uint32_t>(BuiltIn::SubgroupGeMask)) ||
+	    active_input_builtins.get(static_cast<uint32_t>(BuiltIn::SubgroupGtMask)) || active_input_builtins.get(static_cast<uint32_t>(BuiltIn::SubgroupLeMask)) ||
 	    active_input_builtins.get(static_cast<uint32_t>(BuiltIn::SubgroupLtMask));
 	bool need_subgroup_ge_mask = !msl_options.is_ios() && (active_input_builtins.get(static_cast<uint32_t>(BuiltIn::SubgroupGeMask)) ||
 	                                                       active_input_builtins.get(static_cast<uint32_t>(BuiltIn::SubgroupGtMask)));
@@ -265,13 +265,13 @@ void CompilerMSL::build_implicit_builtins()
 	                      (msl_options.multiview || active_input_builtins.get(static_cast<uint32_t>(BuiltIn::ViewIndex)));
 	bool need_dispatch_base =
 	    msl_options.dispatch_base && get_execution_model() == ExecutionModel::GLCompute &&
-	    (active_input_builtins.get(BuiltIn::WorkgroupId) || active_input_builtins.get(static_cast<uint32_t>(BuiltIn::GlobalInvocationId)));
+	    (active_input_builtins.get(static_cast<uint32_t>(BuiltIn::WorkgroupId)) || active_input_builtins.get(static_cast<uint32_t>(BuiltIn::GlobalInvocationId)));
 	bool need_grid_params = get_execution_model() == ExecutionModel::Vertex && msl_options.vertex_for_tessellation;
 	bool need_vertex_base_params =
 	    need_grid_params &&
 	    (active_input_builtins.get(static_cast<uint32_t>(BuiltIn::VertexId)) || active_input_builtins.get(static_cast<uint32_t>(BuiltIn::VertexIndex)) ||
-	     active_input_builtins.get(BuiltIn::BaseVertex) || active_input_builtins.get(BuiltIn::InstanceId) ||
-	     active_input_builtins.get(BuiltIn::InstanceIndex) || active_input_builtins.get(BuiltIn::BaseInstance));
+	     active_input_builtins.get(static_cast<uint32_t>(BuiltIn::BaseVertex)) || active_input_builtins.get(static_cast<uint32_t>(BuiltIn::InstanceId)) ||
+	     active_input_builtins.get(static_cast<uint32_t>(BuiltIn::InstanceIndex)) || active_input_builtins.get(static_cast<uint32_t>(BuiltIn::BaseInstance)));
 	bool need_local_invocation_index =
 		(msl_options.emulate_subgroups && active_input_builtins.get(BuiltIn::SubgroupId)) || is_mesh_shader() ||
 		needs_workgroup_zero_init || needs_local_invocation_index;
@@ -15479,7 +15479,7 @@ void CompilerMSL::fix_up_shader_inputs_outputs()
 				});
 				break;
 			case BuiltIn::WorkgroupId:
-				if (!msl_options.dispatch_base || !active_input_builtins.get(BuiltIn::WorkgroupId))
+				if (!msl_options.dispatch_base || !active_input_builtins.get(static_cast<uint32_t>(BuiltIn::WorkgroupId)))
 					break;
 
 				// The vkCmdDispatchBase() command lets the client set the base value
