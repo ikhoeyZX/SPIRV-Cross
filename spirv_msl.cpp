@@ -545,7 +545,7 @@ void CompilerMSL::build_implicit_builtins()
 				set<SPIRType>(type_id, vec4_type);
 
 				SPIRType vec4_type_ptr = vec4_type;
-				vec4_type_ptr.op = Op::Op::OpTypePointer;
+				vec4_type_ptr.op = Op::OpTypePointer;
 				vec4_type_ptr.pointer = true;
 				vec4_type_ptr.pointer_depth++;
 				vec4_type_ptr.parent_type = type_id;
@@ -1147,7 +1147,7 @@ void CompilerMSL::build_implicit_builtins()
 		set<SPIRType>(type_id, vec4_type);
 
 		SPIRType vec4_type_ptr = vec4_type;
-		vec4_type_ptr.op = Op::Op::OpTypePointer;
+		vec4_type_ptr.op = Op::OpTypePointer;
 		vec4_type_ptr.pointer = true;
 		vec4_type_ptr.pointer_depth++;
 		vec4_type_ptr.parent_type = type_id;
@@ -19789,7 +19789,7 @@ void CompilerMSL::analyze_argument_buffers()
 					atomic_type.vecsize = 1;
 					set<SPIRType>(atomic_type_id, atomic_type);
 
-					atomic_type.op = Op::Op::OpTypePointer;
+					atomic_type.op = Op::OpTypePointer;
 					atomic_type.pointer = true;
 					atomic_type.pointer_depth++;
 					atomic_type.parent_type = atomic_type_id;
