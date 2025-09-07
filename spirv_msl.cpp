@@ -334,7 +334,7 @@ void CompilerMSL::build_implicit_builtins()
 
 			BuiltIn builtin = ir.meta[var.self].decoration.builtin_type;
 
-			if (var.storage == StorageClass::Output)
+			if (var.storage == StorageClass::::Output)
 			{
 				if (has_additional_fixed_sample_mask() && builtin == BuiltIn::SampleMask)
 				{
@@ -1102,7 +1102,7 @@ void CompilerMSL::build_implicit_builtins()
 		// or initialized, and if so, mark it as active, and do not create the implicit variable.
 		bool has_output = false;
 		ir.for_each_typed_id<SPIRVariable>([&](uint32_t, SPIRVariable &var) {
-			if (var.storage == StorageClass::Output && interface_variable_exists_in_entry_point(var.self))
+			if (var.storage == StorageClass::::Output && interface_variable_exists_in_entry_point(var.self))
 			{
 				has_output = true;
 
@@ -1948,14 +1948,14 @@ void CompilerMSL::localize_global_variables()
 	{
 		uint32_t v_id = *iter;
 		auto &var = get<SPIRVariable>(v_id);
-		if (var.storage == StorageClassPrivate || var.storage == StorageClass::Workgroup ||
-		    var.storage == StorageClassTaskPayloadWorkgroupEXT)
+		if (var.storage == StorageClass::Private || var.storage == StorageClass::::Workgroup ||
+		    var.storage == StorageClass::TaskPayloadWorkgroupEXT)
 		{
 			if (!variable_is_lut(var))
 				entry_func.add_local_variable(v_id);
 			iter = global_variables.erase(iter);
 		}
-		else if (var.storage == StorageClass::Output && is_mesh_shader())
+		else if (var.storage == StorageClass::::Output && is_mesh_shader())
 		{
 			entry_func.add_local_variable(v_id);
 			iter = global_variables.erase(iter);
@@ -1974,7 +1974,7 @@ void CompilerMSL::extract_global_variables_from_functions()
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t, SPIRVariable &var) {
 		// Some builtins resolve directly to a function call which does not need any declared variables.
 		// Skip these.
-		if (var.storage == StorageClass::Input && has_decoration(var.self, Decoration::BuiltIn))
+		if (var.storage == StorageClass::::Input && has_decoration(var.self, Decoration::BuiltIn))
 		{
 			auto bi_type = BuiltIn(get_decoration(var.self, Decoration::BuiltIn));
 			if (bi_type == BuiltIn::HelperInvocation && !needs_manual_helper_invocation_updates())
@@ -1996,9 +1996,9 @@ void CompilerMSL::extract_global_variables_from_functions()
 			}
 		}
 
-		if (var.storage == StorageClass::Input || var.storage == StorageClass::Output ||
-		    var.storage == StorageClass::Uniform || var.storage == StorageClass::UniformConstant ||
-		    var.storage == StorageClassPushConstant || var.storage == StorageClass::StorageBuffer)
+		if (var.storage == StorageClass::::Input || var.storage == StorageClass::::Output ||
+		    var.storage == StorageClass::::Uniform || var.storage == StorageClass::::UniformConstant ||
+		    var.storage == StorageClass::PushConstant || var.storage == StorageClass::::StorageBuffer)
 		{
 			global_var_ids.insert(var.self);
 		}
@@ -2373,9 +2373,9 @@ void CompilerMSL::extract_global_variables_from_function(uint32_t func_id, std::
 			bool is_patch = has_decoration(arg_id, DecorationPatch) || is_patch_block(*p_type);
 			bool is_block = has_decoration(p_type->self, Decoration::Block);
 			bool is_control_point_storage =
-			    !is_patch && ((is_tessellation_shader() && var.storage == StorageClass::Input) ||
-			                  (is_tesc_shader() && var.storage == StorageClass::Output));
-			bool is_patch_block_storage = is_patch && is_block && var.storage == StorageClass::Output;
+			    !is_patch && ((is_tessellation_shader() && var.storage == StorageClass::::Input) ||
+			                  (is_tesc_shader() && var.storage == StorageClass::::Output));
+			bool is_patch_block_storage = is_patch && is_block && var.storage == StorageClass::::Output;
 			bool is_builtin = is_builtin_variable(var);
 			bool variable_is_stage_io =
 					!is_builtin || bi_type == BuiltInPosition || bi_type == BuiltIn::PointSize ||
@@ -2385,7 +2385,7 @@ void CompilerMSL::extract_global_variables_from_function(uint32_t func_id, std::
 			                                        variable_is_stage_io;
 
 			// If output is masked it is not considered part of the global stage IO interface.
-			if (is_redirected_to_global_stage_io && var.storage == StorageClass::Output)
+			if (is_redirected_to_global_stage_io && var.storage == StorageClass::::Output)
 				is_redirected_to_global_stage_io = !is_stage_output_variable_masked(var);
 
 			if (is_redirected_to_global_stage_io)
@@ -2396,11 +2396,11 @@ void CompilerMSL::extract_global_variables_from_function(uint32_t func_id, std::
 				// structure to the function.
 				std::string name;
 				if (is_patch)
-					name = var.storage == StorageClass::Input ? patch_stage_in_var_name : patch_stage_out_var_name;
+					name = var.storage == StorageClass::::Input ? patch_stage_in_var_name : patch_stage_out_var_name;
 				else
-					name = var.storage == StorageClass::Input ? "gl_in" : "gl_out";
+					name = var.storage == StorageClass::::Input ? "gl_in" : "gl_out";
 
-				if (var.storage == StorageClass::Output && has_decoration(p_type->self, Decoration::Block))
+				if (var.storage == StorageClass::::Output && has_decoration(p_type->self, Decoration::Block))
 				{
 					// If we're redirecting a block, we might still need to access the original block
 					// variable if we're masking some members.
@@ -2414,7 +2414,7 @@ void CompilerMSL::extract_global_variables_from_function(uint32_t func_id, std::
 					}
 				}
 
-				if (var.storage == StorageClass::Input)
+				if (var.storage == StorageClass::::Input)
 				{
 					auto &added_in = is_patch ? patch_added_in : control_point_added_in;
 					if (added_in)
@@ -2422,7 +2422,7 @@ void CompilerMSL::extract_global_variables_from_function(uint32_t func_id, std::
 					arg_id = is_patch ? patch_stage_in_var_id : stage_in_ptr_var_id;
 					added_in = true;
 				}
-				else if (var.storage == StorageClass::Output)
+				else if (var.storage == StorageClass::::Output)
 				{
 					auto &added_out = is_patch ? patch_added_out : control_point_added_out;
 					if (added_out)
@@ -2437,7 +2437,7 @@ void CompilerMSL::extract_global_variables_from_function(uint32_t func_id, std::
 				set<SPIRVariable>(next_id, type_id, StorageClassFunction, 0, arg_id);
 
 				set_name(next_id, name);
-				if (is_tese_shader() && msl_options.raw_buffer_tese_input && var.storage == StorageClass::Input)
+				if (is_tese_shader() && msl_options.raw_buffer_tese_input && var.storage == StorageClass::::Input)
 					set_decoration(next_id, DecorationNonWritable);
 			}
 			else if (is_builtin && is_mesh_shader())
@@ -2514,13 +2514,13 @@ void CompilerMSL::mark_packable_structs()
 		{
 			auto &type = this->get<SPIRType>(var.basetype);
 			if (type.pointer &&
-			    (type.storage == StorageClass::Uniform || type.storage == StorageClass::UniformConstant ||
-			     type.storage == StorageClassPushConstant || type.storage == StorageClass::StorageBuffer) &&
+			    (type.storage == StorageClass::::Uniform || type.storage == StorageClass::::UniformConstant ||
+			     type.storage == StorageClass::PushConstant || type.storage == StorageClass::::StorageBuffer) &&
 			    (has_decoration(type.self, Decoration::Block) || has_decoration(type.self, DecorationBufferBlock)))
 				mark_as_packable(type);
 		}
 
-		if (var.storage == StorageClass::Workgroup)
+		if (var.storage == StorageClass::::Workgroup)
 		{
 			auto *type = &this->get<SPIRType>(var.basetype);
 			if (type->basetype == SPIRType::Struct)
@@ -2531,7 +2531,7 @@ void CompilerMSL::mark_packable_structs()
 	// Physical storage buffer pointers can appear outside of the context of a variable, if the address
 	// is calculated from a ulong or uvec2 and cast to a pointer, so check if they need to be packed too.
 	ir.for_each_typed_id<SPIRType>([&](uint32_t, SPIRType &type) {
-		if (type.basetype == SPIRType::Struct && type.pointer && type.storage == StorageClassPhysicalStorageBuffer)
+		if (type.basetype == SPIRType::Struct && type.pointer && type.storage == StorageClass::PhysicalStorageBuffer)
 			mark_as_packable(type);
 	});
 }
@@ -2750,7 +2750,7 @@ bool CompilerMSL::add_component_variable_to_interface_block(spv::StorageClass st
 		entry_func.add_local_variable(var.self);
 		vars_needing_early_declaration.push_back(var.self);
 
-		if (var.storage == StorageClass::Input)
+		if (var.storage == StorageClass::::Input)
 		{
 			entry_func.fixup_hooks_in.push_back([=, &type, &var]() {
 				if (!type.array.empty())
@@ -2888,7 +2888,7 @@ void CompilerMSL::add_plain_variable_to_interface_block(StorageClass storage, co
 	else if (!meta.strip_array)
 		ir.meta[var.self].decoration.qualified_alias = qual_var_name;
 
-	if (var.storage == StorageClass::Output && var.initializer != ID(0))
+	if (var.storage == StorageClass::::Output && var.initializer != ID(0))
 	{
 		if (padded_output || padded_input)
 		{
@@ -3602,7 +3602,7 @@ void CompilerMSL::add_plain_member_variable_to_interface_block(StorageClass stor
 	}
 
 	const SPIRConstant *c = nullptr;
-	if (!flatten_stage_out && var.storage == StorageClass::Output &&
+	if (!flatten_stage_out && var.storage == StorageClass::::Output &&
 	    var.initializer != ID(0) && (c = maybe_get<SPIRConstant>(var.initializer)))
 	{
 		if (meta.strip_array)
@@ -5004,7 +5004,7 @@ void CompilerMSL::mark_scalar_layout_structs(const SPIRType &type)
 	{
 		// Handle possible recursion when a struct contains a pointer to its own type nested somewhere.
 		auto &mbr_type = get<SPIRType>(type.member_types[i]);
-		if (mbr_type.basetype == SPIRType::Struct && !(mbr_type.pointer && mbr_type.storage == StorageClassPhysicalStorageBuffer))
+		if (mbr_type.basetype == SPIRType::Struct && !(mbr_type.pointer && mbr_type.storage == StorageClass::PhysicalStorageBuffer))
 		{
 			auto *struct_type = &mbr_type;
 			while (!struct_type->array.empty())
@@ -5218,7 +5218,7 @@ void CompilerMSL::ensure_member_packing_rules_msl(SPIRType &ib_type, uint32_t in
 	// that struct alignment == max alignment of all members and struct size depends on this alignment.
 	// Can't repack structs, but can repack pointers to structs.
 	auto &mbr_type = get<SPIRType>(ib_type.member_types[index]);
-	bool is_buff_ptr = mbr_type.pointer && mbr_type.storage == StorageClassPhysicalStorageBuffer;
+	bool is_buff_ptr = mbr_type.pointer && mbr_type.storage == StorageClass::PhysicalStorageBuffer;
 	if (mbr_type.basetype == SPIRType::Struct && !is_buff_ptr)
 		SPIRV_CROSS_THROW("Cannot perform any repacking for structs when it is used as a member of another struct.");
 
@@ -8351,7 +8351,7 @@ void CompilerMSL::emit_specialization_constants_and_structs()
 	// Ignore type_id because we want the underlying struct type from the pointer.
 	ir.for_each_typed_id<SPIRType>([&](uint32_t /* type_id */, const SPIRType &type) {
 		if (type.basetype == SPIRType::Struct &&
-			type.pointer && type.storage == StorageClassPhysicalStorageBuffer &&
+			type.pointer && type.storage == StorageClass::PhysicalStorageBuffer &&
 			declared_structs.count(type.self) == 0)
 		{
 			statement("struct ", to_name(type.self), ";");
@@ -8567,7 +8567,7 @@ bool CompilerMSL::emit_tessellation_io_load(uint32_t result_type_id, uint32_t id
 	auto &result_type = get<SPIRType>(result_type_id);
 	if (ptr_type.storage != StorageClass::Input && ptr_type.storage != StorageClass::Output)
 		return false;
-	if (ptr_type.storage == StorageClass::Output && is_tese_shader())
+	if (ptr_type.storage == StorageClass::::Output && is_tese_shader())
 		return false;
 
 	if (has_decoration(ptr, DecorationPatch))
@@ -8695,7 +8695,7 @@ bool CompilerMSL::emit_tessellation_io_load(uint32_t result_type_id, uint32_t id
 
 				const auto &mbr_type = get<SPIRType>(struct_type.member_types[j]);
 				const auto &expr_mbr_type = get<SPIRType>(expr_type.member_types[j]);
-				if (is_matrix(mbr_type) && ptr_type.storage == StorageClass::Input)
+				if (is_matrix(mbr_type) && ptr_type.storage == StorageClass::::Input)
 				{
 					expr += type_to_glsl(mbr_type) + "(";
 					for (uint32_t k = 0; k < mbr_type.columns; k++, interface_index++)
@@ -10011,7 +10011,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 			break;
 
 		if (needs_frag_discard_checks() &&
-		    (type.storage == StorageClass::StorageBuffer || type.storage == StorageClass::Uniform))
+		    (type.storage == StorageClass::::StorageBuffer || type.storage == StorageClass::::Uniform))
 		{
 			// If we're in a continue block, this kludge will make the block too complex
 			// to emit normally.
@@ -10028,7 +10028,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		if (!maybe_emit_array_assignment(ops[0], ops[1]))
 			CompilerGLSL::emit_instruction(instruction);
 		if (needs_frag_discard_checks() &&
-		    (type.storage == StorageClass::StorageBuffer || type.storage == StorageClass::Uniform))
+		    (type.storage == StorageClass::::StorageBuffer || type.storage == StorageClass::::Uniform))
 			end_scope();
 		if (has_decoration(ops[0], Decoration::BuiltIn) && get_decoration(ops[0], Decoration::BuiltIn) == BuiltIn::PointSize)
 			writes_to_point_size = true;
@@ -11073,7 +11073,7 @@ void CompilerMSL::emit_atomic_func_op(uint32_t result_type, uint32_t result_id, 
 			}
 
 			exp += join(image_expr, ".", op, "(");
-			if (ptr_type.storage == StorageClassImage && res_type->image.arrayed)
+			if (ptr_type.storage == StorageClass::Image && res_type->image.arrayed)
 			{
 				switch (res_type->image.dim)
 				{
@@ -11091,7 +11091,7 @@ void CompilerMSL::emit_atomic_func_op(uint32_t result_type, uint32_t result_id, 
 					SPIRV_CROSS_THROW("Cannot do atomics on Cube textures.");
 				}
 			}
-			else if (ptr_type.storage == StorageClassImage && res_type->image.dim == Dim::Dim1D && msl_options.texture_1D_as_2D)
+			else if (ptr_type.storage == StorageClass::Image && res_type->image.dim == Dim::Dim1D && msl_options.texture_1D_as_2D)
 				exp += join("uint2(", coord, ", 0)");
 			else
 				exp += coord;
@@ -11106,7 +11106,7 @@ void CompilerMSL::emit_atomic_func_op(uint32_t result_type, uint32_t result_id, 
 		exp += string(op) + "_explicit(";
 		exp += "(";
 		// Emulate texture2D atomic operations
-		if (ptr_type.storage == StorageClassImage)
+		if (ptr_type.storage == StorageClass::Image)
 		{
 			auto &flags = ir.get_decoration_bitset(var->self);
 			if (decoration_flags_signal_volatile(flags))
@@ -11120,7 +11120,7 @@ void CompilerMSL::emit_atomic_func_op(uint32_t result_type, uint32_t result_id, 
 		else
 		{
 			// Fallback scenario, could happen for raw pointers.
-			exp += ptr_type.storage == StorageClass::Workgroup ? "threadgroup" : "device";
+			exp += ptr_type.storage == StorageClass::::Workgroup ? "threadgroup" : "device";
 		}
 
 		exp += " atomic_";
@@ -11635,7 +11635,7 @@ void CompilerMSL::emit_glsl_op(uint32_t result_type, uint32_t id, uint32_t eop, 
 		auto &type = expression_type(args[1]);
 
 		bool is_thread_storage = storage_class_array_is_thread(type.storage);
-		if (type.storage == StorageClass::Output && capture_output_to_buffer)
+		if (type.storage == StorageClass::::Output && capture_output_to_buffer)
 			is_thread_storage = false;
 
 		if (!is_thread_storage ||
@@ -13407,7 +13407,7 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 	}
 
 	// Vertex function inputs
-	if (execution.model == ExecutionModel::Vertex && type.storage == StorageClass::Input)
+	if (execution.model == ExecutionModel::Vertex && type.storage == StorageClass::::Input)
 	{
 		if (is_builtin)
 		{
@@ -13445,7 +13445,7 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 	                                 (execution.model == ExecutionModel::Vertex && !msl_options.vertex_for_tessellation);
 
 	// Vertex, mesh and tessellation evaluation function outputs
-	if ((type.storage == StorageClass::Output || is_mesh_shader()) && use_semantic_stage_output)
+	if ((type.storage == StorageClass::::Output || is_mesh_shader()) && use_semantic_stage_output)
 	{
 		if (is_builtin)
 		{
@@ -13490,7 +13490,7 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 			return join(" [[", loc_qual, "]]");
 	}
 
-	if (execution.model == ExecutionModel::Vertex && msl_options.vertex_for_tessellation && type.storage == StorageClass::Output)
+	if (execution.model == ExecutionModel::Vertex && msl_options.vertex_for_tessellation && type.storage == StorageClass::::Output)
 	{
 		// For this type of shader, we always arrange for it to capture its
 		// output to a buffer. For this reason, qualifiers are irrelevant here.
@@ -13501,7 +13501,7 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 	}
 
 	// Tessellation control function inputs
-	if (is_tesc_shader() && type.storage == StorageClass::Input)
+	if (is_tesc_shader() && type.storage == StorageClass::::Input)
 	{
 		if (is_builtin)
 		{
@@ -13538,7 +13538,7 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 	}
 
 	// Tessellation control function outputs
-	if (is_tesc_shader() && type.storage == StorageClass::Output)
+	if (is_tesc_shader() && type.storage == StorageClass::::Output)
 	{
 		// For this type of shader, we always arrange for it to capture its
 		// output to a buffer. For this reason, qualifiers are irrelevant here.
@@ -13549,7 +13549,7 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 	}
 
 	// Tessellation evaluation function inputs
-	if (is_tese_shader() && type.storage == StorageClass::Input)
+	if (is_tese_shader() && type.storage == StorageClass::::Input)
 	{
 		if (is_builtin)
 		{
@@ -13586,7 +13586,7 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 	// Tessellation evaluation function outputs were handled above.
 
 	// Fragment function inputs
-	if (execution.model == ExecutionModel::Fragment && type.storage == StorageClass::Input)
+	if (execution.model == ExecutionModel::Fragment && type.storage == StorageClass::::Input)
 	{
 		string quals;
 		if (is_builtin)
@@ -13682,7 +13682,7 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 	}
 
 	// Fragment function outputs
-	if (execution.model == ExecutionModel::Fragment && type.storage == StorageClass::Output)
+	if (execution.model == ExecutionModel::Fragment && type.storage == StorageClass::::Output)
 	{
 		if (is_builtin)
 		{
@@ -13728,7 +13728,7 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 	}
 
 	// Compute function inputs
-	if (execution.model == ExecutionModel::GLCompute && type.storage == StorageClass::Input)
+	if (execution.model == ExecutionModel::GLCompute && type.storage == StorageClass::::Input)
 	{
 		if (is_builtin)
 		{
@@ -14111,7 +14111,7 @@ string CompilerMSL::get_type_address_space(const SPIRType &type, uint32_t id, bo
 	case StorageClass::Output:
 		if (capture_output_to_buffer)
 		{
-			if (var && type.storage == StorageClass::Output)
+			if (var && type.storage == StorageClass::::Output)
 			{
 				bool is_masked = is_stage_output_variable_masked(*var);
 
@@ -14316,7 +14316,7 @@ void CompilerMSL::entry_point_args_builtin(string &ep_args)
 				builtin_declaration = true;
 
 				// Handle different MSL gl_TessCoord types. (float2, float3)
-				if (bi_type == BuiltIn::TessCoord && get_entry_point().flags.get(ExecutionMode::Quads))
+				if (bi_type == BuiltIn::TessCoord && get_entry_point().flags.get(static_cast<uint32_t>(ExecutionMode::Quads)))
 					ep_args += "float2 " + to_expression(var_id) + "In";
 				else
 					ep_args += builtin_type_decl(bi_type, var_id) + " " + to_expression(var_id);
@@ -14659,8 +14659,8 @@ void CompilerMSL::entry_point_args_discrete_descriptors(string &ep_args)
 
 	entry_point_bindings.clear();
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t var_id, SPIRVariable &var) {
-		if ((var.storage == StorageClass::Uniform || var.storage == StorageClass::UniformConstant ||
-		     var.storage == StorageClassPushConstant || var.storage == StorageClass::StorageBuffer) &&
+		if ((var.storage == StorageClass::::Uniform || var.storage == StorageClass::::UniformConstant ||
+		     var.storage == StorageClass::PushConstant || var.storage == StorageClass::::StorageBuffer) &&
 		    !is_hidden_variable(var))
 		{
 			auto &type = get_variable_data_type(var);
@@ -14688,7 +14688,7 @@ void CompilerMSL::entry_point_args_discrete_descriptors(string &ep_args)
 			// For fully mutable-style aliasing, we need argument buffers where we can exploit the fact
 			// that descriptors are all 8 bytes.
 			SPIRVariable *discrete_descriptor_alias = nullptr;
-			if (var.storage == StorageClass::Uniform || var.storage == StorageClass::StorageBuffer)
+			if (var.storage == StorageClass::::Uniform || var.storage == StorageClass::::StorageBuffer)
 			{
 				for (auto &resource : resources)
 				{
@@ -15008,7 +15008,7 @@ void CompilerMSL::fix_up_shader_inputs_outputs()
 		uint32_t var_id = var.self;
 		bool ssbo = has_decoration(type.self, DecorationBufferBlock);
 
-		if (var.storage == StorageClass::UniformConstant && !is_hidden_variable(var))
+		if (var.storage == StorageClass::::UniformConstant && !is_hidden_variable(var))
 		{
 			if (msl_options.swizzle_texture_samples && has_sampled_images && is_sampled_image_type(type))
 			{
@@ -15033,7 +15033,7 @@ void CompilerMSL::fix_up_shader_inputs_outputs()
 				});
 			}
 		}
-		else if ((var.storage == StorageClass::StorageBuffer || (var.storage == StorageClass::Uniform && ssbo)) &&
+		else if ((var.storage == StorageClass::::StorageBuffer || (var.storage == StorageClass::::Uniform && ssbo)) &&
 		         !is_hidden_variable(var))
 		{
 			if (buffer_requires_array_length(var.self))
@@ -15064,8 +15064,8 @@ void CompilerMSL::fix_up_shader_inputs_outputs()
 
 		if (!msl_options.argument_buffers &&
 		     msl_options.replace_recursive_inputs && type_contains_recursion(type) &&
-		    (var.storage == StorageClass::Uniform || var.storage == StorageClass::UniformConstant ||
-		     var.storage == StorageClassPushConstant || var.storage == StorageClass::StorageBuffer))
+		    (var.storage == StorageClass::::Uniform || var.storage == StorageClass::::UniformConstant ||
+		     var.storage == StorageClass::PushConstant || var.storage == StorageClass::::StorageBuffer))
 		{
 			recursive_inputs.insert(type.self);
 			entry_func.fixup_hooks_in.push_back([this, &type, &var, var_id]() {
@@ -15087,7 +15087,7 @@ void CompilerMSL::fix_up_shader_inputs_outputs()
 		if (!interface_variable_exists_in_entry_point(var.self))
 			return;
 
-		if (var.storage == StorageClass::Input && is_builtin_variable(var) && active_input_builtins.get(bi_type))
+		if (var.storage == StorageClass::::Input && is_builtin_variable(var) && active_input_builtins.get(bi_type))
 		{
 			switch (bi_type)
 			{
@@ -15158,7 +15158,7 @@ void CompilerMSL::fix_up_shader_inputs_outputs()
 				}
 				break;
 			case BuiltIn::TessCoord:
-				if (get_entry_point().flags.get(ExecutionMode::Quads))
+				if (get_entry_point().flags.get(static_cast<uint32_t>(ExecutionMode::Quads)))
 				{
 					// The entry point will only have a float2 TessCoord variable.
 					// Pad to float3.
@@ -15570,7 +15570,7 @@ void CompilerMSL::fix_up_shader_inputs_outputs()
 				break;
 			}
 		}
-		else if (var.storage == StorageClass::Output && get_execution_model() == ExecutionModel::Fragment &&
+		else if (var.storage == StorageClass::::Output && get_execution_model() == ExecutionModel::Fragment &&
 				 is_builtin_variable(var) && active_output_builtins.get(bi_type))
 		{
 			switch (bi_type)
@@ -15608,8 +15608,8 @@ uint32_t CompilerMSL::get_metal_resource_index(SPIRVariable &var, SPIRType::Base
 	auto &execution = get_entry_point();
 	auto &var_dec = ir.meta[var.self].decoration;
 	auto &var_type = get<SPIRType>(var.basetype);
-	uint32_t var_desc_set = (var.storage == StorageClassPushConstant) ? kPushConstDescSet : var_dec.set;
-	uint32_t var_binding = (var.storage == StorageClassPushConstant) ? kPushConstBinding : var_dec.binding;
+	uint32_t var_desc_set = (var.storage == StorageClass::PushConstant) ? kPushConstDescSet : var_dec.set;
+	uint32_t var_binding = (var.storage == StorageClass::PushConstant) ? kPushConstBinding : var_dec.binding;
 
 	// If a matching binding has been specified, find and use it.
 	auto itr = resource_bindings.find({ execution.model, var_desc_set, var_binding });
@@ -15778,9 +15778,9 @@ string CompilerMSL::argument_decl(const SPIRFunction::Parameter &arg)
 	bool constref = !arg.alias_global_variable && !passed_by_value && is_pointer(var_type) && arg.write_count == 0;
 	// Framebuffer fetch is plain value, const looks out of place, but it is not wrong.
 	// readonly coming from glslang is not reliable in all cases.
-	if (type_is_msl_framebuffer_fetch(type) || type_storage == StorageClassPhysicalStorageBuffer)
+	if (type_is_msl_framebuffer_fetch(type) || type_storage == StorageClass::PhysicalStorageBuffer)
 		constref = false;
-	else if (type_storage == StorageClass::UniformConstant)
+	else if (type_storage == StorageClass::::UniformConstant)
 		constref = true;
 
 	bool type_is_image = type.basetype == SPIRType::Image || type.basetype == SPIRType::SampledImage ||
@@ -15845,7 +15845,7 @@ string CompilerMSL::argument_decl(const SPIRFunction::Parameter &arg)
 			decl = join("spvDescriptorArray<", address_space, " ", type_name, "*>");
 		address_space = "const";
 	}
-	else if ((type_storage == StorageClass::Uniform || type_storage == StorageClass::StorageBuffer) && is_array(type))
+	else if ((type_storage == StorageClass::::Uniform || type_storage == StorageClass::::StorageBuffer) && is_array(type))
 	{
 		is_using_builtin_array = true;
 		decl += join(cv_qualifier, type_to_glsl(type, arg.id), "*");
@@ -15872,7 +15872,7 @@ string CompilerMSL::argument_decl(const SPIRFunction::Parameter &arg)
 	}
 
 	if (passed_by_value || (!builtin && !is_pointer(var_type) &&
-	                        (type_storage == StorageClassFunction || type_storage == StorageClassGeneric)))
+	                        (type_storage == StorageClass::Function || type_storage == StorageClass::Generic)))
 	{
 		// If the argument is a pure value and not an opaque type, we will pass by value.
 		if (msl_options.force_native_arrays && is_array(type))
@@ -16448,10 +16448,10 @@ string CompilerMSL::to_qualifiers_glsl(uint32_t id)
 	auto *var = maybe_get<SPIRVariable>(id);
 	auto &type = expression_type(id);
 
-	if (type.storage == StorageClassTaskPayloadWorkgroupEXT)
+	if (type.storage == StorageClass::TaskPayloadWorkgroupEXT)
 		quals += "object_data ";
 
-	if (type.storage == StorageClass::Workgroup || (var && variable_decl_is_remapped_storage(*var, StorageClass::Workgroup)))
+	if (type.storage == StorageClass::::Workgroup || (var && variable_decl_is_remapped_storage(*var, StorageClass::Workgroup)))
 		quals += "threadgroup ";
 
 	return quals;
@@ -16482,7 +16482,7 @@ string CompilerMSL::type_to_glsl(const SPIRType &type, uint32_t id, bool member)
 			{
 				const bool ssbo = has_decoration(p_parent_type->self, DecorationBufferBlock);
 				bool buffer_desc =
-						(var.storage == StorageClass::StorageBuffer || ssbo) &&
+						(var.storage == StorageClass::::StorageBuffer || ssbo) &&
 						msl_options.runtime_array_rich_descriptor;
 
 				const char *wrapper_type = buffer_desc ? "spvBufferDescriptor" : "spvDescriptor";
@@ -16580,7 +16580,7 @@ string CompilerMSL::type_to_glsl(const SPIRType &type, uint32_t id, bool member)
 		// Need to special-case threadgroup booleans. They are supposed to be logical
 		// storage, but MSL compilers will sometimes crash if you use threadgroup bool.
 		// Workaround this by using 16-bit types instead and fixup on load-store to this data.
-		if ((var && var->storage == StorageClass::Workgroup) || type.storage == StorageClass::Workgroup || member)
+		if ((var && var->storage == StorageClass::Workgroup) || type.storage == StorageClass::::Workgroup || member)
 			type_name = "short";
 		else
 			type_name = "bool";
@@ -16653,7 +16653,7 @@ string CompilerMSL::type_to_glsl(const SPIRType &type, uint32_t id, bool member)
 		// matrix struct prior to Metal 3 lacks constructors in the threadgroup AS,
 		// preventing us from default-constructing or initializing matrices in threadgroup storage.
 		// Work around this by using our own type as storage.
-		if (((var && var->storage == StorageClass::Workgroup) || type.storage == StorageClass::Workgroup) &&
+		if (((var && var->storage == StorageClass::Workgroup) || type.storage == StorageClass::::Workgroup) &&
 		    !msl_options.supports_msl_version(3, 0))
 		{
 			add_spv_func_and_recompile(SPVFuncImplStorageMatrix);
@@ -16748,16 +16748,16 @@ bool CompilerMSL::variable_decl_is_remapped_storage(const SPIRVariable &variable
 		// Specially masked IO block variable.
 		// Normally, we will never access IO blocks directly here.
 		// The only scenario which that should occur is with a masked IO block.
-		if (is_tesc_shader() && variable.storage == StorageClass::Output &&
+		if (is_tesc_shader() && variable.storage == StorageClass::::Output &&
 		    has_decoration(get<SPIRType>(variable.basetype).self, Decoration::Block))
 		{
 			return true;
 		}
 
 		if (is_mesh_shader())
-			return variable.storage == StorageClass::Output;
+			return variable.storage == StorageClass::::Output;
 
-		return variable.storage == StorageClass::Output && is_tesc_shader() && is_stage_output_variable_masked(variable);
+		return variable.storage == StorageClass::::Output && is_tesc_shader() && is_stage_output_variable_masked(variable);
 	}
 	else if (storage == StorageClass::StorageBuffer)
 	{
@@ -16772,7 +16772,7 @@ bool CompilerMSL::variable_decl_is_remapped_storage(const SPIRVariable &variable
 		// This is fine, as there cannot be concurrent writers to that memory anyways,
 		// so we just ignore that case.
 
-		return (variable.storage == StorageClass::Output || variable.storage == StorageClass::Input) &&
+		return (variable.storage == StorageClass::::Output || variable.storage == StorageClass::::Input) &&
 		       !variable_storage_requires_stage_io(variable.storage) &&
 		       (variable.storage != StorageClass::Output || !is_stage_output_variable_masked(variable));
 	}
@@ -17014,15 +17014,15 @@ string CompilerMSL::image_type_glsl(const SPIRType &type, uint32_t id, bool memb
 
 		switch (img_type.access)
 		{
-		case AccessQualifierReadOnly:
+		case AccessQualifier::ReadOnly:
 			img_type_name += ", access::read";
 			break;
 
-		case AccessQualifierWriteOnly:
+		case AccessQualifier::WriteOnly:
 			img_type_name += ", access::write";
 			break;
 
-		case AccessQualifierReadWrite:
+		case AccessQualifier::ReadWrite:
 			img_type_name += ", access::read_write";
 			break;
 
@@ -18214,7 +18214,7 @@ uint32_t CompilerMSL::get_declared_type_size_msl(const SPIRType &type, bool is_p
 {
 	// Pointers take 8 bytes each
 	// Match both pointer and array-of-pointer here.
-	if (type.pointer && type.storage == StorageClassPhysicalStorageBuffer)
+	if (type.pointer && type.storage == StorageClass::PhysicalStorageBuffer)
 	{
 		uint32_t type_size = 8;
 
@@ -18293,7 +18293,7 @@ uint32_t CompilerMSL::get_declared_type_alignment_msl(const SPIRType &type, bool
 {
 	// Pointers align on multiples of 8 bytes.
 	// Deliberately ignore array-ness here. It's not relevant for alignment.
-	if (type.pointer && type.storage == StorageClassPhysicalStorageBuffer)
+	if (type.pointer && type.storage == StorageClass::PhysicalStorageBuffer)
 		return 8;
 
 	switch (type.basetype)
@@ -18373,7 +18373,7 @@ void CompilerMSL::analyze_workgroup_variables()
 {
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t, SPIRVariable &var) {
 		// If workgroup variables have initializer, it can only be ConstantNull (zero init)
-		if (var.storage == StorageClass::Workgroup && var.initializer)
+		if (var.storage == StorageClass::::Workgroup && var.initializer)
 		{
 			needs_workgroup_zero_init = true;
 
@@ -19327,7 +19327,7 @@ void CompilerMSL::emit_argument_buffer_aliased_descriptor(const SPIRVariable &al
 	auto &data_type = get_variable_data_type(aliased_var);
 	string descriptor_storage = descriptor_address_space(aliased_var.self, aliased_var.storage, "");
 
-	if (aliased_var.storage == StorageClass::UniformConstant)
+	if (aliased_var.storage == StorageClass::::UniformConstant)
 	{
 		if (is_var_runtime_size_array(aliased_var))
 		{
@@ -19430,8 +19430,8 @@ void CompilerMSL::analyze_argument_buffers()
 	bool needs_buffer_sizes = false;
 
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t self, SPIRVariable &var) {
-		if ((var.storage == StorageClass::Uniform || var.storage == StorageClass::UniformConstant ||
-		     var.storage == StorageClass::StorageBuffer) &&
+		if ((var.storage == StorageClass::::Uniform || var.storage == StorageClass::::UniformConstant ||
+		     var.storage == StorageClass::::StorageBuffer) &&
 		    !is_hidden_variable(var))
 		{
 			uint32_t desc_set = get_decoration(self, Decoration::DescriptorSet);
@@ -19805,7 +19805,7 @@ void CompilerMSL::analyze_argument_buffers()
 					if (has_extended_decoration(var.self, SPIRVCrossDecorationOverlappingBinding))
 					{
 						// Casting raw pointers is fine since their ABI is fixed, but anything opaque is deeply questionable on Metal 2.
-						if (get<SPIRVariable>(resource.overlapping_var_id).storage == StorageClass::UniformConstant &&
+						if (get<SPIRVariable>(resource.overlapping_var_id).storage == StorageClass::::UniformConstant &&
 						    !msl_options.supports_msl_version(3, 0))
 						{
 							SPIRV_CROSS_THROW("Full mutable aliasing of argument buffer descriptors only works on Metal 3+.");
@@ -19914,7 +19914,7 @@ void CompilerMSL::add_argument_buffer_padding_image_type(SPIRType &struct_type, 
 		img_type.image.ms = false;
 		img_type.image.sampled = 1;
 		img_type.image.format = ImageFormat::Unknown;
-		img_type.image.access = AccessQualifier::Max;
+		img_type.image.access = AccessQualifier::::Max;
 
 		argument_buffer_padding_image_type_id = img_type_id;
 	}
@@ -20003,10 +20003,10 @@ uint32_t CompilerMSL::get_fp_fast_math_flags(bool incl_ops) const
 	uint32_t fp_flags = ~0;
 	auto &ep = get_entry_point();
 
-	if (ep.flags.get(ExecutionMode::SignedZeroInfNanPreserve))
-		fp_flags &= ~(FPFastMathModeMask::NSZ | FPFastMathModeMask::NotIn | FPFastMathModeMask::NotNaN);
+	if (ep.flags.get(static_cast<uint32_t>(ExecutionMode::SignedZeroInfNanPreserve)))
+		fp_flags &= ~(FPFastMathModeMask::NSZ | FPFastMathModeMask::NotInf | FPFastMathModeMask::NotNaN);
 
-	if (ep.flags.get(ExecutionMode::ContractionOff))
+	if (ep.flags.get(static_cast<uint32_t>(ExecutionMode::ContractionOff)))
 		fp_flags &= ~(FPFastMathModeMask::AllowContract);
 
 	for (auto &fp_pair : ep.fp_fast_math_defaults)
