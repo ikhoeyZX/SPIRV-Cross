@@ -257,7 +257,7 @@ void CompilerMSL::build_implicit_builtins()
 	bool need_subgroup_mask =
 	    active_input_builtins.get(static_cast<uint32_t>(BuiltIn::SubgroupEqMask) || active_input_builtins.get(static_cast<uint32_t>(BuiltIn::SubgroupGeMask)) ||
 	    active_input_builtins.get(static_cast<uint32_t>(BuiltIn::SubgroupGtMask)) || active_input_builtins.get(static_cast<uint32_t>(BuiltIn::SubgroupLeMask)) ||
-	    active_input_builtins.get(static_cast<uint32_t>(BuiltIn::SubgroupLtMask));
+	    active_input_builtins.get(static_cast<uint32_t>(BuiltIn::SubgroupLtMask)));
 	bool need_subgroup_ge_mask = !msl_options.is_ios() && (active_input_builtins.get(static_cast<uint32_t>(BuiltIn::SubgroupGeMask)) ||
 	                                                       active_input_builtins.get(static_cast<uint32_t>(BuiltIn::SubgroupGtMask)));
 	bool need_multiview = get_execution_model() == ExecutionModel::Vertex && !msl_options.view_index_from_device_index &&
@@ -273,9 +273,9 @@ void CompilerMSL::build_implicit_builtins()
 	     active_input_builtins.get(static_cast<uint32_t>(BuiltIn::BaseVertex)) || active_input_builtins.get(static_cast<uint32_t>(BuiltIn::InstanceId)) ||
 	     active_input_builtins.get(static_cast<uint32_t>(BuiltIn::InstanceIndex)) || active_input_builtins.get(static_cast<uint32_t>(BuiltIn::BaseInstance)));
 	bool need_local_invocation_index =
-		(msl_options.emulate_subgroups && active_input_builtins.get(BuiltIn::SubgroupId)) || is_mesh_shader() ||
+		(msl_options.emulate_subgroups && active_input_builtins.get(static_cast<uint32_t>(BuiltIn::SubgroupId))) || is_mesh_shader() ||
 		needs_workgroup_zero_init || needs_local_invocation_index;
-	bool need_workgroup_size = msl_options.emulate_subgroups && active_input_builtins.get(BuiltIn::NumSubgroups);
+	bool need_workgroup_size = msl_options.emulate_subgroups && active_input_builtins.get(static_cast<uint32_t>(BuiltIn::NumSubgroups));
 	bool force_frag_depth_passthrough =
 	    get_execution_model() == ExecutionModel::Fragment && !uses_explicit_early_fragment_test() && need_subpass_input &&
 	    msl_options.enable_frag_depth_builtin && msl_options.input_attachment_is_ds_attachment;
@@ -320,10 +320,10 @@ void CompilerMSL::build_implicit_builtins()
 				const auto member_count = static_cast<uint32_t>(type.member_types.size());
 				for (uint32_t i = 0; i < member_count; i++)
 				{
-					if (get_member_decoration(type.self, i, Decoration::BuiltIn) == BuiltIn::PointSize)
+					if (get_member_decoration(type.self, i, Decoration::BuiltIn) == static_cast<uint32_t>(BuiltIn::PointSize))
 					{
 						has_point_size = true;
-						active_output_builtins.set(BuiltIn::PointSize);
+						active_output_builtins.set(static_cast<uint32_t>(BuiltIn::PointSize));
 						break;
 					}
 				}
@@ -351,10 +351,10 @@ void CompilerMSL::build_implicit_builtins()
 				}
 			}
 
-			if (builtin == BuiltIn::PointSize)
+			if (builtin == static_cast<uint32_t>(BuiltIn::PointSize))
 			{
 				has_point_size = true;
-				active_output_builtins.set(BuiltIn::PointSize);
+				active_output_builtins.set(static_cast<uint32_t>(BuiltIn::PointSize));
 			}
 
 			if (builtin == BuiltIn::PrimitivePointIndicesEXT ||
@@ -396,7 +396,7 @@ void CompilerMSL::build_implicit_builtins()
 				}
 			}
 
-			if ((need_sample_pos || needs_sample_id) && builtin == BuiltInSampleId)
+			if ((need_sample_pos || needs_sample_id) && builtin == static_cast<uint32_t>(BuiltInSampleId))
 			{
 				builtin_sample_id_id = var.self;
 				mark_implicit_builtin(StorageClass::Input, BuiltInSampleId, var.self);
@@ -554,7 +554,7 @@ void CompilerMSL::build_implicit_builtins()
 				ptr_type.self = type_id;
 
 				set<SPIRVariable>(var_id, type_ptr_id, StorageClass::Input);
-				set_decoration(var_id, Decoration::BuiltIn, BuiltIn::FragCoord);
+				set_decoration(var_id, static_cast<uint32_t>(Decoration::BuiltIn), BuiltIn::FragCoord);
 				builtin_frag_coord_id = var_id;
 				mark_implicit_builtin(StorageClass::Input, BuiltIn::FragCoord, var_id);
 			}
@@ -2378,7 +2378,7 @@ void CompilerMSL::extract_global_variables_from_function(uint32_t func_id, std::
 			bool is_patch_block_storage = is_patch && is_block && var.storage == StorageClass::Output;
 			bool is_builtin = is_builtin_variable(var);
 			bool variable_is_stage_io =
-					!is_builtin || bi_type == BuiltInPosition || bi_type == BuiltIn::PointSize ||
+					!is_builtin || bi_type == BuiltInPosition || bi_type == static_cast<uint32_t>(BuiltIn::PointSize) ||
 					bi_type == BuiltIn::ClipDistance || bi_type == BuiltIn::CullDistance ||
 					p_type->basetype == SPIRType::Struct;
 			bool is_redirected_to_global_stage_io = (is_control_point_storage || is_patch_block_storage) &&
@@ -4208,7 +4208,7 @@ uint32_t CompilerMSL::add_interface_block(StorageClass storage, bool patch)
 		if (is_builtin && !is_block)
 		{
 			bi_type = BuiltIn(get_decoration(var_id, Decoration::BuiltIn));
-			builtin_is_gl_in_out = bi_type == BuiltInPosition || bi_type == BuiltIn::PointSize ||
+			builtin_is_gl_in_out = bi_type == BuiltInPosition || bi_type == static_cast<uint32_t>(BuiltIn::PointSize) ||
 			                       bi_type == BuiltIn::ClipDistance || bi_type == BuiltIn::CullDistance;
 		}
 
@@ -8926,7 +8926,7 @@ bool CompilerMSL::emit_tessellation_access_chain(const uint32_t *ops, uint32_t l
 			bi_type = BuiltIn(get_decoration(var->self, Decoration::BuiltIn));
 
 		variable_is_flat = !builtin_variable || is_block ||
-		                   bi_type == BuiltInPosition || bi_type == BuiltIn::PointSize ||
+		                   bi_type == BuiltInPosition || bi_type == static_cast<uint32_t>(BuiltIn::PointSize) ||
 		                   bi_type == BuiltIn::ClipDistance || bi_type == BuiltIn::CullDistance;
 	}
 
@@ -10030,7 +10030,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		if (needs_frag_discard_checks() &&
 		    (type.storage == StorageClass::StorageBuffer || type.storage == StorageClass::Uniform))
 			end_scope();
-		if (has_decoration(ops[0], Decoration::BuiltIn) && get_decoration(ops[0], Decoration::BuiltIn) == BuiltIn::PointSize)
+		if (has_decoration(ops[0], Decoration::BuiltIn) && get_decoration(ops[0], Decoration::BuiltIn) == static_cast<uint32_t>(BuiltIn::PointSize))
 			writes_to_point_size = true;
 
 		break;
