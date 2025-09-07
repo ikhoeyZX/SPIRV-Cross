@@ -1119,7 +1119,7 @@ void CompilerMSL::build_implicit_builtins()
 					{
 						auto builtin = BuiltIn::Max;
 						bool is_builtin = is_member_builtin(var_type, mbr_idx, &builtin);
-						if (is_builtin && builtin == BuiltInPosition)
+						if (is_builtin && builtin == BuiltIn::Position)
 							active_output_builtins.set(BuiltInPosition);
 					}
 				}
@@ -4352,7 +4352,7 @@ uint32_t CompilerMSL::add_interface_block(StorageClass storage, bool patch)
 	// declaraion is emitted, because it is cleared after each compilation pass.
 	uint32_t next_id = ir.increase_bound_by(3);
 	uint32_t ib_type_id = next_id++;
-	auto &ib_type = set<SPIRType>(ib_type_id, OpTypeStruct);
+	auto &ib_type = set<SPIRType>(ib_type_id, Op::OpTypeStruct);
 	ib_type.basetype = SPIRType::Struct;
 	ib_type.storage = storage;
 	set_decoration(ib_type_id, Decoration::Block);
@@ -8289,7 +8289,7 @@ void CompilerMSL::emit_resources()
 	{
 		auto &execution = get_entry_point();
 		const char *topology = "";
-		if (execution.flags.get(ExecutionMode::OutputTrianglesEXT))
+		if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::OutputTrianglesEXT)))
 			topology = "topology::triangle";
 		else if (execution.flags.get(ExecutionMode::OutputLinesEXT))
 			topology = "topology::line";
@@ -19586,7 +19586,7 @@ void CompilerMSL::analyze_argument_buffers()
 		uint32_t ptr_type_id = next_id + 2;
 		argument_buffer_ids[desc_set] = next_id;
 
-		auto &buffer_type = set<SPIRType>(type_id, OpTypeStruct);
+		auto &buffer_type = set<SPIRType>(type_id, Op::OpTypeStruct);
 
 		buffer_type.basetype = SPIRType::Struct;
 
@@ -19604,7 +19604,7 @@ void CompilerMSL::analyze_argument_buffers()
 		auto buffer_type_name = join("spvDescriptorSetBuffer", desc_set);
 		set_name(type_id, buffer_type_name);
 
-		auto &ptr_type = set<SPIRType>(ptr_type_id, OpTypePointer);
+		auto &ptr_type = set<SPIRType>(ptr_type_id, Op::OpTypePointer);
 		ptr_type = buffer_type;
 		ptr_type.op = spv::Op::OpTypePointer;
 		ptr_type.pointer = true;
@@ -19726,7 +19726,7 @@ void CompilerMSL::analyze_argument_buffers()
 				if (type_is_array)
 				{
 					uint32_t sampler_type_array_id = sampler_type_id + 1;
-					auto &sampler_type_array = set<SPIRType>(sampler_type_array_id, OpTypeArray);
+					auto &sampler_type_array = set<SPIRType>(sampler_type_array_id, Op::OpTypeArray);
 					sampler_type_array = new_sampler_type;
 					sampler_type_array.array = type.array;
 					sampler_type_array.array_size_literal = type.array_size_literal;
@@ -19873,12 +19873,12 @@ void CompilerMSL::add_argument_buffer_padding_buffer_type(SPIRType &struct_type,
 	if (!argument_buffer_padding_buffer_type_id)
 	{
 		uint32_t buff_type_id = ir.increase_bound_by(2);
-		auto &buff_type = set<SPIRType>(buff_type_id, OpNop);
+		auto &buff_type = set<SPIRType>(buff_type_id, Op::OpNop);
 		buff_type.basetype = rez_bind.basetype;
 		buff_type.storage = StorageClass::UniformConstant;
 
 		uint32_t ptr_type_id = buff_type_id + 1;
-		auto &ptr_type = set<SPIRType>(ptr_type_id, OpTypePointer);
+		auto &ptr_type = set<SPIRType>(ptr_type_id, Op::OpTypePointer);
 		ptr_type = buff_type;
 		ptr_type.op = spv::Op::OpTypePointer;
 		ptr_type.pointer = true;
@@ -19898,12 +19898,12 @@ void CompilerMSL::add_argument_buffer_padding_image_type(SPIRType &struct_type, 
 	if (!argument_buffer_padding_image_type_id)
 	{
 		uint32_t base_type_id = ir.increase_bound_by(2);
-		auto &base_type = set<SPIRType>(base_type_id, OpTypeFloat);
+		auto &base_type = set<SPIRType>(base_type_id, Op::OpTypeFloat);
 		base_type.basetype = SPIRType::Float;
 		base_type.width = 32;
 
 		uint32_t img_type_id = base_type_id + 1;
-		auto &img_type = set<SPIRType>(img_type_id, OpTypeImage);
+		auto &img_type = set<SPIRType>(img_type_id, Op::OpTypeImage);
 		img_type.basetype = SPIRType::Image;
 		img_type.storage = StorageClass::UniformConstant;
 
@@ -19914,7 +19914,7 @@ void CompilerMSL::add_argument_buffer_padding_image_type(SPIRType &struct_type, 
 		img_type.image.ms = false;
 		img_type.image.sampled = 1;
 		img_type.image.format = ImageFormat::Unknown;
-		img_type.image.access = AccessQualifier::::Max;
+		img_type.image.access = AccessQualifier::Max;
 
 		argument_buffer_padding_image_type_id = img_type_id;
 	}
@@ -19929,7 +19929,7 @@ void CompilerMSL::add_argument_buffer_padding_sampler_type(SPIRType &struct_type
 	if (!argument_buffer_padding_sampler_type_id)
 	{
 		uint32_t samp_type_id = ir.increase_bound_by(1);
-		auto &samp_type = set<SPIRType>(samp_type_id, OpTypeSampler);
+		auto &samp_type = set<SPIRType>(samp_type_id, Op::OpTypeSampler);
 		samp_type.basetype = SPIRType::Sampler;
 		samp_type.storage = StorageClass::UniformConstant;
 
@@ -20004,7 +20004,7 @@ uint32_t CompilerMSL::get_fp_fast_math_flags(bool incl_ops) const
 	auto &ep = get_entry_point();
 
 	if (ep.flags.get(static_cast<uint32_t>(ExecutionMode::SignedZeroInfNanPreserve)))
-		fp_flags &= ~(FPFastMathModeMask::NSZ | FPFastMathModeMask::NotInf | FPFastMathModeMask::NotNaN);
+		fp_flags &= ~(static_cast<uint32_t>(FPFastMathModeMask::NSZ | FPFastMathModeMask::NotInf | FPFastMathModeMask::NotNaN));
 
 	if (ep.flags.get(static_cast<uint32_t>(ExecutionMode::ContractionOff)))
 		fp_flags &= ~(FPFastMathModeMask::AllowContract);
@@ -20015,7 +20015,7 @@ uint32_t CompilerMSL::get_fp_fast_math_flags(bool incl_ops) const
 
 	if (incl_ops)
 		for (auto &p_m : ir.meta)
-			if (p_m.second.decoration.decoration_flags.get(DecorationFPFastMathMode))
+			if (p_m.second.decoration.decoration_flags.get(static_cast<uint32_t>(Decoration::FPFastMathMode)))
 				fp_flags &= p_m.second.decoration.fp_fast_math_mode;
 
 	return fp_flags;
@@ -20043,7 +20043,7 @@ void CompilerMSL::emit_mesh_entry_point()
 
 	// Push call to original 'main'
 	Instruction ix = {};
-	ix.op = Op::OpFunctionCall;
+	ix.op = static_cast<uint32_t>(Op::OpFunctionCall);
 	ix.offset = uint32_t(ir.spirv.size());
 	ix.length = 3;
 
@@ -20142,7 +20142,7 @@ void CompilerMSL::emit_mesh_outputs()
 			}
 
 			statement("spvV.", to_member_name(type_vert, index), " = ", to_name(orig_var), "[spvVI]", access, ";");
-			if (options.vertex.flip_vert_y && builtin == BuiltInPosition)
+			if (options.vertex.flip_vert_y && builtin == BuiltIn::Position)
 			{
 				statement("spvV.", to_member_name(type_vert, index), ".y = -(", "spvV.",
 				          to_member_name(type_vert, index), ".y);", "    // Invert Y-axis for Metal");
@@ -20170,7 +20170,7 @@ void CompilerMSL::emit_mesh_outputs()
 
 		if (builtin_mesh_primitive_indices_id != 0)
 		{
-			if (mode.flags.get(ExecutionMode::OutputTrianglesEXT))
+			if (mode.flags.get(static_cast<uint32_t>(ExecutionMode::OutputTrianglesEXT)))
 			{
 				statement("spvMesh.set_index(spvPI * 3u + 0u, gl_PrimitiveTriangleIndicesEXT[spvPI].x);");
 				statement("spvMesh.set_index(spvPI * 3u + 1u, gl_PrimitiveTriangleIndicesEXT[spvPI].y);");
