@@ -1182,7 +1182,7 @@ void CompilerMSL::build_implicit_builtins()
 		builtin_mesh_sizes_id = var_id;
 	}
 
-	if (get_execution_model() == spv::ExecutionModelTaskEXT)
+	if (get_execution_model() == spv::ExecutionModel::TaskEXT)
 	{
 		uint32_t offset = ir.increase_bound_by(3);
 		uint32_t type_id = offset;
@@ -2516,7 +2516,7 @@ void CompilerMSL::mark_packable_structs()
 			if (type.pointer &&
 			    (type.storage == StorageClass::Uniform || type.storage == StorageClass::UniformConstant ||
 			     type.storage == StorageClass::PushConstant || type.storage == StorageClass::StorageBuffer) &&
-			    (has_decoration(type.self, Decoration::Block) || has_decoration(type.self, DecorationBufferBlock)))
+			    (has_decoration(type.self, Decoration::Block) || has_decoration(type.self, Decoration::BufferBlock)))
 				mark_as_packable(type);
 		}
 
@@ -2537,7 +2537,7 @@ void CompilerMSL::mark_packable_structs()
 }
 
 // If the specified type is a struct, it and any nested structs
-// are marked as packable with the SPIRVCrossDecorationBufferBlockRepacked decoration,
+// are marked as packable with the SPIRVCrossDecoration::BufferBlockRepacked decoration,
 void CompilerMSL::mark_as_packable(SPIRType &type)
 {
 	// If this is not the base type (eg. it's a pointer or array), tunnel down
@@ -2548,9 +2548,9 @@ void CompilerMSL::mark_as_packable(SPIRType &type)
 	}
 
 	// Handle possible recursion when a struct contains a pointer to its own type nested somewhere.
-	if (type.basetype == SPIRType::Struct && !has_extended_decoration(type.self, SPIRVCrossDecorationBufferBlockRepacked))
+	if (type.basetype == SPIRType::Struct && !has_extended_decoration(type.self, SPIRVCrossDecoration::BufferBlockRepacked))
 	{
-		set_extended_decoration(type.self, SPIRVCrossDecorationBufferBlockRepacked);
+		set_extended_decoration(type.self, SPIRVCrossDecoration::BufferBlockRepacked);
 
 		// Recurse
 		uint32_t mbr_cnt = uint32_t(type.member_types.size());
@@ -5880,7 +5880,7 @@ void CompilerMSL::emit_custom_templates()
 			statement("return elements[pos];");
 			end_scope();
 			if (get_execution_model() == spv::ExecutionModelMeshEXT ||
-			    get_execution_model() == spv::ExecutionModelTaskEXT)
+			    get_execution_model() == spv::ExecutionModel::TaskEXT)
 			{
 				statement("");
 				statement("object_data T& operator [] (size_t pos) object_data");
@@ -8328,7 +8328,7 @@ void CompilerMSL::emit_specialization_constants_and_structs()
 	// When we actually align the struct later, we can insert padding as necessary to make the packed members behave like normally aligned types.
 	ir.for_each_typed_id<SPIRType>([&](uint32_t type_id, const SPIRType &type) {
 		if (type.basetype == SPIRType::Struct &&
-		    has_extended_decoration(type_id, SPIRVCrossDecorationBufferBlockRepacked))
+		    has_extended_decoration(type_id, SPIRVCrossDecoration::BufferBlockRepacked))
 			mark_scalar_layout_structs(type);
 	});
 
@@ -8474,7 +8474,7 @@ void CompilerMSL::emit_specialization_constants_and_structs()
 
 			bool is_struct = (type.basetype == SPIRType::Struct) && type.array.empty() && !type.pointer;
 			bool is_block =
-			    has_decoration(type.self, Decoration::Block) || has_decoration(type.self, DecorationBufferBlock);
+			    has_decoration(type.self, Decoration::Block) || has_decoration(type.self, Decoration::BufferBlock);
 
 			bool is_builtin_block = is_block && is_builtin_type(type);
 			bool is_declarable_struct = is_struct && (!is_builtin_block || builtin_block_type_is_required);
@@ -8502,7 +8502,7 @@ void CompilerMSL::emit_specialization_constants_and_structs()
 
 				declared_structs.insert(type_id);
 
-				if (has_extended_decoration(type_id, SPIRVCrossDecorationBufferBlockRepacked))
+				if (has_extended_decoration(type_id, SPIRVCrossDecoration::BufferBlockRepacked))
 					align_struct(type, aligned_structs);
 
 				// Make sure we declare the underlying struct type, and not the "decorated" type with pointers, etc.
@@ -10628,7 +10628,7 @@ void CompilerMSL::emit_barrier(uint32_t id_exe_scope, uint32_t id_mem_scope, uin
 {
 	auto model = get_execution_model();
 
-	if (model != ExecutionModel::GLCompute && model != ExecutionModelTaskEXT &&
+	if (model != ExecutionModel::GLCompute && model != ExecutionModel::TaskEXT &&
 	    model != ExecutionModelMeshEXT && !is_tesc_shader())
 	{
 		return;
@@ -13957,7 +13957,7 @@ string CompilerMSL::func_type_decl(SPIRType &type)
 	case ExecutionModelMeshEXT:
 		entry_type = "[[mesh]]";
 		break;
-	case ExecutionModelTaskEXT:
+	case ExecutionModel::TaskEXT:
 		entry_type = "[[object]]";
 		break;
 	default:
@@ -14018,7 +14018,7 @@ string CompilerMSL::get_type_address_space(const SPIRType &type, uint32_t id, bo
 	Bitset flags;
 	auto *var = maybe_get<SPIRVariable>(id);
 	if (var && type.basetype == SPIRType::Struct &&
-	    (has_decoration(type.self, Decoration::Block) || has_decoration(type.self, DecorationBufferBlock)))
+	    (has_decoration(type.self, Decoration::Block) || has_decoration(type.self, Decoration::BufferBlock)))
 		flags = get_buffer_block_flags(id);
 	else
 	{
@@ -14026,7 +14026,7 @@ string CompilerMSL::get_type_address_space(const SPIRType &type, uint32_t id, bo
 
 		if (type.basetype == SPIRType::Struct &&
 		    (has_decoration(type.self, Decoration::Block) ||
-		     has_decoration(type.self, DecorationBufferBlock)))
+		     has_decoration(type.self, Decoration::BufferBlock)))
 		{
 			flags.merge_or(ir.get_buffer_block_type_flags(type));
 		}
@@ -14063,7 +14063,7 @@ string CompilerMSL::get_type_address_space(const SPIRType &type, uint32_t id, bo
 	case StorageClassPushConstant:
 		if (type.basetype == SPIRType::Struct)
 		{
-			bool ssbo = has_decoration(type.self, DecorationBufferBlock);
+			bool ssbo = has_decoration(type.self, Decoration::BufferBlock);
 			if (ssbo)
 			{
 				if (entry_point_requires_const_device_buffers())
@@ -14168,7 +14168,7 @@ const char *CompilerMSL::to_restrict(uint32_t id, bool space)
 		uint32_t type_id = expression_type_id(id);
 		auto &type = expression_type(id);
 		if (type.basetype == SPIRType::Struct &&
-		    (has_decoration(type_id, Decoration::Block) || has_decoration(type_id, DecorationBufferBlock)))
+		    (has_decoration(type_id, Decoration::Block) || has_decoration(type_id, Decoration::BufferBlock)))
 			flags = get_buffer_block_flags(id);
 		else
 			flags = get_decoration_bitset(id);
@@ -14410,13 +14410,13 @@ void CompilerMSL::entry_point_args_builtin(string &ep_args)
 				ep_args += ", ";
 			switch (msl_options.vertex_index_type)
 			{
-			case Op::Options::IndexType::None:
+			case Options::IndexType::None:
 				break;
-			case Op::Options::IndexType::UInt16:
+			case Options::IndexType::UInt16:
 				ep_args += join("const device ushort* ", index_buffer_var_name, " [[buffer(",
 				                msl_options.shader_index_buffer_index, ")]]");
 				break;
-			case Op::Options::IndexType::UInt32:
+			case Options::IndexType::UInt32:
 				ep_args += join("const device uint* ", index_buffer_var_name, " [[buffer(",
 				                msl_options.shader_index_buffer_index, ")]]");
 				break;
@@ -14550,7 +14550,7 @@ void CompilerMSL::entry_point_args_builtin(string &ep_args)
 		ep_args += join("spvMesh_t spvMesh");
 	}
 
-	if (get_execution_model() == ExecutionModelTaskEXT)
+	if (get_execution_model() == ExecutionModel::TaskEXT)
 	{
 		if (!ep_args.empty())
 			ep_args += ", ";
@@ -14817,7 +14817,7 @@ void CompilerMSL::entry_point_args_discrete_descriptors(string &ep_args)
 					add_spv_func_and_recompile(SPVFuncImplVariableDescriptorArray);
 					if (!ep_args.empty())
 						ep_args += ", ";
-					const bool ssbo = has_decoration(type.self, DecorationBufferBlock);
+					const bool ssbo = has_decoration(type.self, Decoration::BufferBlock);
 					if ((var.storage == spv::StorageClass::StorageBuffer || ssbo) &&
 					    msl_options.runtime_array_rich_descriptor)
 					{
@@ -15006,7 +15006,7 @@ void CompilerMSL::fix_up_shader_inputs_outputs()
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t, SPIRVariable &var) {
 		auto &type = get_variable_data_type(var);
 		uint32_t var_id = var.self;
-		bool ssbo = has_decoration(type.self, DecorationBufferBlock);
+		bool ssbo = has_decoration(type.self, Decoration::BufferBlock);
 
 		if (var.storage == StorageClass::UniformConstant && !is_hidden_variable(var))
 		{
@@ -15517,13 +15517,13 @@ void CompilerMSL::fix_up_shader_inputs_outputs()
 					builtin_declaration = true;
 					switch (msl_options.vertex_index_type)
 					{
-					case Op::Options::IndexType::None:
+					case Options::IndexType::None:
 						statement(builtin_type_decl(bi_type), " ", to_expression(var_id), " = ",
 						          to_expression(builtin_invocation_id_id), ".x + ",
 						          to_expression(builtin_dispatch_base_id), ".x;");
 						break;
-					case Op::Options::IndexType::UInt16:
-					case Op::Options::IndexType::UInt32:
+					case Options::IndexType::UInt16:
+					case Options::IndexType::UInt32:
 						statement(builtin_type_decl(bi_type), " ", to_expression(var_id), " = ", index_buffer_var_name,
 						          "[", to_expression(builtin_invocation_id_id), ".x] + ",
 						          to_expression(builtin_dispatch_base_id), ".x;");
@@ -16428,7 +16428,7 @@ string CompilerMSL::to_member_reference(uint32_t base, const SPIRType &type, uin
 		// Only allow -> dereference for block types. This is so we get expressions like
 		// buffer[i]->first_member.second_member, rather than buffer[i]->first->second.
 		const bool is_block =
-		    has_decoration(type.self, Decoration::Block) || has_decoration(type.self, DecorationBufferBlock);
+		    has_decoration(type.self, Decoration::Block) || has_decoration(type.self, Decoration::BufferBlock);
 
 		bool is_buffer_variable =
 		    is_block && (var->storage == StorageClass::Uniform || var->storage == StorageClass::StorageBuffer);
@@ -16480,7 +16480,7 @@ string CompilerMSL::type_to_glsl(const SPIRType &type, uint32_t id, bool member)
 			auto &var = get<SPIRVariable>(id);
 			if (is_var_runtime_size_array(var) && is_runtime_size_array(*p_parent_type))
 			{
-				const bool ssbo = has_decoration(p_parent_type->self, DecorationBufferBlock);
+				const bool ssbo = has_decoration(p_parent_type->self, Decoration::BufferBlock);
 				bool buffer_desc =
 						(var.storage == StorageClass::StorageBuffer || ssbo) &&
 						msl_options.runtime_array_rich_descriptor;
