@@ -2940,7 +2940,7 @@ void CompilerMSL::add_plain_variable_to_interface_block(StorageClass storage, co
 			set_member_decoration(ib_type.self, ib_mbr_idx, Decoration::Component, comp);
 		mark_location_as_used_by_shader(locn, get<SPIRType>(type_id), storage);
 	}
-	else if (is_builtin && is_tessellation_shader() && storage == static_cast<uint32_t>(StorageClass::Input) && inputs_by_builtin.count(static_cast<uint32_t>(builtin)))
+	else if (is_builtin && is_tessellation_shader() && storage == StorageClass::Input && inputs_by_builtin.count(static_cast<uint32_t>(builtin)))
 	{
 		uint32_t locn = inputs_by_builtin[static_cast<uint32_t>(builtin)].location;
 		set_member_decoration(ib_type.self, ib_mbr_idx, Decoration::Location, locn);
@@ -3111,7 +3111,7 @@ void CompilerMSL::add_composite_variable_to_interface_block(StorageClass storage
 				set_member_decoration(ib_type.self, ib_mbr_idx, Decoration::Component, comp);
 			mark_location_as_used_by_shader(locn, *usable_type, storage);
 		}
-		else if (is_builtin && is_tessellation_shader() && storage == static_cast<uint32_t>(StorageClass::Input) && inputs_by_builtin.count(static_cast<uint32_t>(builtin)))
+		else if (is_builtin && is_tessellation_shader() && storage == StorageClass::Input && inputs_by_builtin.count(static_cast<uint32_t>(builtin)))
 		{
 			uint32_t locn = inputs_by_builtin[static_cast<uint32_t>(builtin)].location + i;
 			set_member_decoration(ib_type.self, ib_mbr_idx, Decoration::Location, locn);
@@ -3336,7 +3336,7 @@ void CompilerMSL::add_composite_member_variable_to_interface_block(StorageClass 
 				ir_location = get_accumulated_member_location(var, mbr_idx, meta.strip_array);
 			else if (is_builtin)
 			{
-				if (is_tessellation_shader() && storage == static_cast<uint32_t>(StorageClass::Input) && inputs_by_builtin.count(static_cast<uint32_t>(builtin)))
+				if (is_tessellation_shader() && storage == StorageClass::Input && inputs_by_builtin.count(static_cast<uint32_t>(builtin)))
 					ir_location = inputs_by_builtin[static_cast<uint32_t>(builtin)].location;
 				else if (capture_output_to_buffer && storage == StorageClass::Output && outputs_by_builtin.count(static_cast<uint32_t>(builtin)))
 					ir_location = outputs_by_builtin[static_cast<uint32_t>(builtin)].location;
@@ -3508,7 +3508,7 @@ void CompilerMSL::add_plain_member_variable_to_interface_block(StorageClass stor
 		ir_location = get_accumulated_member_location(var, mbr_idx, meta.strip_array);
 	else if (is_builtin)
 	{
-		if (is_tessellation_shader() && storage == static_cast<uint32_t>(StorageClass::Input) && inputs_by_builtin.count(static_cast<uint32_t>(builtin)))
+		if (is_tessellation_shader() && storage == StorageClass::Input && inputs_by_builtin.count(static_cast<uint32_t>(builtin)))
 			ir_location = inputs_by_builtin[static_cast<uint32_t>(builtin)].location;
 		else if (capture_output_to_buffer && storage == StorageClass::Output && outputs_by_builtin.count(static_cast<uint32_t>(builtin)))
 			ir_location = outputs_by_builtin[static_cast<uint32_t>(builtin)].location;
@@ -3897,7 +3897,7 @@ void CompilerMSL::add_variable_to_interface_block(StorageClass storage, const st
 		ensure_struct_members_valid_vecsizes(get_variable_data_type(var), locn);
 	}
 
-	if (storage == StorageClass::Input && has_decoration(var.self, DecorationPerVertexKHR))
+	if (storage == StorageClass::Input && has_decoration(var.self, Decoration::PerVertexKHR))
 		SPIRV_CROSS_THROW("PerVertexKHR decoration is not supported in MSL.");
 
 	// If variable names alias, they will end up with wrong names in the interface struct, because
@@ -4061,7 +4061,7 @@ void CompilerMSL::add_variable_to_interface_block(StorageClass storage, const st
 			}
 		}
 	}
-	else if (is_tese_shader() && storage == static_cast<uint32_t>(StorageClass::Input) && !meta.strip_array && is_builtin &&
+	else if (is_tese_shader() && storage == StorageClass::Input && !meta.strip_array && is_builtin &&
 	         (builtin == BuiltIn::TessLevelOuter || builtin == BuiltIn::TessLevelInner))
 	{
 		add_tess_level_input_to_interface_block(ib_var_ref, ib_type, var);
@@ -4136,8 +4136,8 @@ void CompilerMSL::fix_up_interface_member_indices(StorageClass storage, uint32_t
 	// Only needed for tessellation shaders and pull-model interpolants.
 	// Need to redirect interface indices back to variables themselves.
 	// For structs, each member of the struct need a separate instance.
-	if (!is_tesc_shader() && !(is_tese_shader() && storage == static_cast<uint32_t>(StorageClass::Input)) &&
-	    !(get_execution_model() == ExecutionModel::Fragment && storage == static_cast<uint32_t>(StorageClass::Input) &&
+	if (!is_tesc_shader() && !(is_tese_shader() && storage == StorageClass::Input) &&
+	    !(get_execution_model() == ExecutionModel::Fragment && storage == StorageClass::Input &&
 	      !pull_model_inputs.empty()))
 		return;
 
@@ -4208,7 +4208,7 @@ uint32_t CompilerMSL::add_interface_block(StorageClass storage, bool patch)
 		if (is_builtin && !is_block)
 		{
 			bi_type = BuiltIn(get_decoration(var_id, Decoration::BuiltIn));
-			builtin_is_gl_in_out = bi_type == static_cast<uint32_t>(BuiltIn::Position) || bi_type == static_cast<uint32_t>(BuiltIn::PointSize) ||
+			builtin_is_gl_in_out = bi_type == BuiltIn::Position || bi_type == BuiltIn::PointSize ||
 			                       bi_type == BuiltIn::ClipDistance || bi_type == BuiltIn::CullDistance;
 		}
 
@@ -4323,7 +4323,7 @@ uint32_t CompilerMSL::add_interface_block(StorageClass storage, bool patch)
 			}
 		}
 
-		if (is_tese_shader() && msl_options.raw_buffer_tese_input && patch && storage == static_cast<uint32_t>(StorageClass::Input) &&
+		if (is_tese_shader() && msl_options.raw_buffer_tese_input && patch && storage == StorageClass::Input &&
 		    (bi_type == BuiltIn::TessLevelOuter || bi_type == BuiltIn::TessLevelInner))
 		{
 			// In this case, we won't add the builtin to the interface struct,
@@ -4344,7 +4344,7 @@ uint32_t CompilerMSL::add_interface_block(StorageClass storage, bool patch)
 	// For patch input in a tessellation evaluation shader, the per-vertex stage inputs
 	// are included in a special patch control point array.
 	if (vars.empty() &&
-	    !(!msl_options.raw_buffer_tese_input && storage == static_cast<uint32_t>(StorageClass::Input) && patch && stage_in_var_id))
+	    !(!msl_options.raw_buffer_tese_input && storage == StorageClass::Input && patch && stage_in_var_id))
 		return 0;
 
 	// Add a new typed variable for this interface structure.
@@ -4549,7 +4549,7 @@ uint32_t CompilerMSL::add_interface_block(StorageClass storage, bool patch)
 
 	for (auto *p_var : vars)
 	{
-		bool strip_array = (is_tesc_shader() || (is_tese_shader() && storage == static_cast<uint32_t>(StorageClass::Input))) && !patch;
+		bool strip_array = (is_tesc_shader() || (is_tese_shader() && storage == StorageClass::Input)) && !patch;
 
 		// Fixing up flattened stores in TESC is impossible since the memory is group shared either via
 		// device (not masked) or threadgroup (masked) storage classes and it's race condition city.
@@ -4737,7 +4737,7 @@ uint32_t CompilerMSL::add_interface_block(StorageClass storage, bool patch)
 	fix_up_interface_member_indices(storage, ib_type_id);
 
 	// For patch inputs, add one more member, holding the array of control point data.
-	if (is_tese_shader() && !msl_options.raw_buffer_tese_input && storage == static_cast<uint32_t>(StorageClass::Input) && patch &&
+	if (is_tese_shader() && !msl_options.raw_buffer_tese_input && storage == StorageClass::Input && patch &&
 	    stage_in_var_id)
 	{
 		uint32_t pcp_type_id = ir.increase_bound_by(1);
