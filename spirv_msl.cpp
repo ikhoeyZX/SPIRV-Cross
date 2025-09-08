@@ -2252,7 +2252,7 @@ void CompilerMSL::extract_global_variables_from_function(uint32_t func_id, std::
 			{
 				// Add the correct invocation ID for calculating clustered rotate case.
 				if (i.length > 5)
-					added_arg_ids.insert(static_cast<Scope>(evaluate_constant_u32(ops[2])) == ScopeSubgroup
+					added_arg_ids.insert(static_cast<Scope>(evaluate_constant_u32(ops[2])) == Scope::Subgroup
 						? builtin_subgroup_invocation_id_id : builtin_local_invocation_index_id);
 				break;
 			}
@@ -4369,7 +4369,7 @@ uint32_t CompilerMSL::add_interface_block(StorageClass storage, bool patch)
 		ib_var_ref = patch ? patch_stage_in_var_name : stage_in_var_name;
 		switch (get_execution_model())
 		{
-		case ExecutionModelTessellationControl:
+		case ExecutionModel::TessellationControl:
 			// Add a hook to populate the shared workgroup memory containing the gl_in array.
 			entry_func.fixup_hooks_in.push_back([=]() {
 				// Can't use PatchVertices, PrimitiveId, or InvocationId yet; the hooks for those may not have run yet.
@@ -4396,7 +4396,7 @@ uint32_t CompilerMSL::add_interface_block(StorageClass storage, bool patch)
 				}
 			});
 			break;
-		case ExecutionModelTessellationEvaluation:
+		case ExecutionModel::TessellationEvaluation:
 			if (!msl_options.raw_buffer_tese_input)
 				break;
 			if (patch)
@@ -4456,7 +4456,7 @@ uint32_t CompilerMSL::add_interface_block(StorageClass storage, bool patch)
 			switch (get_execution_model())
 			{
 			case ExecutionModel::Vertex:
-			case ExecutionModelTessellationEvaluation:
+			case ExecutionModel::TessellationEvaluation:
 				// Instead of declaring a struct variable to hold the output and then
 				// copying that to the output buffer, we'll declare the output variable
 				// as a reference to the final output element in the buffer. Then we can
@@ -4491,7 +4491,7 @@ uint32_t CompilerMSL::add_interface_block(StorageClass storage, bool patch)
 					}
 				});
 				break;
-			case ExecutionModelTessellationControl:
+			case ExecutionModel::TessellationControl:
 				if (msl_options.multi_patch_workgroup)
 				{
 					// We cannot use PrimitiveId here, because the hook may not have run yet.
@@ -10639,7 +10639,7 @@ void CompilerMSL::emit_barrier(uint32_t id_exe_scope, uint32_t id_mem_scope, uin
 	// Use the wider of the two scopes (smaller value)
 	exe_scope = min(exe_scope, mem_scope);
 
-	if (msl_options.emulate_subgroups && exe_scope >= ScopeSubgroup && !id_mem_sem)
+	if (msl_options.emulate_subgroups && exe_scope >= Scope::Subgroup && !id_mem_sem)
 		// In this case, we assume a "subgroup" size of 1. The barrier, then, is a noop.
 		return;
 
@@ -10653,7 +10653,7 @@ void CompilerMSL::emit_barrier(uint32_t id_exe_scope, uint32_t id_mem_scope, uin
 	else
 	{
 		if ((msl_options.is_ios() && msl_options.supports_msl_version(1, 2)) || msl_options.supports_msl_version(2))
-			bar_stmt = exe_scope < ScopeSubgroup ? "threadgroup_barrier" : "simdgroup_barrier";
+			bar_stmt = exe_scope < Scope::Subgroup ? "threadgroup_barrier" : "simdgroup_barrier";
 		else
 			bar_stmt = "threadgroup_barrier";
 	}
@@ -10711,7 +10711,7 @@ void CompilerMSL::emit_barrier(uint32_t id_exe_scope, uint32_t id_mem_scope, uin
 	{
 		// If there's no device-related memory in the barrier, demote to workgroup scope.
 		// glslang seems to emit device scope even for memoryBarrierShared().
-		if (mem_scope == ScopeDevice &&
+		if (mem_scope == Scope::Device &&
 		    (mem_sem & (MemorySemanticsMask::UniformMemory |
 		                MemorySemanticsMask::ImageMemory |
 		                MemorySemanticsMask::CrossWorkgroupMemory)) == 0)
@@ -13930,7 +13930,7 @@ string CompilerMSL::func_type_decl(SPIRType &type)
 			SPIRV_CROSS_THROW("Tessellation requires Metal 1.2.");
 		entry_type = msl_options.vertex_for_tessellation ? "kernel" : "vertex";
 		break;
-	case ExecutionModelTessellationEvaluation:
+	case ExecutionModel::TessellationEvaluation:
 		if (!msl_options.supports_msl_version(1, 2))
 			SPIRV_CROSS_THROW("Tessellation requires Metal 1.2.");
 		if (execution.flags.get(ExecutionMode::Isolines))
@@ -13944,17 +13944,17 @@ string CompilerMSL::func_type_decl(SPIRType &type)
 	case ExecutionModel::Fragment:
 		entry_type = uses_explicit_early_fragment_test() ? "[[ early_fragment_tests ]] fragment" : "fragment";
 		break;
-	case ExecutionModelTessellationControl:
+	case ExecutionModel::TessellationControl:
 		if (!msl_options.supports_msl_version(1, 2))
 			SPIRV_CROSS_THROW("Tessellation requires Metal 1.2.");
 		if (execution.flags.get(ExecutionMode::Isolines))
 			SPIRV_CROSS_THROW("Metal does not support isoline tessellation.");
 		/* fallthrough */
 	case ExecutionModel::GLCompute:
-	case ExecutionModelKernel:
+	case ExecutionModel::Kernel:
 		entry_type = "kernel";
 		break;
-	case ExecutionModelMeshEXT:
+	case ExecutionModel::MeshEXT:
 		entry_type = "[[mesh]]";
 		break;
 	case ExecutionModel::TaskEXT:
@@ -17262,7 +17262,7 @@ void CompilerMSL::emit_subgroup_op(const Instruction &i)
 			// MSL does not have a cluster size parameter, so calculate the invocation ID manually and using a shuffle.
 			auto delta_expr = enclose_expression(to_unpacked_expression(ops[op_idx + 1]));
 			auto cluster_size_minus_one = evaluate_constant_u32(ops[op_idx + 2]) - 1;
-			auto local_id_expr = to_unpacked_expression(scope == ScopeSubgroup
+			auto local_id_expr = to_unpacked_expression(scope == Scope::Subgroup
 				? builtin_subgroup_invocation_id_id : builtin_local_invocation_index_id);
 			auto shuffle_idx = join("((", local_id_expr, " + ", delta_expr, ")", " & ", std::to_string(cluster_size_minus_one),
 				") + (", local_id_expr, " & ", std::to_string(~cluster_size_minus_one), ")");
@@ -17783,14 +17783,14 @@ string CompilerMSL::builtin_qualifier(BuiltIn builtin)
 	case BuiltIn::PrimitiveId:
 		switch (execution.model)
 		{
-		case ExecutionModelTessellationControl:
+		case ExecutionModel::TessellationControl:
 			if (msl_options.multi_patch_workgroup)
 			{
 				// Shouldn't be reached.
 				SPIRV_CROSS_THROW("PrimitiveId is computed manually with multi-patch workgroups in MSL.");
 			}
 			return "threadgroup_position_in_grid";
-		case ExecutionModelTessellationEvaluation:
+		case ExecutionModel::TessellationEvaluation:
 			return "patch_id";
 		case ExecutionModel::Fragment:
 			if (msl_options.is_ios() && !msl_options.supports_msl_version(2, 3))
@@ -17798,7 +17798,7 @@ string CompilerMSL::builtin_qualifier(BuiltIn builtin)
 			else if (msl_options.is_macos() && !msl_options.supports_msl_version(2, 2))
 				SPIRV_CROSS_THROW("PrimitiveId on macOS requires MSL 2.2.");
 			return "primitive_id";
-		case ExecutionModelMeshEXT:
+		case ExecutionModel::MeshEXT:
 			return "primitive_id";
 		default:
 			SPIRV_CROSS_THROW("PrimitiveId is not supported in this execution model.");
@@ -18557,7 +18557,7 @@ bool CompilerMSL::OpCodePreprocessor::handle(Op opcode, const uint32_t *args, ui
 		// Add the correct invocation ID for calculating clustered rotate case.
 		if (length > 5)
 		{
-			if (static_cast<Scope>(compiler.evaluate_constant_u32(args[2])) == ScopeSubgroup)
+			if (static_cast<Scope>(compiler.evaluate_constant_u32(args[2])) == Scope::Subgroup)
 				needs_subgroup_invocation_id = true;
 			else
 				needs_local_invocation_index = true;
