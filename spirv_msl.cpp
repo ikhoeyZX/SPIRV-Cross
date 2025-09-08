@@ -1007,7 +1007,7 @@ void CompilerMSL::build_implicit_builtins()
 			auto &ptr_in_type = set<SPIRType>(type_ptr_id, float_type_ptr_in);
 			ptr_in_type.self = type_id;
 			set<SPIRVariable>(var_id, type_ptr_id, StorageClass::Output);
-			set_decoration(var_id, Decoration::BuiltIn, static_cast<uint32_t>(BuiltIn::FragDepth);
+			set_decoration(var_id, Decoration::BuiltIn, static_cast<uint32_t>(BuiltIn::FragDepth));
 			builtin_frag_depth_id = var_id;
 			mark_implicit_builtin(StorageClass::Output, BuiltIn::FragDepth, var_id);
 			active_output_builtins.set(static_cast<uint32_t>(BuiltIn::FragDepth));
@@ -1037,7 +1037,7 @@ void CompilerMSL::build_implicit_builtins()
 			auto &ptr_in_type = set<SPIRType>(type_ptr_id, float_type_ptr_in);
 			ptr_in_type.self = type_id;
 			set<SPIRVariable>(var_id, type_ptr_id, StorageClass::Output);
-			set_decoration(var_id, Decoration::BuiltIn, BuiltIn::PointSize);
+			set_decoration(var_id, Decoration::BuiltIn, static_cast<uint32_t>(BuiltIn::PointSize));
 			mark_implicit_builtin(StorageClass::Output, BuiltIn::PointSize, var_id);
 		}
 	}
@@ -1091,7 +1091,7 @@ void CompilerMSL::build_implicit_builtins()
 	bool need_position = (get_execution_model() == ExecutionModel::Vertex || is_tese_shader()) &&
 	                     !capture_output_to_buffer && !get_is_rasterization_disabled() &&
 	                     !msl_options.auto_disable_rasterization &&
-	                     !active_output_builtins.get(static_cast<uint32_t>(BuiltInPosition));
+	                     !active_output_builtins.get(static_cast<uint32_t>(BuiltIn::Position));
 
 	if (need_position)
 	{
@@ -1107,8 +1107,8 @@ void CompilerMSL::build_implicit_builtins()
 				has_output = true;
 
 				// Check if the var is the Position builtin
-				if (has_decoration(var.self, Decoration::BuiltIn) && get_decoration(var.self, Decoration::BuiltIn) == BuiltInPosition)
-					active_output_builtins.set(BuiltInPosition);
+				if (has_decoration(var.self, Decoration::BuiltIn) && get_decoration(var.self, Decoration::BuiltIn) == BuiltIn::Position)
+					active_output_builtins.set(BuiltIn::Position);
 
 				// If the var is a struct, check if any members is the Position builtin
 				auto &var_type = get_variable_element_type(var);
@@ -1120,14 +1120,14 @@ void CompilerMSL::build_implicit_builtins()
 						auto builtin = BuiltIn::Max;
 						bool is_builtin = is_member_builtin(var_type, mbr_idx, &builtin);
 						if (is_builtin && builtin == BuiltIn::Position)
-							active_output_builtins.set(BuiltInPosition);
+							active_output_builtins.set(BuiltIn::Position);
 					}
 				}
 			}
 		});
-		need_position = has_output && !active_output_builtins.get(static_cast<uint32_t>(BuiltInPosition));
+		need_position = has_output && !active_output_builtins.get(static_cast<uint32_t>(BuiltIn::Position));
 	}
-	else if (!active_output_builtins.get(static_cast<uint32_t>(BuiltInPosition)) && msl_options.auto_disable_rasterization)
+	else if (!active_output_builtins.get(static_cast<uint32_t>(BuiltIn::Position)) && msl_options.auto_disable_rasterization)
 	{
 		is_rasterization_disabled = true;
 	}
@@ -1156,8 +1156,8 @@ void CompilerMSL::build_implicit_builtins()
 		ptr_type.self = type_id;
 
 		set<SPIRVariable>(var_id, type_ptr_id, StorageClass::Output);
-		set_decoration(var_id, Decoration::BuiltIn, BuiltInPosition);
-		mark_implicit_builtin(StorageClass::Output, BuiltInPosition, var_id);
+		set_decoration(var_id, Decoration::BuiltIn, BuiltIn::Position);
+		mark_implicit_builtin(StorageClass::Output, BuiltIn::Position, var_id);
 	}
 
 	if (is_mesh_shader())
@@ -1230,9 +1230,9 @@ void CompilerMSL::ensure_builtin(spv::StorageClass storage, spv::BuiltIn builtin
 
 	// At this point, the specified builtin variable must have already been declared in the entry point.
 	// If not, mark as active and force recompile.
-	if (active_builtins != nullptr && !active_builtins->get(builtin))
+	if (active_builtins != nullptr && !active_builtins->get(static_cast<uint32_t>(builtin)))
 	{
-		active_builtins->set(builtin);
+		active_builtins->set(static_cast<uint32_t>(builtin));
 		force_recompile();
 	}
 }
@@ -1255,7 +1255,7 @@ void CompilerMSL::mark_implicit_builtin(StorageClass storage, BuiltIn builtin, u
 	}
 
 	assert(active_builtins != nullptr);
-	active_builtins->set(builtin);
+	active_builtins->set(static_cast<uint32_t>(builtin));
 
 	auto &var = get_entry_point().interface_variables;
 	if (find(begin(var), end(var), VariableID(id)) == end(var))
@@ -1277,7 +1277,7 @@ uint32_t CompilerMSL::build_constant_uint_array_pointer()
 	uint_type_pointer.parent_type = get_uint_type_id();
 	uint_type_pointer.storage = StorageClass::Uniform;
 	set<SPIRType>(type_ptr_id, uint_type_pointer);
-	set_decoration(type_ptr_id, DecorationArrayStride, 4);
+	set_decoration(type_ptr_id, Decoration::ArrayStride, 4);
 
 	SPIRType uint_type_pointer2 = uint_type_pointer;
 	uint_type_pointer2.pointer_depth++;
@@ -1350,7 +1350,7 @@ uint32_t CompilerMSL::get_uint_type_id()
 
 	uint_type_id = ir.increase_bound_by(1);
 
-	SPIRType type { OpTypeInt };
+	SPIRType type { Op::OpTypeInt };
 	type.basetype = SPIRType::UInt;
 	type.width = 32;
 	set<SPIRType>(uint_type_id, type);
@@ -2378,7 +2378,7 @@ void CompilerMSL::extract_global_variables_from_function(uint32_t func_id, std::
 			bool is_patch_block_storage = is_patch && is_block && var.storage == StorageClass::Output;
 			bool is_builtin = is_builtin_variable(var);
 			bool variable_is_stage_io =
-					!is_builtin || bi_type == BuiltInPosition || bi_type == static_cast<uint32_t>(BuiltIn::PointSize) ||
+					!is_builtin || bi_type == BuiltIn::Position || bi_type == static_cast<uint32_t>(BuiltIn::PointSize) ||
 					bi_type == BuiltIn::ClipDistance || bi_type == BuiltIn::CullDistance ||
 					p_type->basetype == SPIRType::Struct;
 			bool is_redirected_to_global_stage_io = (is_control_point_storage || is_patch_block_storage) &&
@@ -2969,7 +2969,7 @@ void CompilerMSL::add_plain_variable_to_interface_block(StorageClass storage, co
 	if (is_builtin)
 	{
 		set_member_decoration(ib_type.self, ib_mbr_idx, Decoration::BuiltIn, builtin);
-		if (builtin == BuiltInPosition && storage == StorageClass::Output)
+		if (builtin == BuiltIn::Position && storage == StorageClass::Output)
 			qual_pos_var_name = qual_var_name;
 	}
 
@@ -3597,7 +3597,7 @@ void CompilerMSL::add_plain_member_variable_to_interface_block(StorageClass stor
 	if (is_builtin)
 	{
 		set_member_decoration(ib_type.self, ib_mbr_idx, Decoration::BuiltIn, builtin);
-		if (builtin == BuiltInPosition && storage == StorageClass::Output)
+		if (builtin == BuiltIn::Position && storage == StorageClass::Output)
 			qual_pos_var_name = qual_var_name;
 	}
 
@@ -4208,7 +4208,7 @@ uint32_t CompilerMSL::add_interface_block(StorageClass storage, bool patch)
 		if (is_builtin && !is_block)
 		{
 			bi_type = BuiltIn(get_decoration(var_id, Decoration::BuiltIn));
-			builtin_is_gl_in_out = bi_type == BuiltInPosition || bi_type == static_cast<uint32_t>(BuiltIn::PointSize) ||
+			builtin_is_gl_in_out = bi_type == BuiltIn::Position || bi_type == static_cast<uint32_t>(BuiltIn::PointSize) ||
 			                       bi_type == BuiltIn::ClipDistance || bi_type == BuiltIn::CullDistance;
 		}
 
@@ -4584,7 +4584,7 @@ uint32_t CompilerMSL::add_interface_block(StorageClass storage, bool patch)
 			uint32_t ptr_type_id = offset + 3;
 			uint32_t var_id = offset + 4;
 
-			SPIRType type { OpTypeInt };
+			SPIRType type { Op::OpTypeInt };
 			switch (input.second.format)
 			{
 			case MSL_SHADER_VARIABLE_FORMAT_UINT16:
@@ -4652,7 +4652,7 @@ uint32_t CompilerMSL::add_interface_block(StorageClass storage, bool patch)
 			uint32_t ptr_type_id = offset + 3;
 			uint32_t var_id = offset + 4;
 
-			SPIRType type { OpTypeInt };
+			SPIRType type { Op::OpTypeInt };
 			switch (output.second.format)
 			{
 			case MSL_SHADER_VARIABLE_FORMAT_UINT16:
@@ -5280,7 +5280,7 @@ void CompilerMSL::ensure_member_packing_rules_msl(SPIRType &ib_type, uint32_t in
 		uint32_t type_id = ir.increase_bound_by(1);
 		set<SPIRType>(type_id, physical_type);
 		set_extended_member_decoration(ib_type.self, index, SPIRVCrossDecorationPhysicalTypeID, type_id);
-		set_decoration(type_id, DecorationArrayStride, array_stride);
+		set_decoration(type_id, Decoration::ArrayStride, array_stride);
 
 		// Remove packed_ for vectors of size 1, 2 and 4.
 		unset_extended_member_decoration(ib_type.self, index, SPIRVCrossDecorationPhysicalTypePacked);
@@ -8926,7 +8926,7 @@ bool CompilerMSL::emit_tessellation_access_chain(const uint32_t *ops, uint32_t l
 			bi_type = BuiltIn(get_decoration(var->self, Decoration::BuiltIn));
 
 		variable_is_flat = !builtin_variable || is_block ||
-		                   bi_type == BuiltInPosition || bi_type == static_cast<uint32_t>(BuiltIn::PointSize) ||
+		                   bi_type == BuiltIn::Position || bi_type == static_cast<uint32_t>(BuiltIn::PointSize) ||
 		                   bi_type == BuiltIn::ClipDistance || bi_type == BuiltIn::CullDistance;
 	}
 
@@ -19536,7 +19536,7 @@ void CompilerMSL::analyze_argument_buffers()
 				uint_type_pointer.parent_type = get_uint_type_id();
 				uint_type_pointer.storage = StorageClass::Uniform;
 				set<SPIRType>(uint_ptr_type_id, uint_type_pointer);
-				set_decoration(uint_ptr_type_id, DecorationArrayStride, 4);
+				set_decoration(uint_ptr_type_id, Decoration::ArrayStride, 4);
 			}
 
 			if (set_needs_swizzle_buffer[desc_set])
