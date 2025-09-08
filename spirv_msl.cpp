@@ -2940,15 +2940,15 @@ void CompilerMSL::add_plain_variable_to_interface_block(StorageClass storage, co
 			set_member_decoration(ib_type.self, ib_mbr_idx, Decoration::Component, comp);
 		mark_location_as_used_by_shader(locn, get<SPIRType>(type_id), storage);
 	}
-	else if (is_builtin && is_tessellation_shader() && storage == static_cast<uint32_t>(StorageClass::Input) && inputs_by_builtin.count(builtin))
+	else if (is_builtin && is_tessellation_shader() && storage == static_cast<uint32_t>(StorageClass::Input) && inputs_by_builtin.count(static_cast<uint32_t>(builtin)))
 	{
-		uint32_t locn = inputs_by_builtin[builtin].location;
+		uint32_t locn = inputs_by_builtin[static_cast<uint32_t>(builtin)].location;
 		set_member_decoration(ib_type.self, ib_mbr_idx, Decoration::Location, locn);
 		mark_location_as_used_by_shader(locn, type, storage);
 	}
-	else if (is_builtin && capture_output_to_buffer && storage == StorageClass::Output && outputs_by_builtin.count(builtin))
+	else if (is_builtin && capture_output_to_buffer && storage == StorageClass::Output && outputs_by_builtin.count(static_cast<uint32_t>(builtin)))
 	{
-		uint32_t locn = outputs_by_builtin[builtin].location;
+		uint32_t locn = outputs_by_builtin[static_cast<uint32_t>(builtin)].location;
 		set_member_decoration(ib_type.self, ib_mbr_idx, Decoration::Location, locn);
 		mark_location_as_used_by_shader(locn, type, storage);
 	}
@@ -3111,15 +3111,15 @@ void CompilerMSL::add_composite_variable_to_interface_block(StorageClass storage
 				set_member_decoration(ib_type.self, ib_mbr_idx, Decoration::Component, comp);
 			mark_location_as_used_by_shader(locn, *usable_type, storage);
 		}
-		else if (is_builtin && is_tessellation_shader() && storage == static_cast<uint32_t>(StorageClass::Input) && inputs_by_builtin.count(builtin))
+		else if (is_builtin && is_tessellation_shader() && storage == static_cast<uint32_t>(StorageClass::Input) && inputs_by_builtin.count(static_cast<uint32_t>(builtin)))
 		{
-			uint32_t locn = inputs_by_builtin[builtin].location + i;
+			uint32_t locn = inputs_by_builtin[static_cast<uint32_t>(builtin)].location + i;
 			set_member_decoration(ib_type.self, ib_mbr_idx, Decoration::Location, locn);
 			mark_location_as_used_by_shader(locn, *usable_type, storage);
 		}
-		else if (is_builtin && capture_output_to_buffer && storage == StorageClass::Output && outputs_by_builtin.count(builtin))
+		else if (is_builtin && capture_output_to_buffer && storage == StorageClass::Output && outputs_by_builtin.count(static_cast<uint32_t>(builtin)))
 		{
-			uint32_t locn = outputs_by_builtin[builtin].location + i;
+			uint32_t locn = outputs_by_builtin[static_cast<uint32_t>(builtin)].location + i;
 			set_member_decoration(ib_type.self, ib_mbr_idx, Decoration::Location, locn);
 			mark_location_as_used_by_shader(locn, *usable_type, storage);
 		}
@@ -3214,7 +3214,7 @@ void CompilerMSL::add_composite_member_variable_to_interface_block(StorageClass 
 
 	BuiltIn builtin = BuiltIn::Max;
 	bool is_builtin = is_member_builtin(var_type, mbr_idx, &builtin);
-	bool is_flat = interpolation_qual.get(Decoration::Flat) ||
+	bool is_flat = interpolation_qual.get(static_cast<uint32_t>(Decoration::Flat)) ||
 	               has_member_decoration(var_type.self, mbr_idx, Decoration::Flat) ||
 	               has_decoration(var.self, Decoration::Flat);
 	bool is_noperspective = interpolation_qual.get(static_cast<uint32_t>(Decoration::NoPerspective)) ||
@@ -3229,13 +3229,13 @@ void CompilerMSL::add_composite_member_variable_to_interface_block(StorageClass 
 
 	Bitset inherited_qual;
 	if (is_flat)
-		inherited_qual.set(Decoration::Flat);
+		inherited_qual.set(static_cast<uint32_t>(Decoration::Flat));
 	if (is_noperspective)
 		inherited_qual.set(static_cast<uint32_t>(Decoration::NoPerspective));
 	if (is_centroid)
-		inherited_qual.set(Decoration::Centroid);
+		inherited_qual.set(static_cast<uint32_t>(Decoration::Centroid));
 	if (is_sample)
-		inherited_qual.set(Decoration::Sample);
+		inherited_qual.set(static_cast<uint32_t>(Decoration::Sample));
 
 	uint32_t mbr_type_id = var_type.member_types[mbr_idx];
 	auto &mbr_type = get<SPIRType>(mbr_type_id);
@@ -3336,10 +3336,10 @@ void CompilerMSL::add_composite_member_variable_to_interface_block(StorageClass 
 				ir_location = get_accumulated_member_location(var, mbr_idx, meta.strip_array);
 			else if (is_builtin)
 			{
-				if (is_tessellation_shader() && storage == static_cast<uint32_t>(StorageClass::Input) && inputs_by_builtin.count(builtin))
-					ir_location = inputs_by_builtin[builtin].location;
-				else if (capture_output_to_buffer && storage == StorageClass::Output && outputs_by_builtin.count(builtin))
-					ir_location = outputs_by_builtin[builtin].location;
+				if (is_tessellation_shader() && storage == static_cast<uint32_t>(StorageClass::Input) && inputs_by_builtin.count(static_cast<uint32_t>(builtin)))
+					ir_location = inputs_by_builtin[static_cast<uint32_t>(builtin)].location;
+				else if (capture_output_to_buffer && storage == StorageClass::Output && outputs_by_builtin.count(static_cast<uint32_t>(builtin)))
+					ir_location = outputs_by_builtin[static_cast<uint32_t>(builtin)].location;
 			}
 		}
 
@@ -3508,10 +3508,10 @@ void CompilerMSL::add_plain_member_variable_to_interface_block(StorageClass stor
 		ir_location = get_accumulated_member_location(var, mbr_idx, meta.strip_array);
 	else if (is_builtin)
 	{
-		if (is_tessellation_shader() && storage == static_cast<uint32_t>(StorageClass::Input) && inputs_by_builtin.count(builtin))
-			ir_location = inputs_by_builtin[builtin].location;
-		else if (capture_output_to_buffer && storage == StorageClass::Output && outputs_by_builtin.count(builtin))
-			ir_location = outputs_by_builtin[builtin].location;
+		if (is_tessellation_shader() && storage == static_cast<uint32_t>(StorageClass::Input) && inputs_by_builtin.count(static_cast<uint32_t>(builtin)))
+			ir_location = inputs_by_builtin[static_cast<uint32_t>(builtin)].location;
+		else if (capture_output_to_buffer && storage == StorageClass::Output && outputs_by_builtin.count(static_cast<uint32_t>(builtin)))
+			ir_location = outputs_by_builtin[static_cast<uint32_t>(builtin)].location;
 	}
 
 	// Once we determine the location of the first member within nested structures,
@@ -3669,9 +3669,9 @@ void CompilerMSL::add_tess_level_input_to_interface_block(const std::string &ib_
 			set_member_decoration(ib_type.self, ib_mbr_idx, Decoration::Location, locn);
 			mark_location_as_used_by_shader(locn, new_var_type, StorageClass::Input);
 		}
-		else if (inputs_by_builtin.count(builtin))
+		else if (inputs_by_builtin.count(static_cast<uint32_t>(builtin)))
 		{
-			uint32_t locn = inputs_by_builtin[builtin].location;
+			uint32_t locn = inputs_by_builtin[static_cast<uint32_t>(builtin)].location;
 			set_member_decoration(ib_type.self, ib_mbr_idx, Decoration::Location, locn);
 			mark_location_as_used_by_shader(locn, new_var_type, StorageClass::Input);
 		}
