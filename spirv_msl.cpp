@@ -5772,7 +5772,7 @@ void CompilerMSL::emit_header()
 	{
 		uint32_t contract_mask = FPFastMathModeMask::AllowContract;
 		uint32_t relax_mask = static_cast<uint32_t>((FPFastMathModeMask::NSZ | FPFastMathModeMask::AllowRecip | FPFastMathModeMask::AllowReassoc));
-		uint32_t fast_mask = static_cast<uint32_t>((relax_mask | FPFastMathModeMask::NotNaN | FPFastMathModeMask::NotIn));
+		uint32_t fast_mask = static_cast<uint32_t>((relax_mask | FPFastMathModeMask::NotNaN | FPFastMathModeMask::NotInf));
 
 		// FP math mode
 		uint32_t fp_flags = get_fp_fast_math_flags(true);
@@ -8695,7 +8695,7 @@ bool CompilerMSL::emit_tessellation_io_load(uint32_t result_type_id, uint32_t id
 
 				const auto &mbr_type = get<SPIRType>(struct_type.member_types[j]);
 				const auto &expr_mbr_type = get<SPIRType>(expr_type.member_types[j]);
-				if (is_matrix(mbr_type) && ptr_type.storage == static_cast<uint32_t>(StorageClass::Input))
+				if (is_matrix(mbr_type) && ptr_type.storage == StorageClass::Input)
 				{
 					expr += type_to_glsl(mbr_type) + "(";
 					for (uint32_t k = 0; k < mbr_type.columns; k++, interface_index++)
@@ -9385,7 +9385,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		{
 			// Sample mask input for Metal is not an array
 			if (BuiltIn(get_decoration(ptr, Decoration::BuiltIn)) == BuiltIn::SampleMask)
-				set_decoration(id, Decoration::BuiltIn, BuiltIn::SampleMask);
+				set_decoration(id, Decoration::BuiltIn, static_cast<uint32_t>(BuiltIn::SampleMask));
 			CompilerGLSL::emit_instruction(instruction);
 		}
 		break;
@@ -9805,8 +9805,8 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 			}
 		};
 
-		test(bias, ImageOperandsBiasMask);
-		test(lod, ImageOperandsLodMask);
+		test(bias, ImageOperandsMask::Bias);
+		test(lod, ImageOperandsMask::Lod);
 
 		auto &texel_type = expression_type(texel_id);
 		auto store_type = texel_type;
@@ -10446,7 +10446,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		auto input_size = input_type1.vecsize;
 		if (instruction.length == 5)
 		{
-			if (ops[4] == PackedVectorFormatPackedVectorFormat4x8Bit)
+			if (ops[4] == PackedVector::FormatPackedVectorFormat4x8Bit)
 			{
 				string type = opcode == Op::OpSDot || opcode == Op::OpSUDot ? "char4" : "uchar4";
 				vec1input = join("as_type<", type, ">(", to_expression(vec1), ")");
@@ -10466,7 +10466,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 					to_unsigned_basetype(input_type1.width);
 
 			SPIRType::BaseType vec2_expected_type =
-					opcode != OpSDot ?
+					opcode != Op::OpSDot ?
 					to_unsigned_basetype(input_type2.width) :
 					to_signed_basetype(input_type2.width);
 
@@ -10506,7 +10506,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		string vec1input, vec2input;
 		if (instruction.length == 6)
 		{
-			if (ops[5] == PackedVectorFormatPackedVectorFormat4x8Bit)
+			if (ops[5] == PackedVector::FormatPackedVectorFormat4x8Bit)
 			{
 				string type = opcode == Op::OpSDotAccSat || opcode == Op::OpSUDotAccSat ? "char4" : "uchar4";
 				vec1input = join("as_type<", type, ">(", to_expression(vec1), ")");
@@ -10527,7 +10527,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 					to_unsigned_basetype(input_type1.width);
 
 			SPIRType::BaseType vec2_expected_type =
-					opcode != OpSDotAccSat ?
+					opcode != Op::OpSDotAccSat ?
 					to_unsigned_basetype(input_type2.width) :
 					to_signed_basetype(input_type2.width);
 
@@ -10639,7 +10639,7 @@ void CompilerMSL::emit_barrier(uint32_t id_exe_scope, uint32_t id_mem_scope, uin
 	// Use the wider of the two scopes (smaller value)
 	exe_scope = min(exe_scope, mem_scope);
 
-	if (msl_options.emulate_subgroups && exe_scope >= Scope::Subgroup && !id_mem_sem)
+	if (msl_options.emulate_subgroups && exe_scope >= static_cast<uint32_t>(Scope::Subgroup) && !id_mem_sem)
 		// In this case, we assume a "subgroup" size of 1. The barrier, then, is a noop.
 		return;
 
@@ -10653,7 +10653,7 @@ void CompilerMSL::emit_barrier(uint32_t id_exe_scope, uint32_t id_mem_scope, uin
 	else
 	{
 		if ((msl_options.is_ios() && msl_options.supports_msl_version(1, 2)) || msl_options.supports_msl_version(2))
-			bar_stmt = exe_scope < Scope::Subgroup ? "threadgroup_barrier" : "simdgroup_barrier";
+			bar_stmt = exe_scope < static_cast<uint32_t>(Scope::Subgroup) ? "threadgroup_barrier" : "simdgroup_barrier";
 		else
 			bar_stmt = "threadgroup_barrier";
 	}
@@ -10674,7 +10674,7 @@ void CompilerMSL::emit_barrier(uint32_t id_exe_scope, uint32_t id_mem_scope, uin
 			mem_flags += "mem_flags::mem_device";
 
 		// Fix tessellation patch function processing
-		if (is_tesc_shader() || (mem_sem & (MemorySemanticsMask::SubgroupMemory | MemorySemanticsMask::WorkgroupMemory)))
+		if (is_tesc_shader() || (mem_sem & static_cast<uint32_t>((MemorySemanticsMask::SubgroupMemory | MemorySemanticsMask::WorkgroupMemory))))
 		{
 			if (!mem_flags.empty())
 				mem_flags += " | ";
@@ -11263,7 +11263,7 @@ void CompilerMSL::emit_glsl_op(uint32_t result_type, uint32_t id, uint32_t eop, 
 	auto &restype = get<SPIRType>(result_type);
 
 	// Only precise:: preserves NaN in trancendentals (supposedly, cannot find documentation for this).
-	const auto drop_nan_inf = FPFastMathModeMask::NotIn | FPFastMathModeMask::NotNaN;
+	const auto drop_nan_inf = FPFastMathModeMask::NotInf | FPFastMathModeMask::NotNaN;
 	bool preserve_nan = (get_fp_fast_math_flags_for_op(result_type, id) & drop_nan_inf) != drop_nan_inf;
 	const char *preserve_str = preserve_nan ? "precise" : "fast";
 
