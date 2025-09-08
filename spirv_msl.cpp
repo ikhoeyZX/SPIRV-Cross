@@ -4003,7 +4003,7 @@ void CompilerMSL::add_variable_to_interface_block(StorageClass storage, const st
 					{
 						bool is_composite_type = is_matrix(mbr_type) || is_array(mbr_type) || mbr_type.basetype == SPIRType::Struct;
 						bool attribute_load_store =
-								storage == static_cast<uint32_t>(StorageClass::Input) && get_execution_model() != ExecutionModel::Fragment;
+								storage == StorageClass::Input && get_execution_model() != ExecutionModel::Fragment;
 						bool storage_is_stage_io = variable_storage_requires_stage_io(storage);
 
 						// Clip/CullDistance always need to be declared as user attributes.
@@ -4190,7 +4190,7 @@ uint32_t CompilerMSL::add_interface_block(StorageClass storage, bool patch)
 	// without explicit packing and unpacking of components. For any variables which link against the runtime
 	// in some way (vertex attributes, fragment output, etc), we'll need to deal with it somehow.
 	bool pack_components =
-	    (storage == static_cast<uint32_t>(StorageClass::Input) && get_execution_model() == ExecutionModel::Vertex) ||
+	    (storage == StorageClass::Input && get_execution_model() == ExecutionModel::Vertex) ||
 	    (storage == StorageClass::Output && get_execution_model() == ExecutionModel::Fragment) ||
 	    (storage == StorageClass::Output && get_execution_model() == ExecutionModel::Vertex && capture_output_to_buffer);
 
@@ -5770,7 +5770,7 @@ void CompilerMSL::emit_header()
 	// Floating point fast math compile declarations
 	if (msl_options.use_fast_math_pragmas && msl_options.supports_msl_version(3, 2))
 	{
-		uint32_t contract_mask = FPFastMathModeMask::AllowContract;
+		uint32_t contract_mask = static_cast<uint32_t>(FPFastMathModeMask::AllowContract);
 		uint32_t relax_mask = static_cast<uint32_t>((FPFastMathModeMask::NSZ | FPFastMathModeMask::AllowRecip | FPFastMathModeMask::AllowReassoc));
 		uint32_t fast_mask = static_cast<uint32_t>((relax_mask | FPFastMathModeMask::NotNaN | FPFastMathModeMask::NotInf));
 
