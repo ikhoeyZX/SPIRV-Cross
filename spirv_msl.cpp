@@ -2370,7 +2370,7 @@ void CompilerMSL::extract_global_variables_from_function(uint32_t func_id, std::
 			auto *p_type = &get<SPIRType>(type_id);
 			BuiltIn bi_type = BuiltIn(get_decoration(arg_id, Decoration::BuiltIn));
 
-			bool is_patch = has_decoration(arg_id, DecorationPatch) || is_patch_block(*p_type);
+			bool is_patch = has_decoration(arg_id, Decoration::Patch) || is_patch_block(*p_type);
 			bool is_block = has_decoration(p_type->self, Decoration::Block);
 			bool is_control_point_storage =
 			    !is_patch && ((is_tessellation_shader() && var.storage == StorageClass::Input) ||
@@ -2959,10 +2959,10 @@ void CompilerMSL::add_plain_variable_to_interface_block(StorageClass storage, co
 		set_member_decoration(ib_type.self, ib_mbr_idx, Decoration::Component, component);
 	}
 
-	if (get_decoration_bitset(var.self).get(DecorationIndex))
+	if (get_decoration_bitset(var.self).get(Decoration::Index))
 	{
-		uint32_t index = get_decoration(var.self, DecorationIndex);
-		set_member_decoration(ib_type.self, ib_mbr_idx, DecorationIndex, index);
+		uint32_t index = get_decoration(var.self, Decoration::Index);
+		set_member_decoration(ib_type.self, ib_mbr_idx, Decoration::Index, index);
 	}
 
 	// Mark the member as builtin if needed
@@ -3127,13 +3127,13 @@ void CompilerMSL::add_composite_variable_to_interface_block(StorageClass storage
 		{
 			// Declare the Clip/CullDistance as [[user(clip/cullN)]].
 			set_member_decoration(ib_type.self, ib_mbr_idx, Decoration::BuiltIn, builtin);
-			set_member_decoration(ib_type.self, ib_mbr_idx, DecorationIndex, i);
+			set_member_decoration(ib_type.self, ib_mbr_idx, Decoration::Index, i);
 		}
 
-		if (get_decoration_bitset(var.self).get(DecorationIndex))
+		if (get_decoration_bitset(var.self).get(Decoration::Index))
 		{
-			uint32_t index = get_decoration(var.self, DecorationIndex);
-			set_member_decoration(ib_type.self, ib_mbr_idx, DecorationIndex, index);
+			uint32_t index = get_decoration(var.self, Decoration::Index);
+			set_member_decoration(ib_type.self, ib_mbr_idx, Decoration::Index, index);
 		}
 
 		if (storage != StorageClass::Input || !pull_model_inputs.count(var.self))
@@ -3384,7 +3384,7 @@ void CompilerMSL::add_composite_member_variable_to_interface_block(StorageClass 
 		{
 			// Declare the Clip/CullDistance as [[user(clip/cullN)]].
 			set_member_decoration(ib_type.self, ib_mbr_idx, Decoration::BuiltIn, builtin);
-			set_member_decoration(ib_type.self, ib_mbr_idx, DecorationIndex, i);
+			set_member_decoration(ib_type.self, ib_mbr_idx, Decoration::Index, i);
 		}
 
 		if (has_member_decoration(var_type.self, mbr_idx, Decoration::Component))
@@ -4245,7 +4245,7 @@ uint32_t CompilerMSL::add_interface_block(StorageClass storage, bool patch)
 			}
 		}
 
-		bool filter_patch_decoration = (has_decoration(var_id, DecorationPatch) || is_patch_block(type)) == patch;
+		bool filter_patch_decoration = (has_decoration(var_id, Decoration::Patch) || is_patch_block(type)) == patch;
 
 		bool hidden = is_hidden_variable(var, incl_builtins);
 
@@ -8291,7 +8291,7 @@ void CompilerMSL::emit_resources()
 		const char *topology = "";
 		if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::OutputTrianglesEXT)))
 			topology = "topology::triangle";
-		else if (execution.flags.get(ExecutionMode::OutputLinesEXT))
+		else if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::OutputLinesEXT)))
 			topology = "topology::line";
 		else if (execution.flags.get(ExecutionMode::OutputPoints))
 			topology = "topology::point";
@@ -8570,7 +8570,7 @@ bool CompilerMSL::emit_tessellation_io_load(uint32_t result_type_id, uint32_t id
 	if (ptr_type.storage == StorageClass::Output && is_tese_shader())
 		return false;
 
-	if (has_decoration(ptr, DecorationPatch))
+	if (has_decoration(ptr, Decoration::Patch))
 		return false;
 	bool ptr_is_io_variable = ir.ids[ptr].get_type() == TypeVariable;
 
@@ -8898,7 +8898,7 @@ bool CompilerMSL::emit_tessellation_access_chain(const uint32_t *ops, uint32_t l
 		is_arrayed = !type.array.empty();
 
 		flatten_composites = variable_storage_requires_stage_io(var->storage);
-		patch = has_decoration(ops[2], DecorationPatch) || is_patch_block(type);
+		patch = has_decoration(ops[2], Decoration::Patch) || is_patch_block(type);
 
 		// Should match strip_array in add_interface_block.
 		flat_data = var->storage == StorageClass::Input || (var->storage == StorageClass::Output && is_tesc_shader());
@@ -13087,7 +13087,7 @@ string CompilerMSL::to_buffer_size_expression(uint32_t id)
 	}
 }
 
-// Checks whether the type is a Block all of whose members have DecorationPatch.
+// Checks whether the type is a Block all of whose members have Decoration::Patch.
 bool CompilerMSL::is_patch_block(const SPIRType &type)
 {
 	if (!has_decoration(type.self, Decoration::Block))
@@ -13095,7 +13095,7 @@ bool CompilerMSL::is_patch_block(const SPIRType &type)
 
 	for (uint32_t i = 0; i < type.member_types.size(); i++)
 	{
-		if (!has_member_decoration(type.self, i, DecorationPatch))
+		if (!has_member_decoration(type.self, i, Decoration::Patch))
 			return false;
 	}
 
@@ -13470,14 +13470,14 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 				return string(" [[") + builtin_qualifier(builtin) + "]]" + (mbr_type.array.empty() ? "" : " ");
 
 			case BuiltIn::ClipDistance:
-				if (has_member_decoration(type.self, index, DecorationIndex))
-					return join(" [[user(clip", get_member_decoration(type.self, index, DecorationIndex), ")]]");
+				if (has_member_decoration(type.self, index, Decoration::Index))
+					return join(" [[user(clip", get_member_decoration(type.self, index, Decoration::Index), ")]]");
 				else
 					return string(" [[") + builtin_qualifier(builtin) + "]]" + (mbr_type.array.empty() ? "" : " ");
 
 			case BuiltIn::CullDistance:
-				if (has_member_decoration(type.self, index, DecorationIndex))
-					return join(" [[user(cull", get_member_decoration(type.self, index, DecorationIndex), ")]]");
+				if (has_member_decoration(type.self, index, Decoration::Index))
+					return join(" [[user(cull", get_member_decoration(type.self, index, Decoration::Index), ")]]");
 				else
 					return string(" [[") + builtin_qualifier(builtin) + "]]" + (mbr_type.array.empty() ? "" : " ");
 
@@ -13609,9 +13609,9 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 				break;
 
 			case BuiltIn::ClipDistance:
-				return join(" [[user(clip", get_member_decoration(type.self, index, DecorationIndex), ")]]");
+				return join(" [[user(clip", get_member_decoration(type.self, index, Decoration::Index), ")]]");
 			case BuiltIn::CullDistance:
-				return join(" [[user(cull", get_member_decoration(type.self, index, DecorationIndex), ")]]");
+				return join(" [[user(cull", get_member_decoration(type.self, index, Decoration::Index), ")]]");
 
 			default:
 				break;
@@ -13716,13 +13716,13 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 		// Metal will likely complain about missing color attachments, too.
 		if (locn != k_unknown_location && !(msl_options.enable_frag_output_mask & (1 << locn)))
 			return "";
-		if (locn != k_unknown_location && has_member_decoration(type.self, index, DecorationIndex))
-			return join(" [[color(", locn, "), index(", get_member_decoration(type.self, index, DecorationIndex),
+		if (locn != k_unknown_location && has_member_decoration(type.self, index, Decoration::Index))
+			return join(" [[color(", locn, "), index(", get_member_decoration(type.self, index, Decoration::Index),
 			            ")]]");
 		else if (locn != k_unknown_location)
 			return join(" [[color(", locn, ")]]");
-		else if (has_member_decoration(type.self, index, DecorationIndex))
-			return join(" [[index(", get_member_decoration(type.self, index, DecorationIndex), ")]]");
+		else if (has_member_decoration(type.self, index, Decoration::Index))
+			return join(" [[index(", get_member_decoration(type.self, index, Decoration::Index), ")]]");
 		else
 			return "";
 	}
@@ -13904,7 +13904,7 @@ bool CompilerMSL::entry_point_requires_const_device_buffers() const
 	return (get_execution_model() == ExecutionModel::Fragment && !has_descriptor_side_effects) ||
 	       (entry_point_returns_stage_output() &&
 	        (get_execution_model() == ExecutionModel::Vertex ||
-	         get_execution_model() == ExecutionModelTessellationEvaluation));
+	         get_execution_model() == ExecutionModel::TessellationEvaluation));
 }
 
 // Returns the type declaration for a function, including the
@@ -13933,7 +13933,7 @@ string CompilerMSL::func_type_decl(SPIRType &type)
 	case ExecutionModel::TessellationEvaluation:
 		if (!msl_options.supports_msl_version(1, 2))
 			SPIRV_CROSS_THROW("Tessellation requires Metal 1.2.");
-		if (execution.flags.get(ExecutionMode::Isolines))
+		if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::Isolines)))
 			SPIRV_CROSS_THROW("Metal does not support isoline tessellation.");
 		if (msl_options.is_ios())
 			entry_type = join("[[ patch(", is_tessellating_triangles() ? "triangle" : "quad", ") ]] vertex");
@@ -13947,7 +13947,7 @@ string CompilerMSL::func_type_decl(SPIRType &type)
 	case ExecutionModel::TessellationControl:
 		if (!msl_options.supports_msl_version(1, 2))
 			SPIRV_CROSS_THROW("Tessellation requires Metal 1.2.");
-		if (execution.flags.get(ExecutionMode::Isolines))
+		if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::Isolines)))
 			SPIRV_CROSS_THROW("Metal does not support isoline tessellation.");
 		/* fallthrough */
 	case ExecutionModel::GLCompute:
@@ -13970,12 +13970,12 @@ string CompilerMSL::func_type_decl(SPIRType &type)
 
 bool CompilerMSL::is_tesc_shader() const
 {
-	return get_execution_model() == ExecutionModelTessellationControl;
+	return get_execution_model() == ExecutionModel::TessellationControl;
 }
 
 bool CompilerMSL::is_tese_shader() const
 {
-	return get_execution_model() == ExecutionModelTessellationEvaluation;
+	return get_execution_model() == ExecutionModel::TessellationEvaluation;
 }
 
 bool CompilerMSL::is_mesh_shader() const
@@ -13986,7 +13986,7 @@ bool CompilerMSL::is_mesh_shader() const
 bool CompilerMSL::uses_explicit_early_fragment_test()
 {
 	auto &ep_flags = get_entry_point().flags;
-	return ep_flags.get(ExecutionMode::EarlyFragmentTests) || ep_flags.get(ExecutionMode::PostDepthCoverage);
+	return ep_flags.get(static_cast<uint32_t>(ExecutionMode::EarlyFragmentTests)) || ep_flags.get(static_cast<uint32_t>(ExecutionMode::PostDepthCoverage));
 }
 
 // In MSL, address space qualifiers are required for all pointer or reference variables
@@ -14004,12 +14004,12 @@ bool CompilerMSL::decoration_flags_signal_volatile(const Bitset &flags) const
 	// Using volatile for coherent pre-3.2 is definitely not correct, but it's something.
 	// MSL 3.2 adds actual coherent qualifiers.
 	return flags.get(DecorationVolatile) ||
-	       (flags.get(Decoration::Coherent) && !msl_options.supports_msl_version(3, 2));
+	       (flags.get(static_cast<uint32_t>(Decoration::Coherent)) && !msl_options.supports_msl_version(3, 2));
 }
 
 bool CompilerMSL::decoration_flags_signal_coherent(const Bitset &flags) const
 {
-	return flags.get(Decoration::Coherent) && msl_options.supports_msl_version(3, 2);
+	return flags.get(static_cast<uint32_t>(Decoration::Coherent)) && msl_options.supports_msl_version(3, 2);
 }
 
 string CompilerMSL::get_type_address_space(const SPIRType &type, uint32_t id, bool argument)
@@ -14097,7 +14097,7 @@ string CompilerMSL::get_type_address_space(const SPIRType &type, uint32_t id, bo
 		if (is_tese_shader() && msl_options.raw_buffer_tese_input && var)
 		{
 			bool is_stage_in = var->basevariable == stage_in_ptr_var_id;
-			bool is_patch_stage_in = has_decoration(var->self, DecorationPatch);
+			bool is_patch_stage_in = has_decoration(var->self, Decoration::Patch);
 			bool is_builtin = has_decoration(var->self, Decoration::BuiltIn);
 			BuiltIn builtin = (BuiltIn)get_decoration(var->self, Decoration::BuiltIn);
 			bool is_tess_level = is_builtin && (builtin == BuiltIn::TessLevelOuter || builtin == BuiltIn::TessLevelInner);
@@ -14176,7 +14176,7 @@ const char *CompilerMSL::to_restrict(uint32_t id, bool space)
 	else
 		flags = get_decoration_bitset(id);
 
-	return flags.get(Decoration::Restrict) || flags.get(Decoration::RestrictPointerEXT) ?
+	return flags.get(static_cast<uint32_t>(Decoration::Restrict)) || flags.get(static_cast<uint32_t>(Decoration::RestrictPointerEXT)) ?
 	       (space ? "__restrict " : "__restrict") : "";
 }
 
@@ -14273,14 +14273,14 @@ bool CompilerMSL::is_sample_rate() const
 	auto &caps = get_declared_capabilities();
 	return get_execution_model() == ExecutionModel::Fragment &&
 	       (msl_options.force_sample_rate_shading ||
-	        std::find(caps.begin(), caps.end(), CapabilitySampleRateShading) != caps.end() ||
+	        std::find(caps.begin(), caps.end(), Capability::SampleRateShading) != caps.end() ||
 	        (msl_options.use_framebuffer_fetch_subpasses && need_subpass_input_ms));
 }
 
 bool CompilerMSL::is_intersection_query() const
 {
 	auto &caps = get_declared_capabilities();
-	return std::find(caps.begin(), caps.end(), CapabilityRayQueryKHR) != caps.end();
+	return std::find(caps.begin(), caps.end(), Capability::RayQueryKHR) != caps.end();
 }
 
 void CompilerMSL::entry_point_args_builtin(string &ep_args)
@@ -14301,7 +14301,7 @@ void CompilerMSL::entry_point_args_builtin(string &ep_args)
 		{
 			// If the builtin is not part of the active input builtin set, don't emit it.
 			// Relevant for multiple entry-point modules which might declare unused builtins.
-			if (!active_input_builtins.get(bi_type) || !interface_variable_exists_in_entry_point(var_id))
+			if (!active_input_builtins.get(static_cast<uint32_t>(bi_type)) || !interface_variable_exists_in_entry_point(var_id))
 				return;
 
 			// Remember this variable. We may need to correct its type.
@@ -14322,7 +14322,7 @@ void CompilerMSL::entry_point_args_builtin(string &ep_args)
 					ep_args += builtin_type_decl(bi_type, var_id) + " " + to_expression(var_id);
 
 				ep_args += string(" [[") + builtin_qualifier(bi_type);
-				if (bi_type == BuiltIn::SampleMask && get_entry_point().flags.get(ExecutionMode::PostDepthCoverage))
+				if (bi_type == BuiltIn::SampleMask && get_entry_point().flags.get(static_cast<uint32_t>(ExecutionMode::PostDepthCoverage)))
 				{
 					if (!msl_options.supports_msl_version(2))
 						SPIRV_CROSS_THROW("Post-depth coverage requires MSL 2.0.");
@@ -15087,7 +15087,7 @@ void CompilerMSL::fix_up_shader_inputs_outputs()
 		if (!interface_variable_exists_in_entry_point(var.self))
 			return;
 
-		if (var.storage == StorageClass::Input && is_builtin_variable(var) && active_input_builtins.get(bi_type))
+		if (var.storage == StorageClass::Input && is_builtin_variable(var) && active_input_builtins.get(static_cast<uint32_t>(bi_type)))
 		{
 			switch (bi_type)
 			{
@@ -15571,7 +15571,7 @@ void CompilerMSL::fix_up_shader_inputs_outputs()
 			}
 		}
 		else if (var.storage == StorageClass::Output && get_execution_model() == ExecutionModel::Fragment &&
-				 is_builtin_variable(var) && active_output_builtins.get(bi_type))
+				 is_builtin_variable(var) && active_output_builtins.get(static_cast<uint32_t>(bi_type)))
 		{
 			switch (bi_type)
 			{
@@ -17837,7 +17837,7 @@ string CompilerMSL::builtin_qualifier(BuiltIn builtin)
 
 	// Fragment function out
 	case BuiltIn::FragDepth:
-		if (execution.flags.get(ExecutionMode::DepthGreater))
+		if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::DepthGreater)))
 			return "depth(greater)";
 		else if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::DepthLess)))
 			return "depth(less)";
@@ -19719,7 +19719,7 @@ void CompilerMSL::analyze_argument_buffers()
 
 				bool type_is_array = !type.array.empty();
 				uint32_t sampler_type_id = ir.increase_bound_by(type_is_array ? 2 : 1);
-				auto &new_sampler_type = set<SPIRType>(sampler_type_id, OpTypeSampler);
+				auto &new_sampler_type = set<SPIRType>(sampler_type_id, Op::OpTypeSampler);
 				new_sampler_type.basetype = SPIRType::Sampler;
 				new_sampler_type.storage = StorageClass::UniformConstant;
 
@@ -20007,7 +20007,7 @@ uint32_t CompilerMSL::get_fp_fast_math_flags(bool incl_ops) const
 		fp_flags &= ~(static_cast<uint32_t>(FPFastMathModeMask::NSZ | FPFastMathModeMask::NotInf | FPFastMathModeMask::NotNaN));
 
 	if (ep.flags.get(static_cast<uint32_t>(ExecutionMode::ContractionOff)))
-		fp_flags &= ~(FPFastMathModeMask::AllowContract);
+		fp_flags &= ~(static_cast<uint32_t>(FPFastMathModeMask::AllowContract));
 
 	for (auto &fp_pair : ep.fp_fast_math_defaults)
 		if (fp_pair.second)
@@ -20132,10 +20132,10 @@ void CompilerMSL::emit_mesh_outputs()
 					break;
 				}
 
-				if (has_member_decoration(type_vert.self, index, DecorationIndex))
+				if (has_member_decoration(type_vert.self, index, Decoration::Index))
 				{
 					// Declare the Clip/CullDistance as [[user(clip/cullN)]].
-					const uint32_t orig_index = get_member_decoration(type_vert.self, index, DecorationIndex);
+					const uint32_t orig_index = get_member_decoration(type_vert.self, index, Decoration::Index);
 					access += "[" + to_string(orig_index) + "]";
 					statement("spvV.", builtin_to_glsl(builtin, StorageClass::Output), "[", orig_index, "] = ", to_name(orig_var), "[spvVI]", access, ";");
 				}
@@ -20176,7 +20176,7 @@ void CompilerMSL::emit_mesh_outputs()
 				statement("spvMesh.set_index(spvPI * 3u + 1u, gl_PrimitiveTriangleIndicesEXT[spvPI].y);");
 				statement("spvMesh.set_index(spvPI * 3u + 2u, gl_PrimitiveTriangleIndicesEXT[spvPI].z);");
 			}
-			else if (mode.flags.get(ExecutionMode::OutputLinesEXT))
+			else if (mode.flags.get(static_cast<uint32_t>(ExecutionMode::OutputLinesEXT)))
 			{
 				statement("spvMesh.set_index(spvPI * 2u + 0u, gl_PrimitiveLineIndicesEXT[spvPI].x);");
 				statement("spvMesh.set_index(spvPI * 2u + 1u, gl_PrimitiveLineIndicesEXT[spvPI].y);");
