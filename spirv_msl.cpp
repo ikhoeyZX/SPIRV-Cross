@@ -10670,17 +10670,17 @@ void CompilerMSL::emit_barrier(uint32_t id_exe_scope, uint32_t id_mem_scope, uin
 		// For tesc shaders, this also affects objects in the Output storage class.
 		// Since in Metal, these are placed in a device buffer, we have to sync device memory here.
 		if (is_tesc_shader() ||
-		    (mem_sem & (MemorySemanticsUniformMemoryMask | MemorySemanticsCrossWorkgroupMemoryMask)))
+		    (mem_sem & (MemorySemanticsMask::UniformMemory | MemorySemanticsMask::CrossWorkgroupMemory)))
 			mem_flags += "mem_flags::mem_device";
 
 		// Fix tessellation patch function processing
-		if (is_tesc_shader() || (mem_sem & (MemorySemanticsSubgroupMemoryMask | MemorySemanticsWorkgroupMemoryMask)))
+		if (is_tesc_shader() || (mem_sem & (MemorySemanticsMask::SubgroupMemory | MemorySemanticsMask::WorkgroupMemory)))
 		{
 			if (!mem_flags.empty())
 				mem_flags += " | ";
 			mem_flags += "mem_flags::mem_threadgroup";
 		}
-		if (mem_sem & MemorySemanticsImageMemoryMask)
+		if (mem_sem & MemorySemanticsMask::ImageMemory)
 		{
 			if (!mem_flags.empty())
 				mem_flags += " | ";
@@ -10694,14 +10694,14 @@ void CompilerMSL::emit_barrier(uint32_t id_exe_scope, uint32_t id_mem_scope, uin
 	}
 	else
 	{
-		if ((mem_sem & (MemorySemanticsUniformMemoryMask | MemorySemanticsCrossWorkgroupMemoryMask)) &&
-		    (mem_sem & (MemorySemanticsSubgroupMemoryMask | MemorySemanticsWorkgroupMemoryMask)))
+		if ((mem_sem & (MemorySemanticsMask::UniformMemory | MemorySemanticsMask::CrossWorkgroupMemory)) &&
+		    (mem_sem & (MemorySemanticsMask::SubgroupMemory | MemorySemanticsMask::WorkgroupMemory)))
 			bar_stmt += "mem_flags::mem_device_and_threadgroup";
-		else if (mem_sem & (MemorySemanticsUniformMemoryMask | MemorySemanticsCrossWorkgroupMemoryMask))
+		else if (mem_sem & (MemorySemanticsMask::UniformMemory | MemorySemanticsMask::CrossWorkgroupMemory))
 			bar_stmt += "mem_flags::mem_device";
-		else if (mem_sem & (MemorySemanticsSubgroupMemoryMask | MemorySemanticsWorkgroupMemoryMask))
+		else if (mem_sem & (MemorySemanticsMask::SubgroupMemory | MemorySemanticsMask::WorkgroupMemory))
 			bar_stmt += "mem_flags::mem_threadgroup";
-		else if (mem_sem & MemorySemanticsImageMemoryMask)
+		else if (mem_sem & MemorySemanticsMask::ImageMemory)
 			bar_stmt += "mem_flags::mem_texture";
 		else
 			bar_stmt += "mem_flags::mem_none";
@@ -10712,18 +10712,18 @@ void CompilerMSL::emit_barrier(uint32_t id_exe_scope, uint32_t id_mem_scope, uin
 		// If there's no device-related memory in the barrier, demote to workgroup scope.
 		// glslang seems to emit device scope even for memoryBarrierShared().
 		if (mem_scope == ScopeDevice &&
-		    (mem_sem & (MemorySemanticsUniformMemoryMask |
-		                MemorySemanticsImageMemoryMask |
-		                MemorySemanticsCrossWorkgroupMemoryMask)) == 0)
+		    (mem_sem & (MemorySemanticsMask::UniformMemory |
+		                MemorySemanticsMask::ImageMemory |
+		                MemorySemanticsMask::CrossWorkgroupMemory)) == 0)
 		{
 			mem_scope = Scope::Workgroup;
 		}
 
 		// MSL 3.2 only supports seq_cst or relaxed.
-		if (mem_sem & (MemorySemanticsAcquireReleaseMask |
-		               MemorySemanticsAcquireMask |
-		               MemorySemanticsReleaseMask |
-		               MemorySemanticsSequentiallyConsistentMask))
+		if (mem_sem & (MemorySemanticsMask::AcquireReleaseMask |
+		               MemorySemanticsMask::Acquire |
+		               MemorySemanticsMask::Release |
+		               MemorySemanticsMask::SequentiallyConsistent))
 		{
 			bar_stmt += ", memory_order_seq_cst";
 		}
@@ -10734,19 +10734,19 @@ void CompilerMSL::emit_barrier(uint32_t id_exe_scope, uint32_t id_mem_scope, uin
 
 		switch (mem_scope)
 		{
-		case ScopeDevice:
+		case Scope::Device:
 			bar_stmt += ", thread_scope_device";
 			break;
 
-		case ScopeWorkgroup:
+		case Scope::Workgroup:
 			bar_stmt += ", thread_scope_threadgroup";
 			break;
 
-		case ScopeSubgroup:
+		case Scope::Subgroup:
 			bar_stmt += ", thread_scope_subgroup";
 			break;
 
-		case ScopeInvocation:
+		case Scope::Invocation:
 			bar_stmt += ", thread_scope_thread";
 			break;
 
@@ -10771,9 +10771,9 @@ static bool storage_class_array_is_thread(StorageClass storage)
 	{
 	case StorageClass::Input:
 	case StorageClass::Output:
-	case StorageClassGeneric:
-	case StorageClassFunction:
-	case StorageClassPrivate:
+	case StorageClass::Generic:
+	case StorageClass::Function:
+	case StorageClass::Private:
 		return true;
 
 	default:
@@ -14052,7 +14052,7 @@ string CompilerMSL::get_type_address_space(const SPIRType &type, uint32_t id, bo
 		break;
 	}
 
-	case StorageClassPhysicalStorageBuffer:
+	case StorageClass::PhysicalStorageBuffer:
 		// We cannot fully trust NonWritable coming from glslang due to a bug in buffer_reference handling.
 		// There isn't much gain in emitting const in C++ languages anyway.
 		addr_space = "device";
@@ -14060,7 +14060,7 @@ string CompilerMSL::get_type_address_space(const SPIRType &type, uint32_t id, bo
 
 	case StorageClass::Uniform:
 	case StorageClass::UniformConstant:
-	case StorageClassPushConstant:
+	case StorageClass::PushConstant:
 		if (type.basetype == SPIRType::Struct)
 		{
 			bool ssbo = has_decoration(type.self, Decoration::BufferBlock);
@@ -14085,8 +14085,8 @@ string CompilerMSL::get_type_address_space(const SPIRType &type, uint32_t id, bo
 		}
 		break;
 
-	case StorageClassFunction:
-	case StorageClassGeneric:
+	case StorageClass::Function:
+	case StorageClass::Generic:
 		break;
 
 	case StorageClass::Input:
@@ -14134,7 +14134,7 @@ string CompilerMSL::get_type_address_space(const SPIRType &type, uint32_t id, bo
 			addr_space = "threadgroup";
 		break;
 
-	case StorageClassTaskPayloadWorkgroupEXT:
+	case StorageClass::TaskPayloadWorkgroupEXT:
 		if (is_mesh_shader())
 			addr_space = "const object_data";
 		else
@@ -14176,7 +14176,7 @@ const char *CompilerMSL::to_restrict(uint32_t id, bool space)
 	else
 		flags = get_decoration_bitset(id);
 
-	return flags.get(DecorationRestrict) || flags.get(DecorationRestrictPointerEXT) ?
+	return flags.get(Decoration::Restrict) || flags.get(Decoration::RestrictPointerEXT) ?
 	       (space ? "__restrict " : "__restrict") : "";
 }
 
