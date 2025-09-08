@@ -10716,7 +10716,7 @@ void CompilerMSL::emit_barrier(uint32_t id_exe_scope, uint32_t id_mem_scope, uin
 		                MemorySemanticsImageMemoryMask |
 		                MemorySemanticsCrossWorkgroupMemoryMask)) == 0)
 		{
-			mem_scope = ScopeWorkgroup;
+			mem_scope = Scope::Workgroup;
 		}
 
 		// MSL 3.2 only supports seq_cst or relaxed.
@@ -13423,7 +13423,7 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 					return "";
 				return string(" [[") + builtin_qualifier(builtin) + "]]";
 
-			case BuiltInDrawIndex:
+			case BuiltIn::DrawIndex:
 				SPIRV_CROSS_THROW("DrawIndex is not supported in MSL.");
 
 			default:
@@ -13517,7 +13517,7 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 				if (msl_options.emulate_subgroups)
 					return "";
 				return string(" [[") + builtin_qualifier(builtin) + "]]" + (mbr_type.array.empty() ? "" : " ");
-			case BuiltInPatchVertices:
+			case BuiltIn::PatchVertices:
 				return "";
 			// Others come from stage input.
 			default:
@@ -13558,7 +13558,7 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 			case BuiltIn::PrimitiveId:
 			case BuiltIn::TessCoord:
 				return string(" [[") + builtin_qualifier(builtin) + "]]";
-			case BuiltInPatchVertices:
+			case BuiltIn::PatchVertices:
 				return "";
 			// Others come from stage input.
 			default:
@@ -14226,7 +14226,7 @@ bool CompilerMSL::is_direct_input_builtin(BuiltIn bi_type)
 	case BuiltIn::PointSize:
 	case BuiltIn::ClipDistance:
 	case BuiltIn::CullDistance:
-	case BuiltInPatchVertices:
+	case BuiltIn::PatchVertices:
 		return false;
 	case BuiltIn::InvocationId:
 	case BuiltIn::PrimitiveId:
@@ -14249,7 +14249,7 @@ bool CompilerMSL::is_direct_input_builtin(BuiltIn bi_type)
 	case BuiltIn::NumSubgroups:
 		return !msl_options.emulate_subgroups;
 	// Any stage function in
-	case BuiltInDeviceIndex:
+	case BuiltIn::DeviceIndex:
 	case BuiltIn::SubgroupEqMask:
 	case BuiltIn::SubgroupGeMask:
 	case BuiltIn::SubgroupGtMask:
@@ -15129,7 +15129,7 @@ void CompilerMSL::fix_up_shader_inputs_outputs()
 					          ", spvIndirectParams[1] - 1);");
 				});
 				break;
-			case BuiltInPatchVertices:
+			case BuiltIn::PatchVertices:
 				if (is_tese_shader())
 				{
 					if (msl_options.raw_buffer_tese_input)
@@ -15469,7 +15469,7 @@ void CompilerMSL::fix_up_shader_inputs_outputs()
 					});
 				}
 				break;
-			case BuiltInDeviceIndex:
+			case BuiltIn::DeviceIndex:
 				// Metal pipelines belong to the devices which create them, so we'll
 				// need to create a MTLPipelineState for every MTLDevice in a grouped
 				// VkDevice. We can assume, then, that the device index is constant.
@@ -17068,7 +17068,7 @@ void CompilerMSL::emit_subgroup_op(const Instruction &i)
 	{
 		// In this mode, only the GroupNonUniform cap is supported. The only op
 		// we need to handle, then, is OpGroupNonUniformElect.
-		if (op != OpGroupNonUniformElect)
+		if (op != Op::OpGroupNonUniformElect)
 			SPIRV_CROSS_THROW("Subgroup emulation does not support operations other than Elect.");
 		// In this mode, the subgroup size is assumed to be one, so every invocation
 		// is elected.
@@ -17168,13 +17168,13 @@ void CompilerMSL::emit_subgroup_op(const Instruction &i)
 	// These instructions are always quad-scoped and thus do not have a scope operand.
 	case Op::OpGroupNonUniformQuadAllKHR:
 	case Op::OpGroupNonUniformQuadAnyKHR:
-		scope = ScopeSubgroup;
+		scope = Scope::Subgroup;
 		break;
 	default:
 		scope = static_cast<Scope>(evaluate_constant_u32(ops[op_idx++]));
 		break;
 	}
-	if (scope != ScopeSubgroup)
+	if (scope != Scope::Subgroup)
 		SPIRV_CROSS_THROW("Only subgroup scope is supported.");
 
 	switch (op)
@@ -17298,13 +17298,13 @@ void CompilerMSL::emit_subgroup_op(const Instruction &i)
 case Op::OpGroupNonUniform##op: \
 	{ \
 		auto operation = static_cast<GroupOperation>(ops[op_idx++]); \
-		if (operation == GroupOperationReduce) \
+		if (operation == GroupOperation::Reduce) \
 			emit_unary_func_op(result_type, id, ops[op_idx], "simd_" #msl_op); \
-		else if (operation == GroupOperationInclusiveScan) \
+		else if (operation == GroupOperation::InclusiveScan) \
 			emit_unary_func_op(result_type, id, ops[op_idx], "simd_prefix_inclusive_" #msl_op); \
-		else if (operation == GroupOperationExclusiveScan) \
+		else if (operation == GroupOperation::ExclusiveScan) \
 			emit_unary_func_op(result_type, id, ops[op_idx], "simd_prefix_exclusive_" #msl_op); \
-		else if (operation == GroupOperationClusteredReduce) \
+		else if (operation == GroupOperation::ClusteredReduce) \
 		{ \
 			uint32_t cluster_size = evaluate_constant_u32(ops[op_idx + 1]); \
 			if (get_execution_model() != ExecutionModel::Fragment || msl_options.supports_msl_version(2, 2)) \
@@ -17326,13 +17326,13 @@ case Op::OpGroupNonUniform##op: \
 case Op::OpGroupNonUniform##op: \
 	{ \
 		auto operation = static_cast<GroupOperation>(ops[op_idx++]); \
-		if (operation == GroupOperationReduce) \
+		if (operation == GroupOperation::Reduce) \
 			emit_unary_func_op(result_type, id, ops[op_idx], "simd_" #msl_op); \
-		else if (operation == GroupOperationInclusiveScan) \
+		else if (operation == GroupOperation::InclusiveScan) \
 			SPIRV_CROSS_THROW("Metal doesn't support InclusiveScan for OpGroupNonUniform" #op "."); \
-		else if (operation == GroupOperationExclusiveScan) \
+		else if (operation == GroupOperation::ExclusiveScan) \
 			SPIRV_CROSS_THROW("Metal doesn't support ExclusiveScan for OpGroupNonUniform" #op "."); \
-		else if (operation == GroupOperationClusteredReduce) \
+		else if (operation == GroupOperation::ClusteredReduce) \
 		{ \
 			uint32_t cluster_size = evaluate_constant_u32(ops[op_idx + 1]); \
 			if (get_execution_model() != ExecutionModel::Fragment || msl_options.supports_msl_version(2, 2)) \
@@ -17348,13 +17348,13 @@ case Op::OpGroupNonUniform##op: \
 case Op::OpGroupNonUniform##op: \
 	{ \
 		auto operation = static_cast<GroupOperation>(ops[op_idx++]); \
-		if (operation == GroupOperationReduce) \
+		if (operation == GroupOperation::Reduce) \
 			emit_unary_func_op_cast(result_type, id, ops[op_idx], "simd_" #msl_op, type, type); \
-		else if (operation == GroupOperationInclusiveScan) \
+		else if (operation == GroupOperation::InclusiveScan) \
 			SPIRV_CROSS_THROW("Metal doesn't support InclusiveScan for OpGroupNonUniform" #op "."); \
-		else if (operation == GroupOperationExclusiveScan) \
+		else if (operation == GroupOperation::ExclusiveScan) \
 			SPIRV_CROSS_THROW("Metal doesn't support ExclusiveScan for OpGroupNonUniform" #op "."); \
-		else if (operation == GroupOperationClusteredReduce) \
+		else if (operation == GroupOperation::ClusteredReduce) \
 		{ \
 			uint32_t cluster_size = evaluate_constant_u32(ops[op_idx + 1]); \
 			if (get_execution_model() != ExecutionModel::Fragment || msl_options.supports_msl_version(2, 2)) \
@@ -17631,7 +17631,7 @@ string CompilerMSL::builtin_to_glsl(BuiltIn builtin, StorageClass storage)
 		{
 			SPIRV_CROSS_THROW("BaseInstance requires Metal 1.1 and Mac or Apple A9+ hardware.");
 		}
-	case BuiltInDrawIndex:
+	case BuiltIn::DrawIndex:
 		SPIRV_CROSS_THROW("DrawIndex is not supported in MSL.");
 
 	// When used in the entry function, output builtins are qualified with output struct name.
@@ -17743,7 +17743,7 @@ string CompilerMSL::builtin_qualifier(BuiltIn builtin)
 		return "instance_id";
 	case BuiltIn::BaseInstance:
 		return "base_instance";
-	case BuiltInDrawIndex:
+	case BuiltIn::DrawIndex:
 		SPIRV_CROSS_THROW("DrawIndex is not supported in MSL.");
 
 	// Vertex function out
@@ -17777,7 +17777,7 @@ string CompilerMSL::builtin_qualifier(BuiltIn builtin)
 			SPIRV_CROSS_THROW("InvocationId is computed manually with multi-patch workgroups in MSL.");
 		}
 		return "thread_index_in_threadgroup";
-	case BuiltInPatchVertices:
+	case BuiltIn::PatchVertices:
 		// Shouldn't be reached.
 		SPIRV_CROSS_THROW("PatchVertices is derived from the auxiliary buffer in MSL.");
 	case BuiltIn::PrimitiveId:
@@ -17909,8 +17909,8 @@ string CompilerMSL::builtin_qualifier(BuiltIn builtin)
 				SPIRV_CROSS_THROW("thread_index_in_simdgroup requires Metal 2.2 in fragment shaders.");
 			return "thread_index_in_simdgroup";
 		}
-		else if (execution.model == ExecutionModelKernel || execution.model == ExecutionModel::GLCompute ||
-		         execution.model == ExecutionModelTessellationControl ||
+		else if (execution.model == ExecutionModel::Kernel || execution.model == ExecutionModel::GLCompute ||
+		         execution.model == ExecutionModel::TessellationControl ||
 		         (execution.model == ExecutionModel::Vertex && msl_options.vertex_for_tessellation))
 		{
 			// We are generating a Metal kernel function.
@@ -17963,7 +17963,7 @@ string CompilerMSL::builtin_type_decl(BuiltIn builtin, uint32_t id)
 		return "uint";
 	case BuiltIn::BaseInstance:
 		return "uint";
-	case BuiltInDrawIndex:
+	case BuiltIn::DrawIndex:
 		SPIRV_CROSS_THROW("DrawIndex is not supported in MSL.");
 
 	// Vertex function out
@@ -17984,7 +17984,7 @@ string CompilerMSL::builtin_type_decl(BuiltIn builtin, uint32_t id)
 	// Tess. control function in
 	case BuiltIn::InvocationId:
 		return "uint";
-	case BuiltInPatchVertices:
+	case BuiltIn::PatchVertices:
 		return "uint";
 	case BuiltIn::PrimitiveId:
 		return "uint";
@@ -18054,7 +18054,7 @@ string CompilerMSL::builtin_type_decl(BuiltIn builtin, uint32_t id)
 	case BuiltIn::SubgroupLtMask:
 		return "uint4";
 
-	case BuiltInDeviceIndex:
+	case BuiltIn::DeviceIndex:
 		return "int";
 
 	case BuiltIn::PrimitivePointIndicesEXT:
