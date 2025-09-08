@@ -250,7 +250,7 @@ bool CompilerMSL::builtin_translates_to_nonarray(spv::BuiltIn builtin) const
 void CompilerMSL::build_implicit_builtins()
 {
 	bool need_sample_pos = active_input_builtins.get(static_cast<uint32_t>(BuiltIn::SamplePosition));
-	bool need_vertex_params = capture_output_to_buffer && get_execution_model() == ExecutionModel::Vertex &&
+	bool need_vertex_params = capture_output_to_buffer && get_execution_model() == static_cast<uint32_t>(ExecutionModel::Vertex) &&
 	                          !msl_options.vertex_for_tessellation;
 	bool need_tesc_params = is_tesc_shader();
 	bool need_tese_params = is_tese_shader() && msl_options.raw_buffer_tese_input;
@@ -260,13 +260,13 @@ void CompilerMSL::build_implicit_builtins()
 	    active_input_builtins.get(static_cast<uint32_t>(BuiltIn::SubgroupLtMask)));
 	bool need_subgroup_ge_mask = !msl_options.is_ios() && (active_input_builtins.get(static_cast<uint32_t>(BuiltIn::SubgroupGeMask)) ||
 	                                                       active_input_builtins.get(static_cast<uint32_t>(BuiltIn::SubgroupGtMask)));
-	bool need_multiview = get_execution_model() == ExecutionModel::Vertex && !msl_options.view_index_from_device_index &&
+	bool need_multiview = get_execution_model() == static_cast<uint32_t>(ExecutionModel::Vertex) && !msl_options.view_index_from_device_index &&
 	                      msl_options.multiview_layered_rendering &&
 	                      (msl_options.multiview || active_input_builtins.get(static_cast<uint32_t>(BuiltIn::ViewIndex)));
 	bool need_dispatch_base =
 	    msl_options.dispatch_base && get_execution_model() == ExecutionModel::GLCompute &&
 	    (active_input_builtins.get(static_cast<uint32_t>(BuiltIn::WorkgroupId)) || active_input_builtins.get(static_cast<uint32_t>(BuiltIn::GlobalInvocationId)));
-	bool need_grid_params = get_execution_model() == ExecutionModel::Vertex && msl_options.vertex_for_tessellation;
+	bool need_grid_params = get_execution_model() == static_cast<uint32_t>(ExecutionModel::Vertex) && msl_options.vertex_for_tessellation;
 	bool need_vertex_base_params =
 	    need_grid_params &&
 	    (active_input_builtins.get(static_cast<uint32_t>(BuiltIn::VertexId)) || active_input_builtins.get(static_cast<uint32_t>(BuiltIn::VertexIndex)) ||
@@ -281,7 +281,7 @@ void CompilerMSL::build_implicit_builtins()
 	    msl_options.enable_frag_depth_builtin && msl_options.input_attachment_is_ds_attachment;
 	bool need_point_size =
 	    msl_options.enable_point_size_builtin && msl_options.enable_point_size_default &&
-	    get_execution_model() == ExecutionModel::Vertex;
+	    get_execution_model() == static_cast<uint32_t>(ExecutionModel::Vertex);
 
 	if (need_subpass_input || need_sample_pos || need_subgroup_mask || need_vertex_params || need_tesc_params ||
 	    need_tese_params || need_multiview || need_dispatch_base || need_vertex_base_params || need_grid_params ||
@@ -1088,7 +1088,7 @@ void CompilerMSL::build_implicit_builtins()
 	}
 
 	// If we're returning a struct from a vertex-like entry point, we must return a position attribute.
-	bool need_position = (get_execution_model() == ExecutionModel::Vertex || is_tese_shader()) &&
+	bool need_position = (get_execution_model() == static_cast<uint32_t>(ExecutionModel::Vertex) || is_tese_shader()) &&
 	                     !capture_output_to_buffer && !get_is_rasterization_disabled() &&
 	                     !msl_options.auto_disable_rasterization &&
 	                     !active_output_builtins.get(static_cast<uint32_t>(BuiltIn::Position));
@@ -1887,7 +1887,7 @@ void CompilerMSL::preprocess_op_codes()
 
 	// Tessellation control shaders are run as compute functions in Metal, and so
 	// must capture their output to a buffer.
-	if (is_tesc_shader() || (get_execution_model() == ExecutionModel::Vertex && msl_options.vertex_for_tessellation))
+	if (is_tesc_shader() || (get_execution_model() == static_cast<uint32_t>(ExecutionModel::Vertex) && msl_options.vertex_for_tessellation))
 	{
 		is_rasterization_disabled = true;
 		capture_output_to_buffer = true;
@@ -2273,7 +2273,7 @@ void CompilerMSL::extract_global_variables_from_function(uint32_t func_id, std::
 			case Op::OpGroupNonUniformLogicalAnd:
 			case Op::OpGroupNonUniformLogicalOr:
 			case Op::OpGroupNonUniformLogicalXor:
-				if ((get_execution_model() != ExecutionModel::Fragment || msl_options.supports_msl_version(2, 2)) &&
+				if ((get_execution_model() != static_cast<uint32_t>(ExecutionModel::Fragment) || msl_options.supports_msl_version(2, 2)) &&
 				    ops[3] == static_cast<uint32_t>(GroupOperation::ClusteredReduce))
 					added_arg_ids.insert(builtin_subgroup_invocation_id_id);
 				break;
@@ -3996,14 +3996,14 @@ void CompilerMSL::add_variable_to_interface_block(StorageClass storage, const st
 							entry_func.add_local_variable(var_id);
 							vars_needing_early_declaration.push_back(var_id);
 							set_name(var_id, builtin_to_glsl(builtin, StorageClass::Output));
-							set_decoration(var_id, Decoration::BuiltIn, builtin);
+							set_decoration(var_id, Decoration::BuiltIn, static_cast<uint32_t>(builtin));
 						}
 					}
 					else if (!is_builtin || has_active_builtin(builtin, storage))
 					{
 						bool is_composite_type = is_matrix(mbr_type) || is_array(mbr_type) || mbr_type.basetype == SPIRType::Struct;
 						bool attribute_load_store =
-								storage == static_cast<uint32_t>(StorageClass::Input) && get_execution_model() != ExecutionModel::Fragment;
+								storage == static_cast<uint32_t>(StorageClass::Input) && get_execution_model() != static_cast<uint32_t>(ExecutionModel::Fragment);
 						bool storage_is_stage_io = variable_storage_requires_stage_io(storage);
 
 						// Clip/CullDistance always need to be declared as user attributes.
@@ -4073,7 +4073,7 @@ void CompilerMSL::add_variable_to_interface_block(StorageClass storage, const st
 		{
 			bool is_composite_type = is_matrix(var_type) || is_array(var_type);
 			bool storage_is_stage_io = variable_storage_requires_stage_io(storage);
-			bool attribute_load_store = storage == static_cast<uint32_t>(StorageClass::Input) && get_execution_model() != ExecutionModel::Fragment;
+			bool attribute_load_store = storage == static_cast<uint32_t>(StorageClass::Input) && get_execution_model() != static_cast<uint32_t>(ExecutionModel::Fragment);
 
 			// Clip/CullDistance always needs to be declared as user attributes.
 			if (builtin == BuiltIn::ClipDistance || builtin == BuiltIn::CullDistance)
@@ -4190,9 +4190,9 @@ uint32_t CompilerMSL::add_interface_block(StorageClass storage, bool patch)
 	// without explicit packing and unpacking of components. For any variables which link against the runtime
 	// in some way (vertex attributes, fragment output, etc), we'll need to deal with it somehow.
 	bool pack_components =
-	    (storage == static_cast<uint32_t>(StorageClass::Input) && get_execution_model() == ExecutionModel::Vertex) ||
+	    (storage == static_cast<uint32_t>(StorageClass::Input) && get_execution_model() == static_cast<uint32_t>(ExecutionModel::Vertex)) ||
 	    (storage == StorageClass::Output && get_execution_model() == ExecutionModel::Fragment) ||
-	    (storage == StorageClass::Output && get_execution_model() == ExecutionModel::Vertex && capture_output_to_buffer);
+	    (storage == StorageClass::Output && get_execution_model() == static_cast<uint32_t>(ExecutionModel::Vertex) && capture_output_to_buffer);
 
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t var_id, SPIRVariable &var) {
 		if (var.storage != storage)
@@ -4332,9 +4332,9 @@ uint32_t CompilerMSL::add_interface_block(StorageClass storage, bool patch)
 			const char *mbr_name =
 			    bi_type == BuiltIn::TessLevelOuter ? "edgeTessellationFactor" : "insideTessellationFactor";
 			add_tess_level_input(base_ref, mbr_name, var);
-			if (inputs_by_builtin.count(bi_type))
+			if (inputs_by_builtin.count(static_cast<uint32_t>(bi_type)))
 			{
-				uint32_t locn = inputs_by_builtin[bi_type].location;
+				uint32_t locn = inputs_by_builtin[static_cast<uint32_t>(bi_type)].location;
 				mark_location_as_used_by_shader(locn, type, StorageClass::Input);
 			}
 		}
@@ -4467,7 +4467,7 @@ uint32_t CompilerMSL::add_interface_block(StorageClass storage, bool patch)
 						// The first member of the indirect buffer is always the number of vertices
 						// to draw.
 						// We zero-base the InstanceID & VertexID variables for HLSL emulation elsewhere, so don't do it twice
-						if (get_execution_model() == ExecutionModel::Vertex && msl_options.vertex_for_tessellation)
+						if (get_execution_model() == static_cast<uint32_t>(ExecutionModel::Vertex) && msl_options.vertex_for_tessellation)
 						{
 							statement("device ", to_name(ir.default_entry_point), "_", ib_var_ref, "& ", ib_var_ref,
 							          " = ", output_buffer_var_name, "[", to_expression(builtin_invocation_id_id),
@@ -4775,7 +4775,7 @@ uint32_t CompilerMSL::add_interface_block_pointer(uint32_t ib_var_id, StorageCla
 		ib_ptr_type.parent_type = ib_ptr_type.type_alias = ib_type.self;
 		ib_ptr_type.pointer = true;
 		ib_ptr_type.pointer_depth++;
-		ib_ptr_type.storage = storage == static_cast<uint32_t>(StorageClass::Input) ?
+		ib_ptr_type.storage = storage == StorageClass::Input ?
 		                          ((is_tesc_shader() && msl_options.multi_patch_workgroup) ||
 		                                   (is_tese_shader() && msl_options.raw_buffer_tese_input) ?
 		                               StorageClass::StorageBuffer :
@@ -4837,7 +4837,7 @@ uint32_t CompilerMSL::add_meshlet_block(bool per_primitive)
 		return 0;
 
 	uint32_t next_id = ir.increase_bound_by(1);
-	auto &type = set<SPIRType>(next_id, SPIRType(OpTypeStruct));
+	auto &type = set<SPIRType>(next_id, SPIRType(Op::OpTypeStruct));
 	type.basetype = SPIRType::Struct;
 
 	InterfaceBlockMeta meta;
@@ -4870,7 +4870,7 @@ uint32_t CompilerMSL::ensure_correct_builtin_type(uint32_t type_id, BuiltIn buil
 	{
 		uint32_t next_id = ir.increase_bound_by(is_pointer(type) ? 2 : 1);
 		uint32_t base_type_id = next_id++;
-		auto &base_type = set<SPIRType>(base_type_id, OpTypeInt);
+		auto &base_type = set<SPIRType>(base_type_id, Op::OpTypeInt);
 		base_type.basetype = SPIRType::UInt;
 		base_type.width = 32;
 
@@ -5771,8 +5771,8 @@ void CompilerMSL::emit_header()
 	if (msl_options.use_fast_math_pragmas && msl_options.supports_msl_version(3, 2))
 	{
 		uint32_t contract_mask = FPFastMathModeMask::AllowContract;
-		uint32_t relax_mask = (FPFastMathModeMask::NSZ | FPFastMathModeMask::AllowRecip | FPFastMathModeMask::AllowReassoc);
-		uint32_t fast_mask = (relax_mask | FPFastMathModeMask::NotNaN | FPFastMathModeMask::NotIn);
+		uint32_t relax_mask = static_cast<uint32_t>((FPFastMathModeMask::NSZ | FPFastMathModeMask::AllowRecip | FPFastMathModeMask::AllowReassoc));
+		uint32_t fast_mask = static_cast<uint32_t>((relax_mask | FPFastMathModeMask::NotNaN | FPFastMathModeMask::NotIn));
 
 		// FP math mode
 		uint32_t fp_flags = get_fp_fast_math_flags(true);
@@ -8001,24 +8001,24 @@ void CompilerMSL::emit_custom_functions()
 			statement("intersection_params spvMakeIntersectionParams(uint flags)");
 			begin_scope();
 			statement("intersection_params ip;");
-			statement("if ((flags & ", RayFlagsOpaqueKHRMask, ") != 0)");
+			statement("if ((flags & ", RayFlagsMask::OpaqueKHR, ") != 0)");
 			statement("    ip.force_opacity(forced_opacity::opaque);");
-			statement("if ((flags & ", RayFlagsNoOpaqueKHRMask, ") != 0)");
+			statement("if ((flags & ", RayFlagsMask::NoOpaqueKHR, ") != 0)");
 			statement("    ip.force_opacity(forced_opacity::non_opaque);");
-			statement("if ((flags & ", RayFlagsTerminateOnFirstHitKHRMask, ") != 0)");
+			statement("if ((flags & ", RayFlagsMask::TerminateOnFirstHitKHR, ") != 0)");
 			statement("    ip.accept_any_intersection(true);");
 			// RayFlagsSkipClosestHitShaderKHRMask is not available in MSL
-			statement("if ((flags & ", RayFlagsCullBackFacingTrianglesKHRMask, ") != 0)");
+			statement("if ((flags & ", RayFlagsMask::CullBackFacingTrianglesKHR, ") != 0)");
 			statement("    ip.set_triangle_cull_mode(triangle_cull_mode::back);");
-			statement("if ((flags & ", RayFlagsCullFrontFacingTrianglesKHRMask, ") != 0)");
+			statement("if ((flags & ", RayFlagsMask::CullFrontFacingTrianglesKHR, ") != 0)");
 			statement("    ip.set_triangle_cull_mode(triangle_cull_mode::front);");
-			statement("if ((flags & ", RayFlagsCullOpaqueKHRMask, ") != 0)");
+			statement("if ((flags & ", RayFlagsMask::CullOpaqueKHR, ") != 0)");
 			statement("    ip.set_opacity_cull_mode(opacity_cull_mode::opaque);");
-			statement("if ((flags & ", RayFlagsCullNoOpaqueKHRMask, ") != 0)");
+			statement("if ((flags & ", RayFlagsMask::CullNoOpaqueKHR, ") != 0)");
 			statement("    ip.set_opacity_cull_mode(opacity_cull_mode::non_opaque);");
-			statement("if ((flags & ", RayFlagsSkipTrianglesKHRMask, ") != 0)");
+			statement("if ((flags & ", RayFlagsMask::SkipTrianglesKHR, ") != 0)");
 			statement("    ip.set_geometry_cull_mode(geometry_cull_mode::triangle);");
-			statement("if ((flags & ", RayFlagsSkipAABBsKHRMask, ") != 0)");
+			statement("if ((flags & ", RayFlagsMask::SkipAABBsKHR, ") != 0)");
 			statement("    ip.set_geometry_cull_mode(geometry_cull_mode::bounding_box);");
 			statement("return ip;");
 			end_scope();
@@ -13891,7 +13891,7 @@ uint32_t CompilerMSL::get_or_allocate_builtin_output_member_location(spv::BuiltI
 
 bool CompilerMSL::entry_point_returns_stage_output() const
 {
-	if (get_execution_model() == ExecutionModel::Vertex && msl_options.vertex_for_tessellation)
+	if (get_execution_model() == static_cast<uint32_t>(ExecutionModel::Vertex) && msl_options.vertex_for_tessellation)
 		return false;
 	bool ep_should_return_output = !get_is_rasterization_disabled();
 	return stage_out_var_id && ep_should_return_output;
@@ -13903,7 +13903,7 @@ bool CompilerMSL::entry_point_requires_const_device_buffers() const
 	// if the compiler deduces it needs to use late-Z for whatever reason.
 	return (get_execution_model() == ExecutionModel::Fragment && !has_descriptor_side_effects) ||
 	       (entry_point_returns_stage_output() &&
-	        (get_execution_model() == ExecutionModel::Vertex ||
+	        (get_execution_model() == static_cast<uint32_t>(ExecutionModel::Vertex) ||
 	         get_execution_model() == ExecutionModel::TessellationEvaluation));
 }
 
@@ -14393,7 +14393,7 @@ void CompilerMSL::entry_point_args_builtin(string &ep_args)
 			    join("constant uint* spvIndirectParams [[buffer(", msl_options.indirect_params_buffer_index, ")]]");
 		}
 		else if (stage_out_var_id &&
-		         !(get_execution_model() == ExecutionModel::Vertex && msl_options.vertex_for_tessellation))
+		         !(get_execution_model() == static_cast<uint32_t>(ExecutionModel::Vertex) && msl_options.vertex_for_tessellation))
 		{
 			if (!ep_args.empty())
 				ep_args += ", ";
@@ -14401,7 +14401,7 @@ void CompilerMSL::entry_point_args_builtin(string &ep_args)
 			    join("device uint* spvIndirectParams [[buffer(", msl_options.indirect_params_buffer_index, ")]]");
 		}
 
-		if (get_execution_model() == ExecutionModel::Vertex && msl_options.vertex_for_tessellation &&
+		if (get_execution_model() == static_cast<uint32_t>(ExecutionModel::Vertex) && msl_options.vertex_for_tessellation &&
 		    (active_input_builtins.get(static_cast<uint32_t>(BuiltIn::VertexIndex)) || active_input_builtins.get(static_cast<uint32_t>(BuiltIn::VertexId))) &&
 		    msl_options.vertex_index_type != Options::IndexType::None)
 		{
@@ -14985,7 +14985,7 @@ void CompilerMSL::fix_up_shader_inputs_outputs()
 	// Vertex shaders shouldn't have the problems with barriers in non-uniform control flow that
 	// tessellation control shaders do, so early returns should be OK. We may need to revisit this
 	// if it ever becomes possible to use barriers from a vertex shader.
-	if (get_execution_model() == ExecutionModel::Vertex && msl_options.vertex_for_tessellation)
+	if (get_execution_model() == static_cast<uint32_t>(ExecutionModel::Vertex) && msl_options.vertex_for_tessellation)
 	{
 		entry_func.fixup_hooks_in.push_back([this]() {
 			statement("if (any(", to_expression(builtin_invocation_id_id),
@@ -15445,7 +15445,7 @@ void CompilerMSL::fix_up_shader_inputs_outputs()
 						statement(to_expression(var_id), " += ", to_expression(view_mask_buffer_id), "[0];");
 					});
 				}
-				else if (get_execution_model() == ExecutionModel::Vertex)
+				else if (get_execution_model() == static_cast<uint32_t>(ExecutionModel::Vertex))
 				{
 					// Metal provides no special support for multiview, so we smuggle
 					// the view index in the instance index.
@@ -17307,7 +17307,7 @@ case Op::OpGroupNonUniform##op: \
 		else if (operation == GroupOperation::ClusteredReduce) \
 		{ \
 			uint32_t cluster_size = evaluate_constant_u32(ops[op_idx + 1]); \
-			if (get_execution_model() != ExecutionModel::Fragment || msl_options.supports_msl_version(2, 2)) \
+			if (get_execution_model() != static_cast<uint32_t>(ExecutionModel::Fragment) || msl_options.supports_msl_version(2, 2)) \
 				add_spv_func_and_recompile(SPVFuncImplSubgroupClustered##op); \
 			emit_subgroup_cluster_op(result_type, id, cluster_size, ops[op_idx], #msl_op); \
 		} \
@@ -17335,7 +17335,7 @@ case Op::OpGroupNonUniform##op: \
 		else if (operation == GroupOperation::ClusteredReduce) \
 		{ \
 			uint32_t cluster_size = evaluate_constant_u32(ops[op_idx + 1]); \
-			if (get_execution_model() != ExecutionModel::Fragment || msl_options.supports_msl_version(2, 2)) \
+			if (get_execution_model() != static_cast<uint32_t>(ExecutionModel::Fragment) || msl_options.supports_msl_version(2, 2)) \
 				add_spv_func_and_recompile(SPVFuncImplSubgroupClustered##op); \
 			emit_subgroup_cluster_op(result_type, id, cluster_size, ops[op_idx], #msl_op); \
 		} \
@@ -17357,7 +17357,7 @@ case Op::OpGroupNonUniform##op: \
 		else if (operation == GroupOperation::ClusteredReduce) \
 		{ \
 			uint32_t cluster_size = evaluate_constant_u32(ops[op_idx + 1]); \
-			if (get_execution_model() != ExecutionModel::Fragment || msl_options.supports_msl_version(2, 2)) \
+			if (get_execution_model() != static_cast<uint32_t>(ExecutionModel::Fragment) || msl_options.supports_msl_version(2, 2)) \
 				add_spv_func_and_recompile(SPVFuncImplSubgroupClustered##op); \
 			emit_subgroup_cluster_op_cast(result_type, id, cluster_size, ops[op_idx], #msl_op, type, type); \
 		} \
@@ -18580,7 +18580,7 @@ bool CompilerMSL::OpCodePreprocessor::handle(Op opcode, const uint32_t *args, ui
 	case Op::OpGroupNonUniformLogicalAnd:
 	case Op::OpGroupNonUniformLogicalOr:
 	case Op::OpGroupNonUniformLogicalXor:
-		if ((compiler.get_execution_model() != ExecutionModel::Fragment ||
+		if ((compiler.get_execution_model() != static_cast<uint32_t>(ExecutionModel::Fragment) ||
 		     compiler.msl_options.supports_msl_version(2, 2)) &&
 		    args[3] == static_cast<uint32_t>(GroupOperation::ClusteredReduce))
 			needs_subgroup_invocation_id = true;
