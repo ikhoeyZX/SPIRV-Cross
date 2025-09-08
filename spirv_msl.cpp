@@ -4073,7 +4073,7 @@ void CompilerMSL::add_variable_to_interface_block(StorageClass storage, const st
 		{
 			bool is_composite_type = is_matrix(var_type) || is_array(var_type);
 			bool storage_is_stage_io = variable_storage_requires_stage_io(storage);
-			bool attribute_load_store = storage == static_cast<uint32_t>(StorageClass::Input) && get_execution_model() != ExecutionModel::Fragment;
+			bool attribute_load_store = storage == StorageClass::Input && get_execution_model() != ExecutionModel::Fragment;
 
 			// Clip/CullDistance always needs to be declared as user attributes.
 			if (builtin == BuiltIn::ClipDistance || builtin == BuiltIn::CullDistance)
@@ -4560,7 +4560,7 @@ uint32_t CompilerMSL::add_interface_block(StorageClass storage, bool patch)
 
 	if (((is_tesc_shader() && msl_options.multi_patch_workgroup) ||
 	     (is_tese_shader() && msl_options.raw_buffer_tese_input)) &&
-	    storage == static_cast<uint32_t>(StorageClass::Input))
+	    storage == StorageClass::Input)
 	{
 		// For tessellation inputs, add all outputs from the previous stage to ensure
 		// the struct containing them is the correct size and layout.
@@ -4793,7 +4793,7 @@ uint32_t CompilerMSL::add_interface_block_pointer(uint32_t ib_var_id, StorageCla
 
 		ib_ptr_var_id = next_id;
 		set<SPIRVariable>(ib_ptr_var_id, ib_ptr_ptr_type_id, StorageClass::Function, 0);
-		set_name(ib_ptr_var_id, storage == static_cast<uint32_t>(StorageClass::Input) ? "gl_in" : "gl_out");
+		set_name(ib_ptr_var_id, storage == StorageClass::Input ? "gl_in" : "gl_out");
 		if (storage == StorageClass::Input)
 			set_decoration(ib_ptr_var_id, Decoration::NonWritable);
 	}
