@@ -769,7 +769,7 @@ void CompilerMSL::build_implicit_builtins()
 				uint32_t var_id = ir.increase_bound_by(1);
 
 				set<SPIRVariable>(var_id, build_extended_vector_type(get_uint_type_id(), 3), StorageClass::Input);
-				set_extended_decoration(var_id, SPIRVCrossDecoration::BuiltInStageInputSize);
+				set_extended_decoration(var_id, SPIRVCrossDecorationBuiltInStageInputSize);
 				get_entry_point().interface_variables.push_back(var_id);
 				set_name(var_id, "spvStageInputSize");
 				builtin_stage_input_size_id = var_id;
@@ -833,7 +833,7 @@ void CompilerMSL::build_implicit_builtins()
 				var_id = offset;
 
 				set<SPIRVariable>(var_id, workgroup_id_type, StorageClass::Input);
-				set_extended_decoration(var_id, SPIRVCrossDecoration::BuiltInDispatchBase);
+				set_extended_decoration(var_id, SPIRVCrossDecorationBuiltInDispatchBase);
 				get_entry_point().interface_variables.push_back(var_id);
 			}
 			else
@@ -903,7 +903,7 @@ void CompilerMSL::build_implicit_builtins()
 			auto &ptr_in_type = set<SPIRType>(type_ptr_id, bool_type_ptr_in);
 			ptr_in_type.self = type_id;
 			set<SPIRVariable>(var_id, type_ptr_id, StorageClass::Input);
-			set_decoration(var_id, Decoration::BuiltIn, BuiltIn::HelperInvocation);
+			set_decoration(var_id, Decoration::BuiltIn, static_cast<uint32_t>(BuiltIn::HelperInvocation));
 			builtin_helper_invocation_id = var_id;
 			mark_implicit_builtin(StorageClass::Input, BuiltIn::HelperInvocation, var_id);
 		}
@@ -952,7 +952,7 @@ void CompilerMSL::build_implicit_builtins()
 					set<SPIRConstant>(var_id, type_id, init, 3, specialized);
 					execution.workgroup_size.constant = var_id;
 				}
-				else if (execution.flags.get(ExecutionMode::LocalSize))
+				else if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::LocalSize)))
 				{
 					uint32_t offset = ir.increase_bound_by(3);
 					const SPIRConstant *init[] = {
@@ -978,7 +978,7 @@ void CompilerMSL::build_implicit_builtins()
 					set<SPIRVariable>(var_id, type_ptr_id, StorageClass::Input);
 					mark_implicit_builtin(StorageClass::Input, BuiltIn::WorkgroupSize, var_id);
 				}
-				set_decoration(var_id, Decoration::BuiltIn, BuiltIn::WorkgroupSize);
+				set_decoration(var_id, Decoration::BuiltIn, static_cast<uint32_t>(BuiltIn::WorkgroupSize));
 				builtin_workgroup_size_id = var_id;
 			}
 		}
@@ -998,7 +998,7 @@ void CompilerMSL::build_implicit_builtins()
 			set<SPIRType>(type_id, float_type);
 
 			SPIRType float_type_ptr_in = float_type;
-			float_type_ptr_in.op = spv::OpTypePointer;
+			float_type_ptr_in.op = spv::Op::OpTypePointer;
 			float_type_ptr_in.pointer = true;
 			float_type_ptr_in.pointer_depth++;
 			float_type_ptr_in.parent_type = type_id;
@@ -1007,10 +1007,10 @@ void CompilerMSL::build_implicit_builtins()
 			auto &ptr_in_type = set<SPIRType>(type_ptr_id, float_type_ptr_in);
 			ptr_in_type.self = type_id;
 			set<SPIRVariable>(var_id, type_ptr_id, StorageClass::Output);
-			set_decoration(var_id, Decoration::BuiltIn, BuiltIn::FragDepth);
+			set_decoration(var_id, Decoration::BuiltIn, static_cast<uint32_t>(BuiltIn::FragDepth);
 			builtin_frag_depth_id = var_id;
 			mark_implicit_builtin(StorageClass::Output, BuiltIn::FragDepth, var_id);
-			active_output_builtins.set(BuiltIn::FragDepth);
+			active_output_builtins.set(static_cast<uint32_t>(BuiltIn::FragDepth));
 		}
 
 		if (!has_point_size && need_point_size)
@@ -1028,7 +1028,7 @@ void CompilerMSL::build_implicit_builtins()
 			set<SPIRType>(type_id, float_type);
 
 			SPIRType float_type_ptr_in = float_type;
-			float_type_ptr_in.op = spv::OpTypePointer;
+			float_type_ptr_in.op = spv::Op::OpTypePointer;
 			float_type_ptr_in.pointer = true;
 			float_type_ptr_in.pointer_depth++;
 			float_type_ptr_in.parent_type = type_id;
@@ -1091,7 +1091,7 @@ void CompilerMSL::build_implicit_builtins()
 	bool need_position = (get_execution_model() == ExecutionModel::Vertex || is_tese_shader()) &&
 	                     !capture_output_to_buffer && !get_is_rasterization_disabled() &&
 	                     !msl_options.auto_disable_rasterization &&
-	                     !active_output_builtins.get(BuiltInPosition);
+	                     !active_output_builtins.get(static_cast<uint32_t>(BuiltInPosition));
 
 	if (need_position)
 	{
@@ -1125,9 +1125,9 @@ void CompilerMSL::build_implicit_builtins()
 				}
 			}
 		});
-		need_position = has_output && !active_output_builtins.get(BuiltInPosition);
+		need_position = has_output && !active_output_builtins.get(static_cast<uint32_t>(BuiltInPosition));
 	}
-	else if (!active_output_builtins.get(BuiltInPosition) && msl_options.auto_disable_rasterization)
+	else if (!active_output_builtins.get(static_cast<uint32_t>(BuiltInPosition)) && msl_options.auto_disable_rasterization)
 	{
 		is_rasterization_disabled = true;
 	}
@@ -1271,7 +1271,7 @@ uint32_t CompilerMSL::build_constant_uint_array_pointer()
 
 	// Create a buffer to hold extra data, including the swizzle constants.
 	SPIRType uint_type_pointer = get_uint_type();
-	uint_type_pointer.op = OpTypePointer;
+	uint_type_pointer.op = Op::OpTypePointer;
 	uint_type_pointer.pointer = true;
 	uint_type_pointer.pointer_depth++;
 	uint_type_pointer.parent_type = get_uint_type_id();
@@ -2438,7 +2438,7 @@ void CompilerMSL::extract_global_variables_from_function(uint32_t func_id, std::
 
 				set_name(next_id, name);
 				if (is_tese_shader() && msl_options.raw_buffer_tese_input && var.storage == StorageClass::Input)
-					set_decoration(next_id, DecorationNonWritable);
+					set_decoration(next_id, Decoration::NonWritable);
 			}
 			else if (is_builtin && is_mesh_shader())
 			{
@@ -2537,7 +2537,7 @@ void CompilerMSL::mark_packable_structs()
 }
 
 // If the specified type is a struct, it and any nested structs
-// are marked as packable with the SPIRVCrossDecoration::BufferBlockRepacked decoration,
+// are marked as packable with the SPIRVCrossDecorationBufferBlockRepacked decoration,
 void CompilerMSL::mark_as_packable(SPIRType &type)
 {
 	// If this is not the base type (eg. it's a pointer or array), tunnel down
@@ -2548,9 +2548,9 @@ void CompilerMSL::mark_as_packable(SPIRType &type)
 	}
 
 	// Handle possible recursion when a struct contains a pointer to its own type nested somewhere.
-	if (type.basetype == SPIRType::Struct && !has_extended_decoration(type.self, SPIRVCrossDecoration::BufferBlockRepacked))
+	if (type.basetype == SPIRType::Struct && !has_extended_decoration(type.self, SPIRVCrossDecorationBufferBlockRepacked))
 	{
-		set_extended_decoration(type.self, SPIRVCrossDecoration::BufferBlockRepacked);
+		set_extended_decoration(type.self, SPIRVCrossDecorationBufferBlockRepacked);
 
 		// Recurse
 		uint32_t mbr_cnt = uint32_t(type.member_types.size());
@@ -2706,7 +2706,7 @@ uint32_t CompilerMSL::build_msl_interpolant_type(uint32_t type_id, bool is_noper
 	// In Metal, the pull-model interpolant type encodes perspective-vs-no-perspective in the type itself.
 	// Add this decoration so we know which argument to pass to the template.
 	if (is_noperspective)
-		set_decoration(new_type_id, DecorationNoPerspective);
+		set_decoration(new_type_id, Decoration::NoPerspective);
 	return new_type_id;
 }
 
@@ -2802,7 +2802,7 @@ void CompilerMSL::add_plain_variable_to_interface_block(StorageClass storage, co
 	bool is_builtin = is_builtin_variable(var);
 	BuiltIn builtin = BuiltIn(get_decoration(var.self, Decoration::BuiltIn));
 	bool is_flat = has_decoration(var.self, DecorationFlat);
-	bool is_noperspective = has_decoration(var.self, DecorationNoPerspective);
+	bool is_noperspective = has_decoration(var.self, Decoration::NoPerspective);
 	bool is_centroid = has_decoration(var.self, DecorationCentroid);
 	bool is_sample = has_decoration(var.self, Decoration::Sample);
 
@@ -2979,7 +2979,7 @@ void CompilerMSL::add_plain_variable_to_interface_block(StorageClass storage, co
 		if (is_flat)
 			set_member_decoration(ib_type.self, ib_mbr_idx, DecorationFlat);
 		if (is_noperspective)
-			set_member_decoration(ib_type.self, ib_mbr_idx, DecorationNoPerspective);
+			set_member_decoration(ib_type.self, ib_mbr_idx, Decoration::NoPerspective);
 		if (is_centroid)
 			set_member_decoration(ib_type.self, ib_mbr_idx, DecorationCentroid);
 		if (is_sample)
@@ -3018,7 +3018,7 @@ void CompilerMSL::add_composite_variable_to_interface_block(StorageClass storage
 	bool is_builtin = is_builtin_variable(var);
 	BuiltIn builtin = BuiltIn(get_decoration(var.self, Decoration::BuiltIn));
 	bool is_flat = has_decoration(var.self, DecorationFlat);
-	bool is_noperspective = has_decoration(var.self, DecorationNoPerspective);
+	bool is_noperspective = has_decoration(var.self, Decoration::NoPerspective);
 	bool is_centroid = has_decoration(var.self, DecorationCentroid);
 	bool is_sample = has_decoration(var.self, Decoration::Sample);
 
@@ -3142,7 +3142,7 @@ void CompilerMSL::add_composite_variable_to_interface_block(StorageClass storage
 			if (is_flat)
 				set_member_decoration(ib_type.self, ib_mbr_idx, DecorationFlat);
 			if (is_noperspective)
-				set_member_decoration(ib_type.self, ib_mbr_idx, DecorationNoPerspective);
+				set_member_decoration(ib_type.self, ib_mbr_idx, Decoration::NoPerspective);
 			if (is_centroid)
 				set_member_decoration(ib_type.self, ib_mbr_idx, DecorationCentroid);
 			if (is_sample)
@@ -3217,9 +3217,9 @@ void CompilerMSL::add_composite_member_variable_to_interface_block(StorageClass 
 	bool is_flat = interpolation_qual.get(DecorationFlat) ||
 	               has_member_decoration(var_type.self, mbr_idx, DecorationFlat) ||
 	               has_decoration(var.self, DecorationFlat);
-	bool is_noperspective = interpolation_qual.get(DecorationNoPerspective) ||
-	                        has_member_decoration(var_type.self, mbr_idx, DecorationNoPerspective) ||
-	                        has_decoration(var.self, DecorationNoPerspective);
+	bool is_noperspective = interpolation_qual.get(Decoration::NoPerspective) ||
+	                        has_member_decoration(var_type.self, mbr_idx, Decoration::NoPerspective) ||
+	                        has_decoration(var.self, Decoration::NoPerspective);
 	bool is_centroid = interpolation_qual.get(DecorationCentroid) ||
 	                   has_member_decoration(var_type.self, mbr_idx, DecorationCentroid) ||
 	                   has_decoration(var.self, DecorationCentroid);
@@ -3231,7 +3231,7 @@ void CompilerMSL::add_composite_member_variable_to_interface_block(StorageClass 
 	if (is_flat)
 		inherited_qual.set(DecorationFlat);
 	if (is_noperspective)
-		inherited_qual.set(DecorationNoPerspective);
+		inherited_qual.set(Decoration::NoPerspective);
 	if (is_centroid)
 		inherited_qual.set(DecorationCentroid);
 	if (is_sample)
@@ -3396,7 +3396,7 @@ void CompilerMSL::add_composite_member_variable_to_interface_block(StorageClass 
 			if (is_flat)
 				set_member_decoration(ib_type.self, ib_mbr_idx, DecorationFlat);
 			if (is_noperspective)
-				set_member_decoration(ib_type.self, ib_mbr_idx, DecorationNoPerspective);
+				set_member_decoration(ib_type.self, ib_mbr_idx, Decoration::NoPerspective);
 			if (is_centroid)
 				set_member_decoration(ib_type.self, ib_mbr_idx, DecorationCentroid);
 			if (is_sample)
@@ -3461,8 +3461,8 @@ void CompilerMSL::add_plain_member_variable_to_interface_block(StorageClass stor
 	bool is_builtin = is_member_builtin(var_type, mbr_idx, &builtin);
 	bool is_flat =
 	    has_member_decoration(var_type.self, mbr_idx, DecorationFlat) || has_decoration(var.self, DecorationFlat);
-	bool is_noperspective = has_member_decoration(var_type.self, mbr_idx, DecorationNoPerspective) ||
-	                        has_decoration(var.self, DecorationNoPerspective);
+	bool is_noperspective = has_member_decoration(var_type.self, mbr_idx, Decoration::NoPerspective) ||
+	                        has_decoration(var.self, Decoration::NoPerspective);
 	bool is_centroid = has_member_decoration(var_type.self, mbr_idx, DecorationCentroid) ||
 	                   has_decoration(var.self, DecorationCentroid);
 	bool is_sample =
@@ -3634,7 +3634,7 @@ void CompilerMSL::add_plain_member_variable_to_interface_block(StorageClass stor
 		if (is_flat)
 			set_member_decoration(ib_type.self, ib_mbr_idx, DecorationFlat);
 		if (is_noperspective)
-			set_member_decoration(ib_type.self, ib_mbr_idx, DecorationNoPerspective);
+			set_member_decoration(ib_type.self, ib_mbr_idx, Decoration::NoPerspective);
 		if (is_centroid)
 			set_member_decoration(ib_type.self, ib_mbr_idx, DecorationCentroid);
 		if (is_sample)
@@ -4314,7 +4314,7 @@ uint32_t CompilerMSL::add_interface_block(StorageClass storage, bool patch)
 							// For variables sharing location, decorations and base type must match.
 							location_meta.base_type_id = type.self;
 							location_meta.flat = has_decoration(var.self, DecorationFlat);
-							location_meta.noperspective = has_decoration(var.self, DecorationNoPerspective);
+							location_meta.noperspective = has_decoration(var.self, Decoration::NoPerspective);
 							location_meta.centroid = has_decoration(var.self, DecorationCentroid);
 							location_meta.sample = has_decoration(var.self, Decoration::Sample);
 						}
@@ -4721,7 +4721,7 @@ uint32_t CompilerMSL::add_interface_block(StorageClass storage, bool patch)
 		if (location_meta.flat)
 			set_member_decoration(ib_type.self, ib_mbr_idx, DecorationFlat);
 		if (location_meta.noperspective)
-			set_member_decoration(ib_type.self, ib_mbr_idx, DecorationNoPerspective);
+			set_member_decoration(ib_type.self, ib_mbr_idx, Decoration::NoPerspective);
 		if (location_meta.centroid)
 			set_member_decoration(ib_type.self, ib_mbr_idx, DecorationCentroid);
 		if (location_meta.sample)
@@ -4752,7 +4752,7 @@ uint32_t CompilerMSL::add_interface_block(StorageClass storage, bool patch)
 	}
 
 	if (storage == StorageClass::Input)
-		set_decoration(ib_var_id, DecorationNonWritable);
+		set_decoration(ib_var_id, Decoration::NonWritable);
 
 	return ib_var_id;
 }
@@ -4795,7 +4795,7 @@ uint32_t CompilerMSL::add_interface_block_pointer(uint32_t ib_var_id, StorageCla
 		set<SPIRVariable>(ib_ptr_var_id, ib_ptr_ptr_type_id, StorageClassFunction, 0);
 		set_name(ib_ptr_var_id, storage == StorageClass::Input ? "gl_in" : "gl_out");
 		if (storage == StorageClass::Input)
-			set_decoration(ib_ptr_var_id, DecorationNonWritable);
+			set_decoration(ib_ptr_var_id, Decoration::NonWritable);
 	}
 	else
 	{
@@ -8328,7 +8328,7 @@ void CompilerMSL::emit_specialization_constants_and_structs()
 	// When we actually align the struct later, we can insert padding as necessary to make the packed members behave like normally aligned types.
 	ir.for_each_typed_id<SPIRType>([&](uint32_t type_id, const SPIRType &type) {
 		if (type.basetype == SPIRType::Struct &&
-		    has_extended_decoration(type_id, SPIRVCrossDecoration::BufferBlockRepacked))
+		    has_extended_decoration(type_id, SPIRVCrossDecorationBufferBlockRepacked))
 			mark_scalar_layout_structs(type);
 	});
 
@@ -8502,7 +8502,7 @@ void CompilerMSL::emit_specialization_constants_and_structs()
 
 				declared_structs.insert(type_id);
 
-				if (has_extended_decoration(type_id, SPIRVCrossDecoration::BufferBlockRepacked))
+				if (has_extended_decoration(type_id, SPIRVCrossDecorationBufferBlockRepacked))
 					align_struct(type, aligned_structs);
 
 				// Make sure we declare the underlying struct type, and not the "decorated" type with pointers, etc.
@@ -9704,15 +9704,15 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		auto *p_var = maybe_get_backing_variable(img_id);
 		if (type.image.dim != Dim::SubpassData)
 		{
-			if (p_var && has_decoration(p_var->self, DecorationNonReadable))
+			if (p_var && has_decoration(p_var->self, Decoration::NonReadable))
 			{
-				unset_decoration(p_var->self, DecorationNonReadable);
+				unset_decoration(p_var->self, Decoration::NonReadable);
 				force_recompile();
 			}
 		}
 
 		// Metal requires explicit fences to break up RAW hazards, even within the same shader invocation
-		if (msl_options.readwrite_texture_fences && p_var && !has_decoration(p_var->self, DecorationNonWritable))
+		if (msl_options.readwrite_texture_fences && p_var && !has_decoration(p_var->self, Decoration::NonWritable))
 		{
 			add_spv_func_and_recompile(SPVFuncImplImageFence);
 			// Need to wrap this with a value type,
@@ -9780,9 +9780,9 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		// Ensure this image has been marked as being written to and force a
 		// recommpile so that the image type output will include write access
 		auto *p_var = maybe_get_backing_variable(img_id);
-		if (p_var && has_decoration(p_var->self, DecorationNonWritable))
+		if (p_var && has_decoration(p_var->self, Decoration::NonWritable))
 		{
-			unset_decoration(p_var->self, DecorationNonWritable);
+			unset_decoration(p_var->self, Decoration::NonWritable);
 			force_recompile();
 		}
 
@@ -13242,7 +13242,7 @@ string CompilerMSL::to_struct_member(const SPIRType &type, uint32_t member_type_
 		physical_type.image.sampled == 2 &&
 		msl_options.is_ios() &&
 		msl_options.argument_buffers_tier <= Options::ArgumentBuffersTier::Tier1 &&
-		!has_decoration(orig_id, DecorationNonWritable))
+		!has_decoration(orig_id, Decoration::NonWritable))
 	{
 		SPIRV_CROSS_THROW("Writable images are not allowed on Tier1 argument buffers on iOS.");
 	}
@@ -13620,7 +13620,7 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 		else
 			quals = member_location_attribute_qualifier(type, index);
 
-		if (builtin == BuiltIn::BaryCoordKHR && has_member_decoration(type.self, index, DecorationNoPerspective))
+		if (builtin == BuiltIn::BaryCoordKHR && has_member_decoration(type.self, index, Decoration::NoPerspective))
 		{
 			// NoPerspective is baked into the builtin type.
 			SPIRV_CROSS_THROW("NoPerspective decorations are not supported for BaryCoord inputs.");
@@ -13645,7 +13645,7 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 				if (builtin == BuiltIn::BaryCoordNoPerspKHR || builtin == BuiltIn::BaryCoordKHR)
 					SPIRV_CROSS_THROW("Centroid interpolation not supported for barycentrics in MSL.");
 
-				if (has_member_decoration(type.self, index, DecorationNoPerspective))
+				if (has_member_decoration(type.self, index, Decoration::NoPerspective))
 					quals += "centroid_no_perspective";
 				else
 					quals += "centroid_perspective";
@@ -13658,12 +13658,12 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 				if (builtin == BuiltIn::BaryCoordNoPerspKHR || builtin == BuiltIn::BaryCoordKHR)
 					SPIRV_CROSS_THROW("Sample interpolation not supported for barycentrics in MSL.");
 
-				if (has_member_decoration(type.self, index, DecorationNoPerspective))
+				if (has_member_decoration(type.self, index, Decoration::NoPerspective))
 					quals += "sample_no_perspective";
 				else
 					quals += "sample_perspective";
 			}
-			else if (has_member_decoration(type.self, index, DecorationNoPerspective) || builtin == BuiltIn::BaryCoordNoPerspKHR)
+			else if (has_member_decoration(type.self, index, Decoration::NoPerspective) || builtin == BuiltIn::BaryCoordNoPerspKHR)
 			{
 				if (!quals.empty())
 					quals += ", ";
@@ -14004,12 +14004,12 @@ bool CompilerMSL::decoration_flags_signal_volatile(const Bitset &flags) const
 	// Using volatile for coherent pre-3.2 is definitely not correct, but it's something.
 	// MSL 3.2 adds actual coherent qualifiers.
 	return flags.get(DecorationVolatile) ||
-	       (flags.get(DecorationCoherent) && !msl_options.supports_msl_version(3, 2));
+	       (flags.get(Decoration::Coherent) && !msl_options.supports_msl_version(3, 2));
 }
 
 bool CompilerMSL::decoration_flags_signal_coherent(const Bitset &flags) const
 {
-	return flags.get(DecorationCoherent) && msl_options.supports_msl_version(3, 2);
+	return flags.get(Decoration::Coherent) && msl_options.supports_msl_version(3, 2);
 }
 
 string CompilerMSL::get_type_address_space(const SPIRType &type, uint32_t id, bool argument)
@@ -14335,7 +14335,7 @@ void CompilerMSL::entry_point_args_builtin(string &ep_args)
 			}
 		}
 
-		if (has_extended_decoration(var_id, SPIRVCrossDecoration::BuiltInDispatchBase))
+		if (has_extended_decoration(var_id, SPIRVCrossDecorationBuiltInDispatchBase))
 		{
 			// This is a special implicit builtin, not corresponding to any SPIR-V builtin,
 			// which holds the base that was passed to vkCmdDispatchBase() or vkCmdDrawIndexed(). If it's present,
@@ -14347,7 +14347,7 @@ void CompilerMSL::entry_point_args_builtin(string &ep_args)
 			ep_args += type_to_glsl(get_variable_data_type(var)) + " " + to_expression(var_id) + " [[grid_origin]]";
 		}
 
-		if (has_extended_decoration(var_id, SPIRVCrossDecoration::BuiltInStageInputSize))
+		if (has_extended_decoration(var_id, SPIRVCrossDecorationBuiltInStageInputSize))
 		{
 			// This is another special implicit builtin, not corresponding to any SPIR-V builtin,
 			// which holds the number of vertices and instances to draw. If it's present,
@@ -14666,7 +14666,7 @@ void CompilerMSL::entry_point_args_discrete_descriptors(string &ep_args)
 			auto &type = get_variable_data_type(var);
 			uint32_t desc_set = get_decoration(var_id, Decoration::DescriptorSet);
 
-			if (is_supported_argument_buffer_type(type) && var.storage != StorageClassPushConstant)
+			if (is_supported_argument_buffer_type(type) && var.storage != StorageClass::PushConstant)
 			{
 				if (descriptor_set_is_argument_buffer(desc_set))
 				{
@@ -15654,7 +15654,7 @@ uint32_t CompilerMSL::get_metal_resource_index(SPIRVariable &var, SPIRType::Base
 	{
 		// Frame-buffer fetch gets its fallback resource index from the input attachment index,
 		// which is then treated as color index.
-		return get_decoration(var.self, DecorationInputAttachmentIndex);
+		return get_decoration(var.self, Decoration::InputAttachmentIndex);
 	}
 	else if (msl_options.enable_decoration_binding)
 	{
@@ -15674,7 +15674,7 @@ uint32_t CompilerMSL::get_metal_resource_index(SPIRVariable &var, SPIRType::Base
 
 	bool allocate_argument_buffer_ids = false;
 
-	if (var.storage != StorageClassPushConstant)
+	if (var.storage != StorageClass::PushConstant)
 		allocate_argument_buffer_ids = descriptor_set_is_argument_buffer(var_desc_set);
 
 	uint32_t binding_stride = 1;
@@ -16568,7 +16568,7 @@ string CompilerMSL::type_to_glsl(const SPIRType &type, uint32_t id, bool member)
 
 	case SPIRType::Interpolant:
 		return join("interpolant<", type_to_glsl(get<SPIRType>(type.parent_type), id), ", interpolation::",
-		            has_decoration(type.self, DecorationNoPerspective) ? "no_perspective" : "perspective", ">");
+		            has_decoration(type.self, Decoration::NoPerspective) ? "no_perspective" : "perspective", ">");
 
 	// Scalars
 	case SPIRType::Boolean:
@@ -17028,11 +17028,11 @@ string CompilerMSL::image_type_glsl(const SPIRType &type, uint32_t id, bool memb
 
 		default:
 		{
-			if (p_var && !has_decoration(p_var->self, DecorationNonWritable))
+			if (p_var && !has_decoration(p_var->self, Decoration::NonWritable))
 			{
 				img_type_name += ", access::";
 
-				if (!has_decoration(p_var->self, DecorationNonReadable))
+				if (!has_decoration(p_var->self, Decoration::NonReadable))
 					img_type_name += "read_";
 
 				img_type_name += "write";
@@ -17045,7 +17045,7 @@ string CompilerMSL::image_type_glsl(const SPIRType &type, uint32_t id, bool memb
 		}
 		}
 
-		if (p_var && has_decoration(p_var->self, DecorationCoherent) && msl_options.supports_msl_version(3, 2))
+		if (p_var && has_decoration(p_var->self, Decoration::Coherent) && msl_options.supports_msl_version(3, 2))
 		{
 			// Cannot declare memory_coherence_device without access qualifier.
 			if (!has_access_qualifier)
@@ -18547,7 +18547,7 @@ bool CompilerMSL::OpCodePreprocessor::handle(Op opcode, const uint32_t *args, ui
 		break;
 
 	case Op::OpGroupNonUniformBallotBitCount:
-		if (args[3] == GroupOperation::Reduce)
+		if (args[3] == static_cast<uint32_t>(GroupOperation::Reduce))
 			needs_subgroup_size = true;
 		else
 			needs_subgroup_invocation_id = true;
@@ -18582,7 +18582,7 @@ bool CompilerMSL::OpCodePreprocessor::handle(Op opcode, const uint32_t *args, ui
 	case Op::OpGroupNonUniformLogicalXor:
 		if ((compiler.get_execution_model() != ExecutionModel::Fragment ||
 		     compiler.msl_options.supports_msl_version(2, 2)) &&
-		    args[3] == GroupOperation::ClusteredReduce)
+		    args[3] == static_cast<uint32_t>(GroupOperation::ClusteredReduce))
 			needs_subgroup_invocation_id = true;
 		break;
 
@@ -19530,7 +19530,7 @@ void CompilerMSL::analyze_argument_buffers()
 
 				// Create a buffer to hold extra data, including the swizzle constants.
 				SPIRType uint_type_pointer = get_uint_type();
-				uint_type_pointer.op = OpTypePointer;
+				uint_type_pointer.op = Op::OpTypePointer;
 				uint_type_pointer.pointer = true;
 				uint_type_pointer.pointer_depth++;
 				uint_type_pointer.parent_type = get_uint_type_id();
@@ -19594,7 +19594,7 @@ void CompilerMSL::analyze_argument_buffers()
 		{
 			buffer_type.storage = StorageClass::StorageBuffer;
 			// Make sure the argument buffer gets marked as const device.
-			set_decoration(next_id, DecorationNonWritable);
+			set_decoration(next_id, Decoration::NonWritable);
 			// Need to mark the type as a Block to enable this.
 			set_decoration(type_id, Decoration::Block);
 		}
