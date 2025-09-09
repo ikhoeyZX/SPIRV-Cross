@@ -5152,7 +5152,7 @@ void CompilerMSL::align_struct(SPIRType &ib_type, unordered_set<uint32_t> &align
 bool CompilerMSL::validate_member_packing_rules_msl(const SPIRType &type, uint32_t index) const
 {
 	auto &mbr_type = get<SPIRType>(type.member_types[index]);
-	auto spirv_offset_decoration = get_member_decoration(type.self, index, static_cast<uint32_t>(Decoration::Offset));
+	auto spirv_offset_decoration = get_member_decoration(type.self, index, Decoration::Offset);
     uint32_t spirv_offset = static_cast<uint32_t>(spirv_offset_decoration);
 	
 	if (index + 1 < type.member_types.size())
@@ -8408,7 +8408,7 @@ void CompilerMSL::emit_specialization_constants_and_structs()
 				    !c.is_used_as_array_length)
 				{
 					// Only scalar, non-composite values can be function constants.
-					uint32_t constant_id = get_decoration(c.self, DecorationSpecId);
+					uint32_t constant_id = get_decoration(c.self, Decoration::SpecId);
 					if (!unique_func_constants.count(constant_id))
 						unique_func_constants.insert(make_pair(constant_id, c.self));
 					SPIRType::BaseType sc_tmp_type = expression_type(unique_func_constants[constant_id]).basetype;
@@ -8927,8 +8927,10 @@ bool CompilerMSL::emit_tessellation_access_chain(const uint32_t *ops, uint32_t l
 			bi_type = BuiltIn(get_decoration(var->self, Decoration::BuiltIn));
 
 		variable_is_flat = !builtin_variable || is_block ||
-		                   bi_type == BuiltIn::Position || BuiltIn::PointSize ||
-		                   bi_type == BuiltIn::ClipDistance || bi_type == BuiltIn::CullDistance;
+                           bi_type == BuiltIn::Position ||
+                           bi_type == BuiltIn::PointSize ||
+                           bi_type == BuiltIn::ClipDistance ||
+                           bi_type == BuiltIn::CullDistance;
 	}
 
 	if (variable_is_flat)
@@ -9331,7 +9333,7 @@ bool CompilerMSL::check_physical_type_cast(std::string &expr, const SPIRType *ty
 {
 	auto *p_physical_type = maybe_get<SPIRType>(physical_type);
 	if (p_physical_type &&
-		p_physical_type->storage == StorageClassPhysicalStorageBuffer &&
+		p_physical_type->storage == StorageClass::PhysicalStorageBuffer &&
 		p_physical_type->basetype == to_unsigned_basetype(64))
 	{
 		if (p_physical_type->vecsize > 1)
@@ -10447,7 +10449,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		auto input_size = input_type1.vecsize;
 		if (instruction.length == 5)
 		{
-			if (ops[4] == PackedVector::FormatPackedVectorFormat4x8Bit)
+			if (ops[4] == static_cast<uint32_t>(PackedVector::FormatPackedVectorFormat4x8Bit))
 			{
 				string type = opcode == Op::OpSDot || opcode == Op::OpSUDot ? "char4" : "uchar4";
 				vec1input = join("as_type<", type, ">(", to_expression(vec1), ")");
@@ -10507,7 +10509,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		string vec1input, vec2input;
 		if (instruction.length == 6)
 		{
-			if (ops[5] == PackedVector::FormatPackedVectorFormat4x8Bit)
+			if (ops[5] == static_cast<uint32_t>(PackedVector::FormatPackedVectorFormat4x8Bit))
 			{
 				string type = opcode == Op::OpSDotAccSat || opcode == Op::OpSUDotAccSat ? "char4" : "uchar4";
 				vec1input = join("as_type<", type, ">(", to_expression(vec1), ")");
