@@ -1381,7 +1381,7 @@ void CompilerHLSL::emit_builtin_variables()
 
 		// SampleMask can be both in and out with sample builtin, in this case we have already
 		// declared the input variable and we need to add the output one now.
-		if (builtin == BuiltInSampleMask && storage == StorageClass::Input && this->active_output_builtins.get(static_cast<uint32_t>(i)))
+		if (builtin == BuiltIn::SampleMask && storage == StorageClass::Input && this->active_output_builtins.get(static_cast<uint32_t>(i)))
 		{
 			type = sample_mask_out_basetype == SPIRType::UInt ? "uint" : "int";
 			if (array_size)
@@ -1505,7 +1505,7 @@ void CompilerHLSL::emit_specialization_constants_and_structs()
 				{
 					// HLSL does not support specialization constants, so fallback to macros.
 					c.specialization_constant_macro_name =
-							constant_value_macro_name(get_decoration(c.self, DecorationSpecId));
+							constant_value_macro_name(get_decoration(c.self, Decoration::SpecId));
 
 					statement("#ifndef ", c.specialization_constant_macro_name);
 					statement("#define ", c.specialization_constant_macro_name, " ", constant_expression(c));
@@ -1641,9 +1641,9 @@ void CompilerHLSL::emit_resources()
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t, SPIRVariable &var) {
 		auto &type = this->get<SPIRType>(var.basetype);
 
-		bool is_block_storage = type.storage == StorageClassStorageBuffer || type.storage == StorageClass::Uniform;
+		bool is_block_storage = type.storage == StorageClass::StorageBuffer || type.storage == StorageClass::Uniform;
 		bool has_block_flags = ir.meta[type.self].decoration.decoration_flags.get(Decoration::Block) ||
-		                       ir.meta[type.self].decoration.decoration_flags.get(DecorationBufferBlock);
+		                       ir.meta[type.self].decoration.decoration_flags.get(Decoration::BufferBlock);
 
 		if (var.storage != StorageClass::Function && type.pointer && is_block_storage && !is_hidden_variable(var) &&
 		    has_block_flags)
@@ -1656,7 +1656,7 @@ void CompilerHLSL::emit_resources()
 	// Output push constant blocks
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t, SPIRVariable &var) {
 		auto &type = this->get<SPIRType>(var.basetype);
-		if (var.storage != StorageClass::Function && type.pointer && type.storage == StorageClassPushConstant &&
+		if (var.storage != StorageClass::Function && type.pointer && type.storage == StorageClass::PushConstant &&
 		    !is_hidden_variable(var))
 		{
 			emit_push_constant_block(var);
@@ -1665,7 +1665,7 @@ void CompilerHLSL::emit_resources()
 	});
 
 	if (execution.model == ExecutionModel::Vertex && hlsl_options.shader_model <= 30 &&
-	    active_output_builtins.get(BuiltIn::Position))
+	    active_output_builtins.get(static_cast<uint32_t>(BuiltIn::Position)))
 	{
 		statement("uniform float4 gl_HalfPixel;");
 		emitted = true;
@@ -1689,7 +1689,7 @@ void CompilerHLSL::emit_resources()
 		}
 
 		if (var.storage != StorageClass::Function && !is_builtin_variable(var) && !var.remapped_variable &&
-		    type.pointer && (type.storage == StorageClass::UniformConstant || type.storage == StorageClassAtomicCounter) &&
+		    type.pointer && (type.storage == StorageClass::UniformConstant || type.storage == StorageClass::AtomicCounter) &&
 		    !is_hidden_variable(var))
 		{
 			emit_uniform(var);
@@ -1763,7 +1763,7 @@ void CompilerHLSL::emit_resources()
 			}
 			else
 			{
-				uint32_t location = get_decoration(var.self, DecorationLocation);
+				uint32_t location = get_decoration(var.self, Decoration::Location);
 				if (var.storage == StorageClass::Input)
 					input_variables.push_back({ &var, location, 0, false });
 				else
@@ -1779,8 +1779,8 @@ void CompilerHLSL::emit_resources()
 		// - Name comparison
 		// - Variable has a name
 		// - Fallback: ID
-		bool has_location_a = a.block || has_decoration(a.var->self, DecorationLocation);
-		bool has_location_b = b.block || has_decoration(b.var->self, DecorationLocation);
+		bool has_location_a = a.block || has_decoration(a.var->self, Decoration::Location);
+		bool has_location_b = b.block || has_decoration(b.var->self, Decoration::Location);
 
 		if (has_location_a && has_location_b)
 			return a.location < b.location;
@@ -1803,15 +1803,15 @@ void CompilerHLSL::emit_resources()
 	};
 
 	auto input_builtins = active_input_builtins;
-	input_builtins.clear(BuiltInNumWorkgroups);
-	input_builtins.clear(BuiltInPointCoord);
-	input_builtins.clear(BuiltInSubgroupSize);
-	input_builtins.clear(BuiltInSubgroupLocalInvocationId);
-	input_builtins.clear(BuiltInSubgroupEqMask);
-	input_builtins.clear(BuiltInSubgroupLtMask);
-	input_builtins.clear(BuiltInSubgroupLeMask);
-	input_builtins.clear(BuiltInSubgroupGtMask);
-	input_builtins.clear(BuiltInSubgroupGeMask);
+	input_builtins.clear(BuiltIn::NumWorkgroups);
+	input_builtins.clear(BuiltIn::PointCoord);
+	input_builtins.clear(BuiltIn::SubgroupSize);
+	input_builtins.clear(BuiltIn::SubgroupLocalInvocationId);
+	input_builtins.clear(BuiltIn::SubgroupEqMask);
+	input_builtins.clear(BuiltIn::SubgroupLtMask);
+	input_builtins.clear(BuiltIn::SubgroupLeMask);
+	input_builtins.clear(BuiltIn::SubgroupGtMask);
+	input_builtins.clear(BuiltIn::SubgroupGeMask);
 
 	if (!input_variables.empty() || !input_builtins.empty())
 	{
