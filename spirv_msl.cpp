@@ -5120,7 +5120,7 @@ void CompilerMSL::align_struct(SPIRType &ib_type, unordered_set<uint32_t> &align
 		uint32_t aligned_msl_offset = (msl_offset + msl_align_mask) & ~msl_align_mask;
 
 		// Fetch the member offset as declared in the SPIRV.
-		uint32_t spirv_mbr_offset = get_member_decoration(ib_type_id, mbr_idx, DecorationOffset);
+		uint32_t spirv_mbr_offset = get_member_decoration(ib_type_id, mbr_idx, Decoration::Offset);
 		if (spirv_mbr_offset > aligned_msl_offset)
 		{
 			// Since MSL and SPIR-V have slightly different struct member alignment and
@@ -5152,14 +5152,14 @@ void CompilerMSL::align_struct(SPIRType &ib_type, unordered_set<uint32_t> &align
 bool CompilerMSL::validate_member_packing_rules_msl(const SPIRType &type, uint32_t index) const
 {
 	auto &mbr_type = get<SPIRType>(type.member_types[index]);
-	uint32_t spirv_offset = get_member_decoration(type.self, index, static_cast<uint32_t>(DecorationOffset));
+	uint32_t spirv_offset = get_member_decoration(type.self, index, static_cast<uint32_t>(Decoration::Offset));
 
 	if (index + 1 < type.member_types.size())
 	{
 		// First, we will check offsets. If SPIR-V offset + MSL size > SPIR-V offset of next member,
 		// we *must* perform some kind of remapping, no way getting around it.
 		// We can always pad after this member if necessary, so that case is fine.
-		uint32_t spirv_offset_next = get_member_decoration(type.self, index + 1, DecorationOffset);
+		uint32_t spirv_offset_next = get_member_decoration(type.self, index + 1, Decoration::Offset);
 		assert(spirv_offset_next >= spirv_offset);
 		uint32_t maximum_size = spirv_offset_next - spirv_offset;
 		uint32_t msl_mbr_size = get_declared_struct_member_size_msl(type, index);
@@ -13181,7 +13181,7 @@ string CompilerMSL::to_struct_member(const SPIRType &type, uint32_t member_type_
 	// and generally we cannot copy full arrays in and out of buffers into Function
 	// address space.
 	// Array of resources should also be declared as builtin arrays.
-	if (has_member_decoration(type.self, index, DecorationOffset))
+	if (has_member_decoration(type.self, index, Decoration::Offset))
 		is_using_builtin_array = true;
 	else if (has_extended_member_decoration(type.self, index, SPIRVCrossDecorationResourceIndexPrimary))
 		is_using_builtin_array = true;
