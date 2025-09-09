@@ -17,7 +17,7 @@
  */
 
 /*
- * At your Op::OpTion, you may choose to accept this material under either:
+ * At your option, you may choose to accept this material under either:
  *  1. The Apache License, Version 2.0, found at <http://www.apache.org/licenses/LICENSE-2.0>, or
  *  2. The MIT License, found at <http://opensource.org/licenses/MIT>.
  */
@@ -31,14 +31,14 @@ using namespace spv;
 using namespace SPIRV_CROSS_NAMESPACE;
 using namespace std;
 
-enum class ImageFormat::NormalizedState
+enum class ImageFormatNormalizedState
 {
 	None = 0,
 	Unorm = 1,
 	Snorm = 2
 };
 
-static ImageFormat::NormalizedState image_format_to_normalized_state(ImageFormat fmt)
+static ImageFormatNormalizedState image_format_to_normalized_state(ImageFormat fmt)
 {
 	switch (fmt)
 	{
@@ -49,7 +49,7 @@ static ImageFormat::NormalizedState image_format_to_normalized_state(ImageFormat
 	case ImageFormat::Rgba8:
 	case ImageFormat::Rgba16:
 	case ImageFormat::Rgb10A2:
-		return ImageFormat::NormalizedState::Unorm;
+		return ImageFormatNormalizedState::Unorm;
 
 	case ImageFormat::R8Snorm:
 	case ImageFormat::R16Snorm:
@@ -57,13 +57,13 @@ static ImageFormat::NormalizedState image_format_to_normalized_state(ImageFormat
 	case ImageFormat::Rg16Snorm:
 	case ImageFormat::Rgba8Snorm:
 	case ImageFormat::Rgba16Snorm:
-		return ImageFormat::NormalizedState::Snorm;
+		return ImageFormatNormalizedState::Snorm;
 
 	default:
 		break;
 	}
 
-	return ImageFormat::NormalizedState::None;
+	return ImageFormatNormalizedState::None;
 }
 
 static unsigned image_format_to_components(ImageFormat fmt)
@@ -249,32 +249,32 @@ static string image_format_to_type(ImageFormat fmt, SPIRType::BaseType basetype)
 string CompilerHLSL::image_type_hlsl_modern(const SPIRType &type, uint32_t id)
 {
 	auto &imagetype = get<SPIRType>(type.image.type);
-	const char *Dim = nullptr;
+	const char *dim = nullptr;
 	bool typed_load = false;
 	uint32_t components = 4;
 
-	bool force_image_srv = hlsl_Options.nonwritable_uav_texture_as_srv && has_Decoration(id, Decoration::NonWritable);
+	bool force_image_srv = hlsl_options.nonwritable_uav_texture_as_srv && has_decoration(id, DecorationNonWritable);
 
 	switch (type.image.dim)
 	{
 	case Dim::Dim1D:
 		typed_load = type.image.sampled == 2;
-		Dim = "1D";
+		dim = "1D";
 		break;
 	case Dim::Dim2D:
 		typed_load = type.image.sampled == 2;
-		Dim = "2D";
+		dim = "2D";
 		break;
 	case Dim::Dim3D:
 		typed_load = type.image.sampled == 2;
-		Dim = "3D";
+		dim = "3D";
 		break;
 	case Dim::Cube:
 		if (type.image.sampled == 2)
 			SPIRV_CROSS_THROW("RWTextureCube does not exist in HLSL.");
-		Dim = "Cube";
+		dim = "Cube";
 		break;
-	case Dim::Rect:
+	case DimRect:
 		SPIRV_CROSS_THROW("Rectangle texture support is not yet implemented for HLSL."); // TODO
 	case Dim::Buffer:
 		if (type.image.sampled == 1)
@@ -296,11 +296,11 @@ string CompilerHLSL::image_type_hlsl_modern(const SPIRType &type, uint32_t id)
 		else
 			SPIRV_CROSS_THROW("Sampler buffers must be either sampled or unsampled. Cannot deduce in runtime.");
 	case Dim::SubpassData:
-		Dim = "2D";
+		dim = "2D";
 		typed_load = false;
 		break;
 	default:
-		SPIRV_CROSS_THROW("Invalid Dim::Dimension.");
+		SPIRV_CROSS_THROW("Invalid dimension.");
 	}
 	const char *arrayed = type.image.arrayed ? "Array" : "";
 	const char *ms = type.image.ms ? "MS" : "";
@@ -312,7 +312,7 @@ string CompilerHLSL::image_type_hlsl_modern(const SPIRType &type, uint32_t id)
 	if (typed_load && interlocked_resources.count(id))
 		rw = "RasterizerOrdered";
 
-	return join(rw, "Texture", Dim, ms, arrayed, "<",
+	return join(rw, "Texture", dim, ms, arrayed, "<",
 	            typed_load ? image_format_to_type(type.image.format, imagetype.basetype) :
 	                         join(type_to_glsl(imagetype), components),
 	            ">");
@@ -387,14 +387,14 @@ string CompilerHLSL::image_type_hlsl_legacy(const SPIRType &type, uint32_t /*id*
 
 string CompilerHLSL::image_type_hlsl(const SPIRType &type, uint32_t id)
 {
-	if (hlsl_Options.shader_model <= 30)
+	if (hlsl_options.shader_model <= 30)
 		return image_type_hlsl_legacy(type, id);
 	else
 		return image_type_hlsl_modern(type, id);
 }
 
-// The Op::OpTional id parameter indicates the object whose type we are trying
-// to find the description for. It is Op::OpTional. Most type descriptions do not
+// The optional id parameter indicates the object whose type we are trying
+// to find the description for. It is optional. Most type descriptions do not
 // depend on a specific object's use of that type.
 string CompilerHLSL::type_to_glsl(const SPIRType &type, uint32_t id)
 {
@@ -410,7 +410,7 @@ string CompilerHLSL::type_to_glsl(const SPIRType &type, uint32_t id)
 			return to_name(type.self);
 
 	case SPIRType::Image:
-	case SPIRType::SampleDimDimage:
+	case SPIRType::SampledImage:
 		return image_type_hlsl(type, id);
 
 	case SPIRType::Sampler:
@@ -423,7 +423,7 @@ string CompilerHLSL::type_to_glsl(const SPIRType &type, uint32_t id)
 		break;
 	}
 
-	if (type.vecsize == 1 && type.columns == 1) // Scalar BuiltIn::
+	if (type.vecsize == 1 && type.columns == 1) // Scalar builtin
 	{
 		switch (type.basetype)
 		{
@@ -436,17 +436,17 @@ string CompilerHLSL::type_to_glsl(const SPIRType &type, uint32_t id)
 		case SPIRType::AtomicCounter:
 			return "atomic_uint";
 		case SPIRType::Half:
-			if (hlsl_Options.enable_16bit_types)
+			if (hlsl_options.enable_16bit_types)
 				return "half";
 			else
 				return "min16float";
 		case SPIRType::Short:
-			if (hlsl_Options.enable_16bit_types)
+			if (hlsl_options.enable_16bit_types)
 				return "int16_t";
 			else
 				return "min16int";
 		case SPIRType::UShort:
-			if (hlsl_Options.enable_16bit_types)
+			if (hlsl_options.enable_16bit_types)
 				return "uint16_t";
 			else
 				return "min16uint";
@@ -455,11 +455,11 @@ string CompilerHLSL::type_to_glsl(const SPIRType &type, uint32_t id)
 		case SPIRType::Double:
 			return "double";
 		case SPIRType::Int64:
-			if (hlsl_Options.shader_model < 60)
+			if (hlsl_options.shader_model < 60)
 				SPIRV_CROSS_THROW("64-bit integers only supported in SM 6.0.");
 			return "int64_t";
 		case SPIRType::UInt64:
-			if (hlsl_Options.shader_model < 60)
+			if (hlsl_options.shader_model < 60)
 				SPIRV_CROSS_THROW("64-bit integers only supported in SM 6.0.");
 			return "uint64_t";
 		case SPIRType::AccelerationStructure:
@@ -470,7 +470,7 @@ string CompilerHLSL::type_to_glsl(const SPIRType &type, uint32_t id)
 			return "???";
 		}
 	}
-	else if (type.vecsize > 1 && type.columns == 1) // Vector BuiltIn::
+	else if (type.vecsize > 1 && type.columns == 1) // Vector builtin
 	{
 		switch (type.basetype)
 		{
@@ -481,11 +481,11 @@ string CompilerHLSL::type_to_glsl(const SPIRType &type, uint32_t id)
 		case SPIRType::UInt:
 			return join("uint", type.vecsize);
 		case SPIRType::Half:
-			return join(hlsl_Options.enable_16bit_types ? "half" : "min16float", type.vecsize);
+			return join(hlsl_options.enable_16bit_types ? "half" : "min16float", type.vecsize);
 		case SPIRType::Short:
-			return join(hlsl_Options.enable_16bit_types ? "int16_t" : "min16int", type.vecsize);
+			return join(hlsl_options.enable_16bit_types ? "int16_t" : "min16int", type.vecsize);
 		case SPIRType::UShort:
-			return join(hlsl_Options.enable_16bit_types ? "uint16_t" : "min16uint", type.vecsize);
+			return join(hlsl_options.enable_16bit_types ? "uint16_t" : "min16uint", type.vecsize);
 		case SPIRType::Float:
 			return join("float", type.vecsize);
 		case SPIRType::Double:
@@ -509,11 +509,11 @@ string CompilerHLSL::type_to_glsl(const SPIRType &type, uint32_t id)
 		case SPIRType::UInt:
 			return join("uint", type.columns, "x", type.vecsize);
 		case SPIRType::Half:
-			return join(hlsl_Options.enable_16bit_types ? "half" : "min16float", type.columns, "x", type.vecsize);
+			return join(hlsl_options.enable_16bit_types ? "half" : "min16float", type.columns, "x", type.vecsize);
 		case SPIRType::Short:
-			return join(hlsl_Options.enable_16bit_types ? "int16_t" : "min16int", type.columns, "x", type.vecsize);
+			return join(hlsl_options.enable_16bit_types ? "int16_t" : "min16int", type.columns, "x", type.vecsize);
 		case SPIRType::UShort:
-			return join(hlsl_Options.enable_16bit_types ? "uint16_t" : "min16uint", type.columns, "x", type.vecsize);
+			return join(hlsl_options.enable_16bit_types ? "uint16_t" : "min16uint", type.columns, "x", type.vecsize);
 		case SPIRType::Float:
 			return join("float", type.columns, "x", type.vecsize);
 		case SPIRType::Double:
@@ -540,9 +540,9 @@ void CompilerHLSL::emit_interface_block_globally(const SPIRVariable &var)
 {
 	add_resource_name(var.self);
 
-	// The global cOp::OpIes of I/O variables should not contain interpolation qualifiers.
+	// The global copies of I/O variables should not contain interpolation qualifiers.
 	// These are emitted inside the interface structs.
-	auto &flags = ir.meta[var.self].Decoration::.Decoration::_flags;
+	auto &flags = ir.meta[var.self].decoration.decoration_flags;
 	auto old_flags = flags;
 	flags.reset();
 	statement("static ", variable_decl(var), ";");
@@ -554,7 +554,7 @@ const char *CompilerHLSL::to_storage_qualifiers_glsl(const SPIRVariable &var)
 	// Input and output variables are handled specially in HLSL backend.
 	// The variables are declared as global, private variables, and do not need any qualifiers.
 	if (var.storage == StorageClass::UniformConstant || var.storage == StorageClass::Uniform ||
-	    var.storage == StorageClass::PushConstant)
+	    var.storage == StorageClassPushConstant)
 	{
 		return "uniform ";
 	}
@@ -562,30 +562,30 @@ const char *CompilerHLSL::to_storage_qualifiers_glsl(const SPIRVariable &var)
 	return "";
 }
 
-void CompilerHLSL::emit_BuiltIn::_outputs_in_struct()
+void CompilerHLSL::emit_builtin_outputs_in_struct()
 {
 	auto &execution = get_entry_point();
 
-	bool legacy = hlsl_Options.shader_model <= 30;
-	active_output_BuiltIn::s.for_each_bit([&](uint32_t i) {
+	bool legacy = hlsl_options.shader_model <= 30;
+	active_output_builtins.for_each_bit([&](uint32_t i) {
 		const char *type = nullptr;
 		const char *semantic = nullptr;
-		auto BuiltIn = static_cast<BuiltIn::>(i);
-		switch (BuiltIn)
+		auto builtin = static_cast<BuiltIn>(i);
+		switch (builtin)
 		{
-		case BuiltIn::Position:
+		case BuiltInPosition:
 			type = is_position_invariant() && backend.support_precise_qualifier ? "precise float4" : "float4";
 			semantic = legacy ? "POSITION" : "SV_Position";
 			break;
 
-		case BuiltIn::SampleMask:
-			if (hlsl_Options.shader_model < 41 || execution.model != ExecutionModel::Fragment)
+		case BuiltInSampleMask:
+			if (hlsl_options.shader_model < 41 || execution.model != ExecutionModelFragment)
 				SPIRV_CROSS_THROW("Sample Mask output is only supported in PS 4.1 or higher.");
 			type = "uint";
 			semantic = "SV_Coverage";
 			break;
 
-		case BuiltIn::FragDepth:
+		case BuiltInFragDepth:
 			type = "float";
 			if (legacy)
 			{
@@ -593,21 +593,21 @@ void CompilerHLSL::emit_BuiltIn::_outputs_in_struct()
 			}
 			else
 			{
-				if (hlsl_Options.shader_model >= 50 && execution.flags.get(ExecutionModeDepthGreater))
+				if (hlsl_options.shader_model >= 50 && execution.flags.get(ExecutionModeDepthGreater))
 					semantic = "SV_DepthGreaterEqual";
-				else if (hlsl_Options.shader_model >= 50 && execution.flags.get(ExecutionModeDepthLess))
+				else if (hlsl_options.shader_model >= 50 && execution.flags.get(ExecutionModeDepthLess))
 					semantic = "SV_DepthLessEqual";
 				else
 					semantic = "SV_Depth";
 			}
 			break;
 
-		case BuiltIn::ClipDistance:
+		case BuiltInClipDistance:
 		{
 			static const char *types[] = { "float", "float2", "float3", "float4" };
 
 			// HLSL is a bit weird here, use SV_ClipDistance0, SV_ClipDistance1 and so on with vectors.
-			if (execution.model == ExecutionModel::MeshEXT)
+			if (execution.model == ExecutionModelMeshEXT)
 			{
 				if (clip_distance_count > 4)
 					SPIRV_CROSS_THROW("Clip distance count > 4 not supported for mesh shaders.");
@@ -633,19 +633,19 @@ void CompilerHLSL::emit_BuiltIn::_outputs_in_struct()
 
 					uint32_t semantic_index = clip / 4;
 
-					statement(types[to_declare - 1], " ", BuiltIn::_to_glsl(BuiltIn::, StorageClass::Output), semantic_index,
+					statement(types[to_declare - 1], " ", builtin_to_glsl(builtin, StorageClassOutput), semantic_index,
 					          " : SV_ClipDistance", semantic_index, ";");
 				}
 			}
 			break;
 		}
 
-		case BuiltIn::CullDistance:
+		case BuiltInCullDistance:
 		{
 			static const char *types[] = { "float", "float2", "float3", "float4" };
 
 			// HLSL is a bit weird here, use SV_CullDistance0, SV_CullDistance1 and so on with vectors.
-			if (execution.model == ExecutionModel::MeshEXT)
+			if (execution.model == ExecutionModelMeshEXT)
 			{
 				if (cull_distance_count > 4)
 					SPIRV_CROSS_THROW("Cull distance count > 4 not supported for mesh shaders.");
@@ -671,14 +671,14 @@ void CompilerHLSL::emit_BuiltIn::_outputs_in_struct()
 
 					uint32_t semantic_index = cull / 4;
 
-					statement(types[to_declare - 1], " ", BuiltIn::_to_glsl(BuiltIn::, StorageClass::Output), semantic_index,
+					statement(types[to_declare - 1], " ", builtin_to_glsl(builtin, StorageClassOutput), semantic_index,
 					          " : SV_CullDistance", semantic_index, ";");
 				}
 			}
 			break;
 		}
 
-		case BuiltIn::PointSize:
+		case BuiltInPointSize:
 			// If point_size_compat is enabled, just ignore PointSize.
 			// PointSize does not exist in HLSL, but some code bases might want to be able to use these shaders,
 			// even if it means working around the missing feature.
@@ -687,66 +687,66 @@ void CompilerHLSL::emit_BuiltIn::_outputs_in_struct()
 				type = "float";
 				semantic = "PSIZE";
 			}
-			else if (!hlsl_Options.point_size_compat)
-				SPIRV_CROSS_THROW("Unsupported BuiltIn in HLSL.");
+			else if (!hlsl_options.point_size_compat)
+				SPIRV_CROSS_THROW("Unsupported builtin in HLSL.");
 			break;
 
-		case BuiltIn::Layer:
-		case BuiltIn::PrimitiveId:
-		case BuiltIn::ViewportIndex:
-		case BuiltIn::PrimitiveShadingRateKHR:
-		case BuiltIn::CullPrimitiveEXT:
+		case BuiltInLayer:
+		case BuiltInPrimitiveId:
+		case BuiltInViewportIndex:
+		case BuiltInPrimitiveShadingRateKHR:
+		case BuiltInCullPrimitiveEXT:
 			// per-primitive attributes handled separatly
 			break;
 
-		case BuiltIn::PrimitivePointIndicesEXT:
-		case BuiltIn::PrimitiveLineIndicesEXT:
-		case BuiltIn::PrimitiveTriangleIndicesEXT:
+		case BuiltInPrimitivePointIndicesEXT:
+		case BuiltInPrimitiveLineIndicesEXT:
+		case BuiltInPrimitiveTriangleIndicesEXT:
 			// meshlet local-index buffer handled separatly
 			break;
 
 		default:
-			SPIRV_CROSS_THROW("Unsupported BuiltIn in HLSL.");
+			SPIRV_CROSS_THROW("Unsupported builtin in HLSL.");
 		}
 
 		if (type && semantic)
-			statement(type, " ", BuiltIn::_to_glsl(BuiltIn::, StorageClass::Output), " : ", semantic, ";");
+			statement(type, " ", builtin_to_glsl(builtin, StorageClassOutput), " : ", semantic, ";");
 	    });
 }
 
-void CompilerHLSL::emit_BuiltIn::_primitive_outputs_in_struct()
+void CompilerHLSL::emit_builtin_primitive_outputs_in_struct()
 {
-	active_output_BuiltIn::s.for_each_bit([&](uint32_t i) {
+	active_output_builtins.for_each_bit([&](uint32_t i) {
 		const char *type = nullptr;
 		const char *semantic = nullptr;
-		auto BuiltIn = static_cast<BuiltIn::>(i);
-		switch (BuiltIn)
+		auto builtin = static_cast<BuiltIn>(i);
+		switch (builtin)
 		{
-		case BuiltIn::Layer:
+		case BuiltInLayer:
 		{
-			if (hlsl_Options.shader_model < 50)
+			if (hlsl_options.shader_model < 50)
 				SPIRV_CROSS_THROW("Render target array index output is only supported in SM 5.0 or higher.");
 			type = "uint";
 			semantic = "SV_RenderTargetArrayIndex";
 			break;
 		}
 
-		case BuiltIn::PrimitiveId:
+		case BuiltInPrimitiveId:
 			type = "uint";
 			semantic = "SV_PrimitiveID";
 			break;
 
-		case BuiltIn::ViewportIndex:
+		case BuiltInViewportIndex:
 			type = "uint";
 			semantic = "SV_ViewportArrayIndex";
 			break;
 
-		case BuiltIn::PrimitiveShadingRateKHR:
+		case BuiltInPrimitiveShadingRateKHR:
 			type = "uint";
 			semantic = "SV_ShadingRate";
 			break;
 
-		case BuiltIn::CullPrimitiveEXT:
+		case BuiltInCullPrimitiveEXT:
 			type = "bool";
 			semantic = "SV_CullPrimitive";
 			break;
@@ -756,124 +756,124 @@ void CompilerHLSL::emit_BuiltIn::_primitive_outputs_in_struct()
 		}
 
 		if (type && semantic)
-			statement(type, " ", BuiltIn::_to_glsl(BuiltIn::, StorageClass::Output), " : ", semantic, ";");
+			statement(type, " ", builtin_to_glsl(builtin, StorageClassOutput), " : ", semantic, ";");
 	});
 }
 
-void CompilerHLSL::emit_BuiltIn::_inputs_in_struct()
+void CompilerHLSL::emit_builtin_inputs_in_struct()
 {
-	bool legacy = hlsl_Options.shader_model <= 30;
-	active_input_BuiltIn::s.for_each_bit([&](uint32_t i) {
+	bool legacy = hlsl_options.shader_model <= 30;
+	active_input_builtins.for_each_bit([&](uint32_t i) {
 		const char *type = nullptr;
 		const char *semantic = nullptr;
-		auto BuiltIn = static_cast<BuiltIn::>(i);
-		switch (BuiltIn)
+		auto builtin = static_cast<BuiltIn>(i);
+		switch (builtin)
 		{
-		case BuiltIn::FragCoord:
+		case BuiltInFragCoord:
 			type = "float4";
 			semantic = legacy ? "VPOS" : "SV_Position";
 			break;
 
-		case BuiltIn::VertexId:
-		case BuiltIn::VertexIndex:
+		case BuiltInVertexId:
+		case BuiltInVertexIndex:
 			if (legacy)
 				SPIRV_CROSS_THROW("Vertex index not supported in SM 3.0 or lower.");
 			type = "uint";
 			semantic = "SV_VertexID";
 			break;
 
-		case BuiltIn::PrimitiveId:
+		case BuiltInPrimitiveId:
 			type = "uint";
 			semantic = "SV_PrimitiveID";
 			break;
 
-		case BuiltIn::InstanceId:
-		case BuiltIn::InstanceIndex:
+		case BuiltInInstanceId:
+		case BuiltInInstanceIndex:
 			if (legacy)
 				SPIRV_CROSS_THROW("Instance index not supported in SM 3.0 or lower.");
 			type = "uint";
 			semantic = "SV_InstanceID";
 			break;
 
-		case BuiltIn::SampleId:
+		case BuiltInSampleId:
 			if (legacy)
 				SPIRV_CROSS_THROW("Sample ID not supported in SM 3.0 or lower.");
 			type = "uint";
 			semantic = "SV_SampleIndex";
 			break;
 
-		case BuiltIn::SampleMask:
-			if (hlsl_Options.shader_model < 50 || get_entry_point().model != ExecutionModel::Fragment)
+		case BuiltInSampleMask:
+			if (hlsl_options.shader_model < 50 || get_entry_point().model != ExecutionModelFragment)
 				SPIRV_CROSS_THROW("Sample Mask input is only supported in PS 5.0 or higher.");
 			type = "uint";
 			semantic = "SV_Coverage";
 			break;
 
-		case BuiltIn::GlobalInvocationId:
+		case BuiltInGlobalInvocationId:
 			type = "uint3";
 			semantic = "SV_DispatchThreadID";
 			break;
 
-		case BuiltIn::LocalInvocationId:
+		case BuiltInLocalInvocationId:
 			type = "uint3";
 			semantic = "SV_GroupThreadID";
 			break;
 
-		case BuiltIn::LocalInvocationIndex:
+		case BuiltInLocalInvocationIndex:
 			type = "uint";
 			semantic = "SV_GroupIndex";
 			break;
 
-		case BuiltIn::WorkgroupId:
+		case BuiltInWorkgroupId:
 			type = "uint3";
 			semantic = "SV_GroupID";
 			break;
 
-		case BuiltIn::FrontFacing:
+		case BuiltInFrontFacing:
 			type = "bool";
 			semantic = "SV_IsFrontFace";
 			break;
 
-		case BuiltIn::ViewIndex:
-			if (hlsl_Options.shader_model < 61 || (get_entry_point().model != ExecutionModel::Vertex && get_entry_point().model != ExecutionModel::Fragment))
+		case BuiltInViewIndex:
+			if (hlsl_options.shader_model < 61 || (get_entry_point().model != ExecutionModelVertex && get_entry_point().model != ExecutionModelFragment))
 				SPIRV_CROSS_THROW("View Index input is only supported in VS and PS 6.1 or higher.");
 			type = "uint";
 			semantic = "SV_ViewID";
 			break;
 
-		case BuiltIn::NumWorkgroups:
-		case BuiltIn::SubgroupSize:
-		case BuiltIn::SubgroupLocalInvocationId:
-		case BuiltIn::SubgroupEqMask:
-		case BuiltIn::SubgroupLtMask:
-		case BuiltIn::SubgroupLeMask:
-		case BuiltIn::SubgroupGtMask:
-		case BuiltIn::SubgroupGeMask:
+		case BuiltInNumWorkgroups:
+		case BuiltInSubgroupSize:
+		case BuiltInSubgroupLocalInvocationId:
+		case BuiltInSubgroupEqMask:
+		case BuiltInSubgroupLtMask:
+		case BuiltInSubgroupLeMask:
+		case BuiltInSubgroupGtMask:
+		case BuiltInSubgroupGeMask:
 			// Handled specially.
 			break;
 
-		case BuiltIn::BaseVertex:
-			if (hlsl_Options.shader_model >= 68)
+		case BuiltInBaseVertex:
+			if (hlsl_options.shader_model >= 68)
 			{
 				type = "uint";
 				semantic = "SV_StartVertexLocation";
 			}
 			break;
 
-		case BuiltIn::BaseInstance:
-			if (hlsl_Options.shader_model >= 68)
+		case BuiltInBaseInstance:
+			if (hlsl_options.shader_model >= 68)
 			{
 				type = "uint";
 				semantic = "SV_StartInstanceLocation";
 			}
 			break;
 
-		case BuiltIn::HelperInvocation:
-			if (hlsl_Options.shader_model < 50 || get_entry_point().model != ExecutionModel::Fragment)
+		case BuiltInHelperInvocation:
+			if (hlsl_options.shader_model < 50 || get_entry_point().model != ExecutionModelFragment)
 				SPIRV_CROSS_THROW("Helper Invocation input is only supported in PS 5.0 or higher.");
 			break;
 
-		case BuiltIn::ClipDistance:
+		case BuiltInClipDistance:
 			// HLSL is a bit weird here, use SV_ClipDistance0, SV_ClipDistance1 and so on with vectors.
 			for (uint32_t clip = 0; clip < clip_distance_count; clip += 4)
 			{
@@ -884,12 +884,12 @@ void CompilerHLSL::emit_BuiltIn::_inputs_in_struct()
 				uint32_t semantic_index = clip / 4;
 
 				static const char *types[] = { "float", "float2", "float3", "float4" };
-				statement(types[to_declare - 1], " ", BuiltIn::_to_glsl(BuiltIn::, StorageClass::Input), semantic_index,
+				statement(types[to_declare - 1], " ", builtin_to_glsl(builtin, StorageClassInput), semantic_index,
 				          " : SV_ClipDistance", semantic_index, ";");
 			}
 			break;
 
-		case BuiltIn::CullDistance:
+		case BuiltInCullDistance:
 			// HLSL is a bit weird here, use SV_CullDistance0, SV_CullDistance1 and so on with vectors.
 			for (uint32_t cull = 0; cull < cull_distance_count; cull += 4)
 			{
@@ -900,42 +900,42 @@ void CompilerHLSL::emit_BuiltIn::_inputs_in_struct()
 				uint32_t semantic_index = cull / 4;
 
 				static const char *types[] = { "float", "float2", "float3", "float4" };
-				statement(types[to_declare - 1], " ", BuiltIn::_to_glsl(BuiltIn::, StorageClass::Input), semantic_index,
+				statement(types[to_declare - 1], " ", builtin_to_glsl(builtin, StorageClassInput), semantic_index,
 				          " : SV_CullDistance", semantic_index, ";");
 			}
 			break;
 
-		case BuiltIn::PointCoord:
+		case BuiltInPointCoord:
 			// PointCoord is not supported, but provide a way to just ignore that, similar to PointSize.
-			if (hlsl_Options.point_coord_compat)
+			if (hlsl_options.point_coord_compat)
 				break;
 			else
-				SPIRV_CROSS_THROW("Unsupported BuiltIn in HLSL.");
+				SPIRV_CROSS_THROW("Unsupported builtin in HLSL.");
 
-		case BuiltIn::Layer:
-			if (hlsl_Options.shader_model < 50 || get_entry_point().model != ExecutionModel::Fragment)
+		case BuiltInLayer:
+			if (hlsl_options.shader_model < 50 || get_entry_point().model != ExecutionModelFragment)
 				SPIRV_CROSS_THROW("Render target array index input is only supported in PS 5.0 or higher.");
 			type = "uint";
 			semantic = "SV_RenderTargetArrayIndex";
 			break;
 
-		case BuiltIn::BaryCoordKHR:
-		case BuiltIn::BaryCoordNoPerspKHR:
-			if (hlsl_Options.shader_model < 61)
+		case BuiltInBaryCoordKHR:
+		case BuiltInBaryCoordNoPerspKHR:
+			if (hlsl_options.shader_model < 61)
 				SPIRV_CROSS_THROW("SM 6.1 is required for barycentrics.");
-			type = BuiltIn == BuiltIn::BaryCoordNoPerspKHR ? "noperspective float3" : "float3";
-			if (active_input_BuiltIn::s.get(BuiltIn::BaryCoordKHR) && active_input_BuiltIn::s.get(BuiltIn::BaryCoordNoPerspKHR))
-				semantic = BuiltIn == BuiltIn::BaryCoordKHR ? "SV_Barycentrics0" : "SV_Barycentrics1";
+			type = builtin == BuiltInBaryCoordNoPerspKHR ? "noperspective float3" : "float3";
+			if (active_input_builtins.get(BuiltIn::BaryCoordKHR) && active_input_builtins.get(BuiltIn::BaryCoordNoPerspKHR))
+				semantic = builtin == BuiltInBaryCoordKHR ? "SV_Barycentrics0" : "SV_Barycentrics1";
 			else
 				semantic = "SV_Barycentrics";
 			break;
 
 		default:
-			SPIRV_CROSS_THROW("Unsupported BuiltIn in HLSL.");
+			SPIRV_CROSS_THROW("Unsupported builtin in HLSL.");
 		}
 
 		if (type && semantic)
-			statement(type, " ", BuiltIn::_to_glsl(BuiltIn::, StorageClass::Input), " : ", semantic, ";");
+			statement(type, " ", builtin_to_glsl(builtin, StorageClassInput), " : ", semantic, ";");
 	});
 }
 
@@ -967,19 +967,19 @@ uint32_t CompilerHLSL::type_to_consumed_locations(const SPIRType &type) const
 string CompilerHLSL::to_interpolation_qualifiers(const Bitset &flags)
 {
 	string res;
-	//if (flags & (1ull << Decoration::Smooth))
+	//if (flags & (1ull << DecorationSmooth))
 	//    res += "linear ";
-	if (flags.get(Decoration::Flat) || flags.get(Decoration::PerVertexKHR))
+	if (flags.get(DecorationFlat) || flags.get(DecorationPerVertexKHR))
 		res += "nointerpolation ";
-	if (flags.get(Decoration::NoPerspective))
+	if (flags.get(DecorationNoPerspective))
 		res += "noperspective ";
-	if (flags.get(Decoration::Centroid))
+	if (flags.get(DecorationCentroid))
 		res += "centroid ";
-	if (flags.get(Decoration::Patch))
+	if (flags.get(DecorationPatch))
 		res += "patch "; // Seems to be different in actual HLSL.
-	if (flags.get(Decoration::Sample))
+	if (flags.get(DecorationSample))
 		res += "sample ";
-	if (flags.get(Decoration::Invariant) && backend.support_precise_qualifier)
+	if (flags.get(DecorationInvariant) && backend.support_precise_qualifier)
 		res += "precise "; // Not supported?
 
 	return res;
@@ -987,7 +987,7 @@ string CompilerHLSL::to_interpolation_qualifiers(const Bitset &flags)
 
 std::string CompilerHLSL::to_semantic(uint32_t location, ExecutionModel em, StorageClass sc)
 {
-	if (em == ExecutionModel::Vertex && sc == StorageClass::Input)
+	if (em == ExecutionModelVertex && sc == StorageClassInput)
 	{
 		// We have a vertex attribute - we should look at remapping it if the user provided
 		// vertex attribute hints.
@@ -1007,7 +1007,7 @@ std::string CompilerHLSL::to_initializer_expression(const SPIRVariable &var)
 	// FIXME: There is a theoretical problem here if someone tries to composite extract
 	// into this initializer since we don't declare it properly, but that is somewhat non-sensical.
 	auto &type = get<SPIRType>(var.basetype);
-	bool is_block = has_Decoration(type.self, Decoration::Block);
+	bool is_block = has_decoration(type.self, Decoration::Block);
 	auto *c = maybe_get<SPIRConstant>(var.initializer);
 	if (is_block && c)
 		return constant_expression(*c);
@@ -1025,11 +1025,11 @@ void CompilerHLSL::emit_interface_block_member_in_struct(const SPIRVariable &var
 	auto mbr_name = join(to_name(type.self), "_", to_member_name(type, member_index));
 	auto &mbr_type = get<SPIRType>(type.member_types[member_index]);
 
-	Bitset member_Decoration::s = get_member_Decoration::_bitset(type.self, member_index);
-	if (has_Decoration(var.self, Decoration::PerVertexKHR))
-		member_Decoration::s.set(Decoration::PerVertexKHR);
+	Bitset member_decorations = get_member_decoration_bitset(type.self, member_index);
+	if (has_decoration(var.self, DecorationPerVertexKHR))
+		member_decorations.set(DecorationPerVertexKHR);
 
-	statement(to_interpolation_qualifiers(member_Decoration::s),
+	statement(to_interpolation_qualifiers(member_decorations),
 	          type_to_glsl(mbr_type),
 	          " ", mbr_name, type_to_array_glsl(mbr_type, var.self),
 	          " : ", semantic, ";");
@@ -1048,12 +1048,12 @@ void CompilerHLSL::emit_interface_block_in_struct(const SPIRVariable &var, unord
 	string binding;
 	bool use_location_number = true;
 	bool need_matrix_unroll = false;
-	bool legacy = hlsl_Options.shader_model <= 30;
-	if (execution.model == ExecutionModel::Fragment && var.storage == StorageClass::Output)
+	bool legacy = hlsl_options.shader_model <= 30;
+	if (execution.model == ExecutionModelFragment && var.storage == StorageClassOutput)
 	{
 		// Dual-source blending is achieved in HLSL by emitting to SV_Target0 and 1.
-		uint32_t index = get_Decoration(var.self, Decoration::Index);
-		uint32_t location = get_Decoration(var.self, Decoration::Location);
+		uint32_t index = get_decoration(var.self, DecorationIndex);
+		uint32_t location = get_decoration(var.self, DecorationLocation);
 
 		if (index != 0 && location != 0)
 			SPIRV_CROSS_THROW("Dual-source blending is only supported on MRT #0 in HLSL.");
@@ -1063,7 +1063,7 @@ void CompilerHLSL::emit_interface_block_in_struct(const SPIRVariable &var, unord
 		if (legacy) // COLOR must be a four-component vector on legacy shader model targets (HLSL ERR_COLOR_4COMP)
 			type.vecsize = 4;
 	}
-	else if (var.storage == StorageClass::Input && execution.model == ExecutionModel::Vertex)
+	else if (var.storage == StorageClassInput && execution.model == ExecutionModelVertex)
 	{
 		need_matrix_unroll = true;
 		if (legacy) // Inputs must be floating-point in legacy targets.
@@ -1084,8 +1084,8 @@ void CompilerHLSL::emit_interface_block_in_struct(const SPIRVariable &var, unord
 
 		// If an explicit location exists, use it with TEXCOORD[N] semantic.
 		// Otherwise, pick a vacant location.
-		if (has_Decoration(var.self, Decoration::Location))
-			location_number = get_Decoration(var.self, Decoration::Location);
+		if (has_decoration(var.self, DecorationLocation))
+			location_number = get_decoration(var.self, DecorationLocation);
 		else
 			location_number = get_vacant_location();
 
@@ -1104,12 +1104,12 @@ void CompilerHLSL::emit_interface_block_in_struct(const SPIRVariable &var, unord
 				newtype.columns = 1;
 
 				string effective_semantic;
-				if (hlsl_Options.flatten_matrix_vertex_input_semantics)
+				if (hlsl_options.flatten_matrix_vertex_input_semantics)
 					effective_semantic = to_semantic(location_number, execution.model, var.storage);
 				else
 					effective_semantic = join(semantic, "_", i);
 
-				statement(to_interpolation_qualifiers(get_Decoration::_bitset(var.self)),
+				statement(to_interpolation_qualifiers(get_decoration_bitset(var.self)),
 				          variable_decl(newtype, join(name, "_", i)), " : ", effective_semantic, ";");
 				active_locations.insert(location_number++);
 			}
@@ -1117,14 +1117,14 @@ void CompilerHLSL::emit_interface_block_in_struct(const SPIRVariable &var, unord
 		else
 		{
 			auto decl_type = type;
-			if (execution.model == ExecutionModel::MeshEXT ||
-			    (execution.model == ExecutionModel::Geometry && var.storage == StorageClass::Input) ||
-			    has_Decoration(var.self, Decoration::PerVertexKHR))
+			if (execution.model == ExecutionModelMeshEXT ||
+			    (execution.model == ExecutionModelGeometry && var.storage == StorageClassInput) ||
+			    has_decoration(var.self, DecorationPerVertexKHR))
 			{
 				decl_type.array.erase(decl_type.array.begin());
 				decl_type.array_size_literal.erase(decl_type.array_size_literal.begin());
 			}
-			statement(to_interpolation_qualifiers(get_Decoration::_bitset(var.self)), variable_decl(decl_type, name), " : ",
+			statement(to_interpolation_qualifiers(get_decoration_bitset(var.self)), variable_decl(decl_type, name), " : ",
 			          semantic, ";");
 
 			// Structs and arrays should consume more locations.
@@ -1139,47 +1139,47 @@ void CompilerHLSL::emit_interface_block_in_struct(const SPIRVariable &var, unord
 	}
 }
 
-std::string CompilerHLSL::BuiltIn::_to_glsl(spv::BuiltIn BuiltIn::, spv::StorageClass storage)
+std::string CompilerHLSL::builtin_to_glsl(spv::BuiltIn builtin, spv::StorageClass storage)
 {
-	switch (BuiltIn)
+	switch (builtin)
 	{
-	case BuiltIn::VertexId:
+	case BuiltInVertexId:
 		return "gl_VertexID";
-	case BuiltIn::InstanceId:
+	case BuiltInInstanceId:
 		return "gl_InstanceID";
-	case BuiltIn::NumWorkgroups:
+	case BuiltInNumWorkgroups:
 	{
-		if (!num_workgroups_BuiltIn)
-			SPIRV_CROSS_THROW("NumWorkgroups BuiltIn is used, but remap_num_workgroups_BuiltIn::() was not called. "
-			                  "Cannot emit code for this BuiltIn::.");
+		if (!num_workgroups_builtin)
+			SPIRV_CROSS_THROW("NumWorkgroups builtin is used, but remap_num_workgroups_builtin() was not called. "
+			                  "Cannot emit code for this builtin.");
 
-		auto &var = get<SPIRVariable>(num_workgroups_BuiltIn);
+		auto &var = get<SPIRVariable>(num_workgroups_builtin);
 		auto &type = get<SPIRType>(var.basetype);
-		auto ret = join(to_name(num_workgroups_BuiltIn), "_", get_member_name(type.self, 0));
+		auto ret = join(to_name(num_workgroups_builtin), "_", get_member_name(type.self, 0));
 		ParsedIR::sanitize_underscores(ret);
 		return ret;
 	}
-	case BuiltIn::PointCoord:
+	case BuiltInPointCoord:
 		// Crude hack, but there is no real alternative. This path is only enabled if point_coord_compat is set.
 		return "float2(0.5f, 0.5f)";
-	case BuiltIn::SubgroupLocalInvocationId:
+	case BuiltInSubgroupLocalInvocationId:
 		return "WaveGetLaneIndex()";
-	case BuiltIn::SubgroupSize:
+	case BuiltInSubgroupSize:
 		return "WaveGetLaneCount()";
-	case BuiltIn::HelperInvocation:
+	case BuiltInHelperInvocation:
 		return "IsHelperLane()";
 
 	default:
-		return CompilerGLSL::BuiltIn::_to_glsl(BuiltIn::, storage);
+		return CompilerGLSL::builtin_to_glsl(builtin, storage);
 	}
 }
 
-void CompilerHLSL::emit_BuiltIn::_variables()
+void CompilerHLSL::emit_builtin_variables()
 {
-	Bitset BuiltIn::s = active_input_BuiltIn::s;
-	BuiltIn::s.merge_or(active_output_BuiltIn::s);
+	Bitset builtins = active_input_builtins;
+	builtins.merge_or(active_output_builtins);
 
-	std::unordered_map<uint32_t, ID> BuiltIn::_to_initializer;
+	std::unordered_map<uint32_t, ID> builtin_to_initializer;
 
 	// We need to declare sample mask with the same type that module declares it.
 	// Sample mask is somewhat special in that SPIR-V has an array, and we can copy that array, so we need to
@@ -1188,18 +1188,18 @@ void CompilerHLSL::emit_BuiltIn::_variables()
 	SPIRType::BaseType sample_mask_out_basetype = SPIRType::Void;
 
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t, SPIRVariable &var) {
-		if (!is_BuiltIn::_variable(var))
+		if (!is_builtin_variable(var))
 			return;
 
 		auto &type = this->get<SPIRType>(var.basetype);
-		auto BuiltIn = BuiltIn::(get_Decoration(var.self, Decoration::BuiltIn));
+		auto builtin = BuiltIn(get_decoration(var.self, Decoration::BuiltIn));
 
-		if (var.storage == StorageClass::Input && BuiltIn == BuiltIn::SampleMask)
+		if (var.storage == StorageClassInput && builtin == BuiltInSampleMask)
 			sample_mask_in_basetype = type.basetype;
-		else if (var.storage == StorageClass::Output && BuiltIn == BuiltIn::SampleMask)
+		else if (var.storage == StorageClassOutput && builtin == BuiltInSampleMask)
 			sample_mask_out_basetype = type.basetype;
 
-		if (var.initializer && var.storage == StorageClass::Output)
+		if (var.initializer && var.storage == StorageClassOutput)
 		{
 			auto *c = this->maybe_get<SPIRConstant>(var.initializer);
 			if (!c)
@@ -1210,188 +1210,188 @@ void CompilerHLSL::emit_BuiltIn::_variables()
 				uint32_t member_count = uint32_t(type.member_types.size());
 				for (uint32_t i = 0; i < member_count; i++)
 				{
-					if (has_member_Decoration(type.self, i, Decoration::BuiltIn))
+					if (has_member_decoration(type.self, i, Decoration::BuiltIn))
 					{
-						BuiltIn::_to_initializer[get_member_Decoration(type.self, i, Decoration::BuiltIn)] =
+						builtin_to_initializer[get_member_decoration(type.self, i, Decoration::BuiltIn)] =
 								c->subconstants[i];
 					}
 				}
 			}
-			else if (has_Decoration(var.self, Decoration::BuiltIn))
+			else if (has_decoration(var.self, Decoration::BuiltIn))
 			{
-				BuiltIn::_to_initializer[BuiltIn::] = var.initializer;
+				builtin_to_initializer[builtin] = var.initializer;
 			}
 		}
 	});
 
 	// Emit global variables for the interface variables which are statically used by the shader.
-	BuiltIn::s.for_each_bit([&](uint32_t i) {
+	builtins.for_each_bit([&](uint32_t i) {
 		const char *type = nullptr;
-		auto BuiltIn = static_cast<BuiltIn::>(i);
+		auto builtin = static_cast<BuiltIn>(i);
 		uint32_t array_size = 0;
 
 		string init_expr;
-		auto init_itr = BuiltIn::_to_initializer.find(BuiltIn);
-		if (init_itr != BuiltIn::_to_initializer.end())
+		auto init_itr = builtin_to_initializer.find(builtin);
+		if (init_itr != builtin_to_initializer.end())
 			init_expr = join(" = ", to_expression(init_itr->second));
 
 		if (get_execution_model() == ExecutionModel::MeshEXT)
 		{
-			if (BuiltIn == BuiltIn::Position || BuiltIn == BuiltIn::PointSize || BuiltIn == BuiltIn::ClipDistance ||
-			    BuiltIn == BuiltIn::CullDistance || BuiltIn == BuiltIn::Layer || BuiltIn == BuiltIn::PrimitiveId ||
-			    BuiltIn == BuiltIn::ViewportIndex || BuiltIn == BuiltIn::CullPrimitiveEXT ||
-			    BuiltIn == BuiltIn::PrimitiveShadingRateKHR || BuiltIn == BuiltIn::PrimitivePointIndicesEXT ||
-			    BuiltIn == BuiltIn::PrimitiveLineIndicesEXT || BuiltIn == BuiltIn::PrimitiveTriangleIndicesEXT)
+			if (builtin == BuiltInPosition || builtin == BuiltInPointSize || builtin == BuiltInClipDistance ||
+			    builtin == BuiltInCullDistance || builtin == BuiltInLayer || builtin == BuiltInPrimitiveId ||
+			    builtin == BuiltInViewportIndex || builtin == BuiltInCullPrimitiveEXT ||
+			    builtin == BuiltInPrimitiveShadingRateKHR || builtin == BuiltInPrimitivePointIndicesEXT ||
+			    builtin == BuiltInPrimitiveLineIndicesEXT || builtin == BuiltInPrimitiveTriangleIndicesEXT)
 			{
 				return;
 			}
 		}
 
-		switch (BuiltIn)
+		switch (builtin)
 		{
-		case BuiltIn::FragCoord:
-		case BuiltIn::Position:
+		case BuiltInFragCoord:
+		case BuiltInPosition:
 			type = "float4";
 			break;
 
-		case BuiltIn::FragDepth:
+		case BuiltInFragDepth:
 			type = "float";
 			break;
 
-		case BuiltIn::VertexId:
-		case BuiltIn::VertexIndex:
-		case BuiltIn::InstanceIndex:
+		case BuiltInVertexId:
+		case BuiltInVertexIndex:
+		case BuiltInInstanceIndex:
 			type = "int";
-			if (hlsl_Options.support_nonzero_base_vertex_base_instance || hlsl_Options.shader_model >= 68)
+			if (hlsl_options.support_nonzero_base_vertex_base_instance || hlsl_options.shader_model >= 68)
 				base_vertex_info.used = true;
 			break;
 
-		case BuiltIn::BaseVertex:
-		case BuiltIn::BaseInstance:
+		case BuiltInBaseVertex:
+		case BuiltInBaseInstance:
 			type = "int";
 			base_vertex_info.used = true;
 			break;
 
-		case BuiltIn::InstanceId:
-		case BuiltIn::SampleId:
+		case BuiltInInstanceId:
+		case BuiltInSampleId:
 			type = "int";
 			break;
 
-		case BuiltIn::PointSize:
-			if (hlsl_Options.point_size_compat || hlsl_Options.shader_model <= 30)
+		case BuiltInPointSize:
+			if (hlsl_options.point_size_compat || hlsl_options.shader_model <= 30)
 			{
 				// Just emit the global variable, it will be ignored.
 				type = "float";
 				break;
 			}
 			else
-				SPIRV_CROSS_THROW(join("Unsupported BuiltIn in HLSL: ", unsigned(BuiltIn)));
+				SPIRV_CROSS_THROW(join("Unsupported builtin in HLSL: ", unsigned(builtin)));
 
-		case BuiltIn::GlobalInvocationId:
-		case BuiltIn::LocalInvocationId:
-		case BuiltIn::WorkgroupId:
+		case BuiltInGlobalInvocationId:
+		case BuiltInLocalInvocationId:
+		case BuiltInWorkgroupId:
 			type = "uint3";
 			break;
 
-		case BuiltIn::LocalInvocationIndex:
+		case BuiltInLocalInvocationIndex:
 			type = "uint";
 			break;
 
-		case BuiltIn::FrontFacing:
+		case BuiltInFrontFacing:
 			type = "bool";
 			break;
 
-		case BuiltIn::NumWorkgroups:
-		case BuiltIn::PointCoord:
+		case BuiltInNumWorkgroups:
+		case BuiltInPointCoord:
 			// Handled specially.
 			break;
 
-		case BuiltIn::SubgroupLocalInvocationId:
-		case BuiltIn::SubgroupSize:
-			if (hlsl_Options.shader_model < 60)
+		case BuiltInSubgroupLocalInvocationId:
+		case BuiltInSubgroupSize:
+			if (hlsl_options.shader_model < 60)
 				SPIRV_CROSS_THROW("Need SM 6.0 for Wave ops.");
 			break;
 
-		case BuiltIn::SubgroupEqMask:
-		case BuiltIn::SubgroupLtMask:
-		case BuiltIn::SubgroupLeMask:
-		case BuiltIn::SubgroupGtMask:
-		case BuiltIn::SubgroupGeMask:
-			if (hlsl_Options.shader_model < 60)
+		case BuiltInSubgroupEqMask:
+		case BuiltInSubgroupLtMask:
+		case BuiltInSubgroupLeMask:
+		case BuiltInSubgroupGtMask:
+		case BuiltInSubgroupGeMask:
+			if (hlsl_options.shader_model < 60)
 				SPIRV_CROSS_THROW("Need SM 6.0 for Wave ops.");
 			type = "uint4";
 			break;
 
-		case BuiltIn::HelperInvocation:
-			if (hlsl_Options.shader_model < 50)
+		case BuiltInHelperInvocation:
+			if (hlsl_options.shader_model < 50)
 				SPIRV_CROSS_THROW("Need SM 5.0 for Helper Invocation.");
 			break;
 
-		case BuiltIn::ClipDistance:
+		case BuiltInClipDistance:
 			array_size = clip_distance_count;
 			type = "float";
 			break;
 
-		case BuiltIn::CullDistance:
+		case BuiltInCullDistance:
 			array_size = cull_distance_count;
 			type = "float";
 			break;
 
-		case BuiltIn::SampleMask:
-			if (active_input_BuiltIn::s.get(BuiltIn::SampleMask))
+		case BuiltInSampleMask:
+			if (active_input_builtins.get(BuiltIn::SampleMask))
 				type = sample_mask_in_basetype == SPIRType::UInt ? "uint" : "int";
 			else
 				type = sample_mask_out_basetype == SPIRType::UInt ? "uint" : "int";
 			array_size = 1;
 			break;
 
-		case BuiltIn::PrimitiveId:
-		case BuiltIn::ViewIndex:
-		case BuiltIn::Layer:
+		case BuiltInPrimitiveId:
+		case BuiltInViewIndex:
+		case BuiltInLayer:
 			type = "uint";
 			break;
 
-		case BuiltIn::ViewportIndex:
-		case BuiltIn::PrimitiveShadingRateKHR:
-		case BuiltIn::PrimitiveLineIndicesEXT:
-		case BuiltIn::CullPrimitiveEXT:
+		case BuiltInViewportIndex:
+		case BuiltInPrimitiveShadingRateKHR:
+		case BuiltInPrimitiveLineIndicesEXT:
+		case BuiltInCullPrimitiveEXT:
 			type = "uint";
 			break;
 
-		case BuiltIn::BaryCoordKHR:
-		case BuiltIn::BaryCoordNoPerspKHR:
-			if (hlsl_Options.shader_model < 61)
+		case BuiltInBaryCoordKHR:
+		case BuiltInBaryCoordNoPerspKHR:
+			if (hlsl_options.shader_model < 61)
 				SPIRV_CROSS_THROW("Need SM 6.1 for barycentrics.");
 			type = "float3";
 			break;
 
 		default:
-			SPIRV_CROSS_THROW(join("Unsupported BuiltIn in HLSL: ", unsigned(BuiltIn)));
+			SPIRV_CROSS_THROW(join("Unsupported builtin in HLSL: ", unsigned(builtin)));
 		}
 
-		StorageClass storage = active_input_BuiltIn::s.get(i) ? StorageClass::Input : StorageClass::Output;
+		StorageClass storage = active_input_builtins.get(i) ? StorageClassInput : StorageClassOutput;
 
 		if (type)
 		{
 			if (array_size)
-				statement("static ", type, " ", BuiltIn::_to_glsl(BuiltIn::, storage), "[", array_size, "]", init_expr, ";");
+				statement("static ", type, " ", builtin_to_glsl(builtin, storage), "[", array_size, "]", init_expr, ";");
 			else
-				statement("static ", type, " ", BuiltIn::_to_glsl(BuiltIn::, storage), init_expr, ";");
+				statement("static ", type, " ", builtin_to_glsl(builtin, storage), init_expr, ";");
 		}
 
-		// SampleMask can be both in and out with sample BuiltIn::, in this case we have already
+		// SampleMask can be both in and out with sample builtin, in this case we have already
 		// declared the input variable and we need to add the output one now.
-		if (BuiltIn == BuiltIn::SampleMask && storage == StorageClass::Input && this->active_output_BuiltIn::s.get(i))
+		if (builtin == BuiltInSampleMask && storage == StorageClassInput && this->active_output_builtins.get(i))
 		{
 			type = sample_mask_out_basetype == SPIRType::UInt ? "uint" : "int";
 			if (array_size)
-				statement("static ", type, " ", this->BuiltIn::_to_glsl(BuiltIn::, StorageClass::Output), "[", array_size, "]", init_expr, ";");
+				statement("static ", type, " ", this->builtin_to_glsl(builtin, StorageClassOutput), "[", array_size, "]", init_expr, ";");
 			else
-				statement("static ", type, " ", this->BuiltIn::_to_glsl(BuiltIn::, StorageClass::Output), init_expr, ";");
+				statement("static ", type, " ", this->builtin_to_glsl(builtin, StorageClassOutput), init_expr, ";");
 		}
 	});
 
-	if (base_vertex_info.used && hlsl_Options.shader_model < 68)
+	if (base_vertex_info.used && hlsl_options.shader_model < 68)
 	{
 		string binding_info;
 		if (base_vertex_info.explicit_binding)
@@ -1446,7 +1446,7 @@ void CompilerHLSL::emit_composite_constants()
 
 		auto &type = this->get<SPIRType>(c.constant_type);
 
-		if (type.basetype == SPIRType::Struct && is_BuiltIn::_type(type))
+		if (type.basetype == SPIRType::Struct && is_builtin_type(type))
 			return;
 
 		if (type.basetype == SPIRType::Struct || !type.array.empty())
@@ -1471,10 +1471,10 @@ void CompilerHLSL::emit_specialization_constants_and_structs()
 	std::unordered_set<TypeID> io_block_types;
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t, const SPIRVariable &var) {
 		auto &type = this->get<SPIRType>(var.basetype);
-		if ((var.storage == StorageClass::Input || var.storage == StorageClass::Output) &&
-		    !var.remapped_variable && type.pointer && !is_BuiltIn::_variable(var) &&
+		if ((var.storage == StorageClassInput || var.storage == StorageClassOutput) &&
+		    !var.remapped_variable && type.pointer && !is_builtin_variable(var) &&
 		    interface_variable_exists_in_entry_point(var.self) &&
-		    has_Decoration(type.self, Decoration::Block))
+		    has_decoration(type.self, Decoration::Block))
 		{
 			io_block_types.insert(type.self);
 		}
@@ -1501,11 +1501,11 @@ void CompilerHLSL::emit_specialization_constants_and_structs()
 				add_resource_name(c.self);
 				auto name = to_name(c.self);
 
-				if (has_Decoration(c.self, Decoration::SpecId))
+				if (has_decoration(c.self, DecorationSpecId))
 				{
 					// HLSL does not support specialization constants, so fallback to macros.
 					c.specialization_constant_macro_name =
-							constant_value_macro_name(get_Decoration(c.self, Decoration::SpecId));
+							constant_value_macro_name(get_decoration(c.self, DecorationSpecId));
 
 					statement("#ifndef ", c.specialization_constant_macro_name);
 					statement("#define ", c.specialization_constant_macro_name, " ", constant_expression(c));
@@ -1530,9 +1530,9 @@ void CompilerHLSL::emit_specialization_constants_and_structs()
 		else if (id.get_type() == TypeType)
 		{
 			auto &type = id.get<SPIRType>();
-			bool is_non_io_block = has_Decoration(type.self, Decoration::Block) &&
+			bool is_non_io_block = has_decoration(type.self, Decoration::Block) &&
 			                       io_block_types.count(type.self) == 0;
-			bool is_buffer_block = has_Decoration(type.self, Decoration::BufferBlock);
+			bool is_buffer_block = has_decoration(type.self, DecorationBufferBlock);
 			if (type.basetype == SPIRType::Struct && type.array.empty() &&
 			    !type.pointer && !is_non_io_block && !is_buffer_block)
 			{
@@ -1552,7 +1552,7 @@ void CompilerHLSL::emit_specialization_constants_and_structs()
 				return;
 
 			string initializer;
-			if (Options.force_zero_initialized_variables && type_can_zero_initialize(type))
+			if (options.force_zero_initialized_variables && type_can_zero_initialize(type))
 				initializer = join(" = ", to_zero_initialized_expression(undef.basetype));
 
 			statement("static ", variable_decl(type, to_name(undef.self), undef.self), initializer, ";");
@@ -1601,15 +1601,15 @@ void CompilerHLSL::replace_illegal_names()
 	CompilerGLSL::replace_illegal_names();
 }
 
-SPIRType::BaseType CompilerHLSL::get_BuiltIn::_basetype(BuiltIn BuiltIn::, SPIRType::BaseType default_type)
+SPIRType::BaseType CompilerHLSL::get_builtin_basetype(BuiltIn builtin, SPIRType::BaseType default_type)
 {
-	switch (BuiltIn)
+	switch (builtin)
 	{
-	case BuiltIn::SampleMask:
+	case BuiltInSampleMask:
 		// We declare sample mask array with module type, so always use default_type here.
 		return default_type;
 	default:
-		return CompilerGLSL::get_BuiltIn::_basetype(BuiltIn::, default_type);
+		return CompilerGLSL::get_builtin_basetype(builtin, default_type);
 	}
 }
 
@@ -1621,11 +1621,11 @@ void CompilerHLSL::emit_resources()
 
 	switch (execution.model)
 	{
-	case ExecutionModel::Geometry:
-	case ExecutionModel::TessellationControl:
-	case ExecutionModel::TessellationEvaluation:
-	case ExecutionModel::MeshEXT:
-		fixup_implicit_BuiltIn::_block_names(execution.model);
+	case ExecutionModelGeometry:
+	case ExecutionModelTessellationControl:
+	case ExecutionModelTessellationEvaluation:
+	case ExecutionModelMeshEXT:
+		fixup_implicit_builtin_block_names(execution.model);
 		break;
 
 	default:
@@ -1641,11 +1641,11 @@ void CompilerHLSL::emit_resources()
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t, SPIRVariable &var) {
 		auto &type = this->get<SPIRType>(var.basetype);
 
-		bool is_block_storage = type.storage == StorageClass::StorageBuffer || type.storage == StorageClass::Uniform;
-		bool has_block_flags = ir.meta[type.self].Decoration::.Decoration::_flags.get(Decoration::Block) ||
-		                       ir.meta[type.self].Decoration::.Decoration::_flags.get(Decoration::BufferBlock);
+		bool is_block_storage = type.storage == StorageClassStorageBuffer || type.storage == StorageClass::Uniform;
+		bool has_block_flags = ir.meta[type.self].decoration.decoration_flags.get(Decoration::Block) ||
+		                       ir.meta[type.self].decoration.decoration_flags.get(DecorationBufferBlock);
 
-		if (var.storage != StorageClass::Function && type.pointer && is_block_storage && !is_hidden_variable(var) &&
+		if (var.storage != StorageClassFunction && type.pointer && is_block_storage && !is_hidden_variable(var) &&
 		    has_block_flags)
 		{
 			emit_buffer_block(var);
@@ -1656,7 +1656,7 @@ void CompilerHLSL::emit_resources()
 	// Output push constant blocks
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t, SPIRVariable &var) {
 		auto &type = this->get<SPIRType>(var.basetype);
-		if (var.storage != StorageClass::Function && type.pointer && type.storage == StorageClass::PushConstant &&
+		if (var.storage != StorageClassFunction && type.pointer && type.storage == StorageClassPushConstant &&
 		    !is_hidden_variable(var))
 		{
 			emit_push_constant_block(var);
@@ -1664,14 +1664,14 @@ void CompilerHLSL::emit_resources()
 		}
 	});
 
-	if (execution.model == ExecutionModel::Vertex && hlsl_Options.shader_model <= 30 &&
-	    active_output_BuiltIn::s.get(BuiltIn::Position))
+	if (execution.model == ExecutionModelVertex && hlsl_options.shader_model <= 30 &&
+	    active_output_builtins.get(BuiltIn::Position))
 	{
 		statement("uniform float4 gl_HalfPixel;");
 		emitted = true;
 	}
 
-	bool skip_separate_image_sampler = !combined_image_samplers.empty() || hlsl_Options.shader_model <= 30;
+	bool skip_separate_image_sampler = !combined_image_samplers.empty() || hlsl_options.shader_model <= 30;
 
 	// Output Uniform Constants (values, samplers, images, etc).
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t, SPIRVariable &var) {
@@ -1688,8 +1688,8 @@ void CompilerHLSL::emit_resources()
 				return;
 		}
 
-		if (var.storage != StorageClass::Function && !is_BuiltIn::_variable(var) && !var.remapped_variable &&
-		    type.pointer && (type.storage == StorageClass::UniformConstant || type.storage == StorageClass::AtomicCounter) &&
+		if (var.storage != StorageClassFunction && !is_builtin_variable(var) && !var.remapped_variable &&
+		    type.pointer && (type.storage == StorageClass::UniformConstant || type.storage == StorageClassAtomicCounter) &&
 		    !is_hidden_variable(var))
 		{
 			emit_uniform(var);
@@ -1701,19 +1701,19 @@ void CompilerHLSL::emit_resources()
 		statement("");
 	emitted = false;
 
-	// Emit BuiltIn input and output variables here.
-	emit_BuiltIn::_variables();
+	// Emit builtin input and output variables here.
+	emit_builtin_variables();
 
-	if (execution.model != ExecutionModel::MeshEXT)
+	if (execution.model != ExecutionModelMeshEXT)
 	{
 		ir.for_each_typed_id<SPIRVariable>([&](uint32_t, SPIRVariable &var) {
 			auto &type = this->get<SPIRType>(var.basetype);
 
-			if (var.storage != StorageClass::Function && !var.remapped_variable && type.pointer &&
-			   (var.storage == StorageClass::Input || var.storage == StorageClass::Output) && !is_BuiltIn::_variable(var) &&
+			if (var.storage != StorageClassFunction && !var.remapped_variable && type.pointer &&
+			   (var.storage == StorageClassInput || var.storage == StorageClassOutput) && !is_builtin_variable(var) &&
 			   interface_variable_exists_in_entry_point(var.self))
 			{
-				// BuiltIn variables are handled separately.
+				// Builtin variables are handled separately.
 				emit_interface_block_globally(var);
 				emitted = true;
 			}
@@ -1742,12 +1742,12 @@ void CompilerHLSL::emit_resources()
 
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t, SPIRVariable &var) {
 		auto &type = this->get<SPIRType>(var.basetype);
-		bool block = has_Decoration(type.self, Decoration::Block);
+		bool block = has_decoration(type.self, Decoration::Block);
 
-		if (var.storage != StorageClass::Input && var.storage != StorageClass::Output)
+		if (var.storage != StorageClassInput && var.storage != StorageClassOutput)
 			return;
 
-		if (!var.remapped_variable && type.pointer && !is_BuiltIn::_variable(var) &&
+		if (!var.remapped_variable && type.pointer && !is_builtin_variable(var) &&
 		    interface_variable_exists_in_entry_point(var.self))
 		{
 			if (block)
@@ -1755,7 +1755,7 @@ void CompilerHLSL::emit_resources()
 				for (uint32_t i = 0; i < uint32_t(type.member_types.size()); i++)
 				{
 					uint32_t location = get_declared_member_location(var, i, false);
-					if (var.storage == StorageClass::Input)
+					if (var.storage == StorageClassInput)
 						input_variables.push_back({ &var, location, i, true });
 					else
 						output_variables.push_back({ &var, location, i, true });
@@ -1763,8 +1763,8 @@ void CompilerHLSL::emit_resources()
 			}
 			else
 			{
-				uint32_t location = get_Decoration(var.self, Decoration::Location);
-				if (var.storage == StorageClass::Input)
+				uint32_t location = get_decoration(var.self, DecorationLocation);
+				if (var.storage == StorageClassInput)
 					input_variables.push_back({ &var, location, 0, false });
 				else
 					output_variables.push_back({ &var, location, 0, false });
@@ -1779,8 +1779,8 @@ void CompilerHLSL::emit_resources()
 		// - Name comparison
 		// - Variable has a name
 		// - Fallback: ID
-		bool has_location_a = a.block || has_Decoration(a.var->self, Decoration::Location);
-		bool has_location_b = b.block || has_Decoration(b.var->self, Decoration::Location);
+		bool has_location_a = a.block || has_decoration(a.var->self, DecorationLocation);
+		bool has_location_b = b.block || has_decoration(b.var->self, DecorationLocation);
 
 		if (has_location_a && has_location_b)
 			return a.location < b.location;
@@ -1802,18 +1802,18 @@ void CompilerHLSL::emit_resources()
 		return name1.compare(name2) < 0;
 	};
 
-	auto input_BuiltIn::s = active_input_BuiltIn::s;
-	input_BuiltIn::s.clear(BuiltIn::NumWorkgroups);
-	input_BuiltIn::s.clear(BuiltIn::PointCoord);
-	input_BuiltIn::s.clear(BuiltIn::SubgroupSize);
-	input_BuiltIn::s.clear(BuiltIn::SubgroupLocalInvocationId);
-	input_BuiltIn::s.clear(BuiltIn::SubgroupEqMask);
-	input_BuiltIn::s.clear(BuiltIn::SubgroupLtMask);
-	input_BuiltIn::s.clear(BuiltIn::SubgroupLeMask);
-	input_BuiltIn::s.clear(BuiltIn::SubgroupGtMask);
-	input_BuiltIn::s.clear(BuiltIn::SubgroupGeMask);
+	auto input_builtins = active_input_builtins;
+	input_builtins.clear(BuiltInNumWorkgroups);
+	input_builtins.clear(BuiltInPointCoord);
+	input_builtins.clear(BuiltInSubgroupSize);
+	input_builtins.clear(BuiltInSubgroupLocalInvocationId);
+	input_builtins.clear(BuiltInSubgroupEqMask);
+	input_builtins.clear(BuiltInSubgroupLtMask);
+	input_builtins.clear(BuiltInSubgroupLeMask);
+	input_builtins.clear(BuiltInSubgroupGtMask);
+	input_builtins.clear(BuiltInSubgroupGeMask);
 
-	if (!input_variables.empty() || !input_BuiltIn::s.empty())
+	if (!input_variables.empty() || !input_builtins.empty())
 	{
 		require_input = true;
 		statement("struct SPIRV_Cross_Input");
@@ -1827,16 +1827,16 @@ void CompilerHLSL::emit_resources()
 			else
 				emit_interface_block_in_struct(*var.var, active_inputs);
 		}
-		emit_BuiltIn::_inputs_in_struct();
+		emit_builtin_inputs_in_struct();
 		end_scope_decl();
 		statement("");
 	}
 
-	const bool is_mesh_shader = execution.model == ExecutionModel::MeshEXT;
-	if (!output_variables.empty() || !active_output_BuiltIn::s.empty())
+	const bool is_mesh_shader = execution.model == ExecutionModelMeshEXT;
+	if (!output_variables.empty() || !active_output_builtins.empty())
 	{
 		sort(output_variables.begin(), output_variables.end(), variable_compare);
-		require_output = !(is_mesh_shader || execution.model == ExecutionModel::Geometry);
+		require_output = !(is_mesh_shader || execution.model == ExecutionModelGeometry);
 
 		statement(is_mesh_shader ? "struct gl_MeshPerVertexEXT" : "struct SPIRV_Cross_Output");
 		begin_scope();
@@ -1851,9 +1851,9 @@ void CompilerHLSL::emit_resources()
 			else
 				emit_interface_block_in_struct(*var.var, active_outputs);
 		}
-		emit_BuiltIn::_outputs_in_struct();
+		emit_builtin_outputs_in_struct();
 		if (!is_mesh_shader)
-			emit_BuiltIn::_primitive_outputs_in_struct();
+			emit_builtin_primitive_outputs_in_struct();
 		end_scope_decl();
 		statement("");
 
@@ -1870,7 +1870,7 @@ void CompilerHLSL::emit_resources()
 
 				emit_interface_block_in_struct(*var.var, active_outputs);
 			}
-			emit_BuiltIn::_primitive_outputs_in_struct();
+			emit_builtin_primitive_outputs_in_struct();
 			end_scope_decl();
 			statement("");
 		}
@@ -1883,10 +1883,10 @@ void CompilerHLSL::emit_resources()
 		if (is_hidden_variable(var, true))
 			continue;
 
-		if (var.storage == StorageClass::TaskPayloadWorkgroupEXT && is_mesh_shader)
+		if (var.storage == StorageClassTaskPayloadWorkgroupEXT && is_mesh_shader)
 			continue;
 
-		if (var.storage != StorageClass::Output)
+		if (var.storage != StorageClassOutput)
 		{
 			if (!variable_is_lut(var))
 			{
@@ -1895,8 +1895,8 @@ void CompilerHLSL::emit_resources()
 				const char *storage = nullptr;
 				switch (var.storage)
 				{
-				case StorageClass::Workgroup:
-				case StorageClass::TaskPayloadWorkgroupEXT:
+				case StorageClassWorkgroup:
+				case StorageClassTaskPayloadWorkgroupEXT:
 					storage = "groupshared";
 					break;
 
@@ -1906,7 +1906,7 @@ void CompilerHLSL::emit_resources()
 				}
 
 				string initializer;
-				if (Options.force_zero_initialized_variables && var.storage == StorageClass::Private &&
+				if (options.force_zero_initialized_variables && var.storage == StorageClassPrivate &&
 				    !var.initializer && !var.static_expression && type_can_zero_initialize(get_variable_data_type(var)))
 				{
 					initializer = join(" = ", to_zero_initialized_expression(get_variable_data_type_id(var)));
@@ -2004,7 +2004,7 @@ void CompilerHLSL::emit_resources()
 		statement("");
 	}
 
-	// HLSL does not seem to have BuiltIn::s for these operation, so roll them by hand ...
+	// HLSL does not seem to have builtins for these operation, so roll them by hand ...
 	if (requires_unorm8_packing)
 	{
 		statement("uint spvPackUnorm4x8(float4 value)");
@@ -2332,7 +2332,7 @@ void CompilerHLSL::emit_resources()
 		statement("");
 	}
 
-	if (is_mesh_shader && Options.vertex.flip_vert_y)
+	if (is_mesh_shader && options.vertex.flip_vert_y)
 	{
 		statement("float4 spvFlipVertY(float4 v)");
 		begin_scope();
@@ -2354,21 +2354,21 @@ void CompilerHLSL::emit_texture_size_variants(uint64_t variant_mask, const char 
 		return;
 
 	static const char *types[QueryTypeCount] = { "float", "int", "uint" };
-	static const char *Dim::Dims[QueryDim::DimCount] = { "Texture1D",   "Texture1DArray",  "Texture2D",   "Texture2DArray",
+	static const char *dims[QueryDimCount] = { "Texture1D",   "Texture1DArray",  "Texture2D",   "Texture2DArray",
 		                                       "Texture3D",   "Buffer",          "TextureCube", "TextureCubeArray",
 		                                       "Texture2DMS", "Texture2DMSArray" };
 
-	static const bool has_lod[QueryDim::DimCount] = { true, true, true, true, true, false, true, true, false, false };
+	static const bool has_lod[QueryDimCount] = { true, true, true, true, true, false, true, true, false, false };
 
-	static const char *ret_types[QueryDim::DimCount] = {
+	static const char *ret_types[QueryDimCount] = {
 		"uint", "uint2", "uint2", "uint3", "uint3", "uint", "uint2", "uint3", "uint2", "uint3",
 	};
 
-	static const uint32_t return_arguments[QueryDim::DimCount] = {
+	static const uint32_t return_arguments[QueryDimCount] = {
 		1, 2, 2, 3, 3, 1, 2, 3, 2, 3,
 	};
 
-	for (uint32_t index = 0; index < QueryDim::DimCount; index++)
+	for (uint32_t index = 0; index < QueryDimCount; index++)
 	{
 		for (uint32_t type_index = 0; type_index < QueryTypeCount; type_index++)
 		{
@@ -2379,7 +2379,7 @@ void CompilerHLSL::emit_texture_size_variants(uint64_t variant_mask, const char 
 				continue;
 
 			statement(ret_types[index], " spv", (uav ? "Image" : "Texture"), "Size(", (uav ? "RW" : ""),
-			          Dim::Dims[index], "<", type_qualifier, types[type_index], vecsize_qualifier, "> Tex, ",
+			          dims[index], "<", type_qualifier, types[type_index], vecsize_qualifier, "> Tex, ",
 			          (uav ? "" : "uint Level, "), "out uint Param)");
 			begin_scope();
 			statement(ret_types[index], " ret;");
@@ -2387,32 +2387,32 @@ void CompilerHLSL::emit_texture_size_variants(uint64_t variant_mask, const char 
 			{
 			case 1:
 				if (has_lod[index] && !uav)
-					statement("Tex.GetDim::Dimensions(Level, ret.x, Param);");
+					statement("Tex.GetDimensions(Level, ret.x, Param);");
 				else
 				{
-					statement("Tex.GetDim::Dimensions(ret.x);");
+					statement("Tex.GetDimensions(ret.x);");
 					statement("Param = 0u;");
 				}
 				break;
 			case 2:
 				if (has_lod[index] && !uav)
-					statement("Tex.GetDim::Dimensions(Level, ret.x, ret.y, Param);");
+					statement("Tex.GetDimensions(Level, ret.x, ret.y, Param);");
 				else if (!uav)
-					statement("Tex.GetDim::Dimensions(ret.x, ret.y, Param);");
+					statement("Tex.GetDimensions(ret.x, ret.y, Param);");
 				else
 				{
-					statement("Tex.GetDim::Dimensions(ret.x, ret.y);");
+					statement("Tex.GetDimensions(ret.x, ret.y);");
 					statement("Param = 0u;");
 				}
 				break;
 			case 3:
 				if (has_lod[index] && !uav)
-					statement("Tex.GetDim::Dimensions(Level, ret.x, ret.y, ret.z, Param);");
+					statement("Tex.GetDimensions(Level, ret.x, ret.y, ret.z, Param);");
 				else if (!uav)
-					statement("Tex.GetDim::Dimensions(ret.x, ret.y, ret.z, Param);");
+					statement("Tex.GetDimensions(ret.x, ret.y, ret.z, Param);");
 				else
 				{
-					statement("Tex.GetDim::Dimensions(ret.x, ret.y, ret.z);");
+					statement("Tex.GetDimensions(ret.x, ret.y, ret.z);");
 					statement("Param = 0u;");
 				}
 				break;
@@ -2434,31 +2434,31 @@ void CompilerHLSL::analyze_meshlet_writes()
 
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t, SPIRVariable &var) {
 		auto &type = this->get<SPIRType>(var.basetype);
-		bool block = has_Decoration(type.self, Decoration::Block);
-		if (var.storage == StorageClass::Output && block && is_BuiltIn::_variable(var))
+		bool block = has_decoration(type.self, Decoration::Block);
+		if (var.storage == StorageClassOutput && block && is_builtin_variable(var))
 		{
 			auto flags = get_buffer_block_flags(var.self);
-			if (flags.get(Decoration::PerPrimitiveEXT))
+			if (flags.get(DecorationPerPrimitiveEXT))
 				id_per_primitive = var.self;
 			else
 				id_per_vertex = var.self;
 		}
-		else if (var.storage == StorageClass::Output)
+		else if (var.storage == StorageClassOutput)
 		{
 			Bitset flags;
 			if (block)
 				flags = get_buffer_block_flags(var.self);
 			else
-				flags = get_Decoration::_bitset(var.self);
+				flags = get_decoration_bitset(var.self);
 
-			if (flags.get(Decoration::PerPrimitiveEXT))
+			if (flags.get(DecorationPerPrimitiveEXT))
 				need_per_primitive = true;
 			else
 				need_per_vertex = true;
 		}
 	});
 
-	// If we have per-primitive outputs, and no per-primitive BuiltIn::s,
+	// If we have per-primitive outputs, and no per-primitive builtins,
 	// empty version of gl_MeshPerPrimitiveEXT will be emitted.
 	// If we don't use block IO for vertex output, we'll also need to synthesize the PerVertex block.
 
@@ -2470,31 +2470,31 @@ void CompilerHLSL::analyze_meshlet_writes()
 		uint32_t op_ptr = op_type + 2;
 		uint32_t op_var = op_type + 3;
 
-		auto &type = set<SPIRType>(op_type, Op::OpTypeStruct);
+		auto &type = set<SPIRType>(op_type, OpTypeStruct);
 		type.basetype = SPIRType::Struct;
 		set_name(op_type, block_name);
-		set_Decoration(op_type, Decoration::Block);
+		set_decoration(op_type, Decoration::Block);
 		if (per_primitive)
-			set_Decoration(op_type, Decoration::PerPrimitiveEXT);
+			set_decoration(op_type, DecorationPerPrimitiveEXT);
 
 		auto &arr = set<SPIRType>(op_arr, type);
-		arr.op = Op::OpTypeArray;
+		arr.op = OpTypeArray;
 		arr.parent_type = type.self;
 		arr.array.push_back(per_primitive ? execution.output_primitives : execution.output_vertices);
 		arr.array_size_literal.push_back(true);
 
 		auto &ptr = set<SPIRType>(op_ptr, arr);
 		ptr.parent_type = arr.self;
-		ptr.op = Op::OpTypePointer;
+		ptr.op = OpTypePointer;
 		ptr.pointer = true;
 		ptr.pointer_depth++;
-		ptr.storage = StorageClass::Output;
-		set_Decoration(op_ptr, Decoration::Block);
+		ptr.storage = StorageClassOutput;
+		set_decoration(op_ptr, Decoration::Block);
 		set_name(op_ptr, block_name);
 
-		auto &var = set<SPIRVariable>(op_var, op_ptr, StorageClass::Output);
+		auto &var = set<SPIRVariable>(op_var, op_ptr, StorageClassOutput);
 		if (per_primitive)
-			set_Decoration(op_var, Decoration::PerPrimitiveEXT);
+			set_decoration(op_var, DecorationPerPrimitiveEXT);
 		set_name(op_var, instance_name);
 		execution.interface_variables.push_back(var.self);
 
@@ -2530,7 +2530,7 @@ void CompilerHLSL::analyze_meshlet_writes(uint32_t func_id, uint32_t id_per_vert
 
 			switch (op)
 			{
-			case OpFunctionCall:
+			case Op::OpFunctionCall:
 			{
 				// Then recurse into the function itself to extract globals used internally in the function
 				uint32_t inner_func_id = ops[2];
@@ -2562,25 +2562,25 @@ void CompilerHLSL::analyze_meshlet_writes(uint32_t func_id, uint32_t id_per_vert
 				break;
 			}
 
-			case OpStore:
-			case OpLoad:
+			case Op::OpStore:
+			case Op::OpLoad:
 			case Op::OpInBoundsAccessChain:
-			case OpAccessChain:
-			case OpPtrAccessChain:
+			case Op::OpAccessChain:
+			case Op::OpPtrAccessChain:
 			case Op::OpInBoundsPtrAccessChain:
-			case OpArrayLength:
+			case Op::OpArrayLength:
 			{
 				auto *var = maybe_get<SPIRVariable>(ops[op == OpStore ? 0 : 2]);
-				if (var && (var->storage == StorageClass::Output || var->storage == StorageClass::TaskPayloadWorkgroupEXT))
+				if (var && (var->storage == StorageClassOutput || var->storage == StorageClassTaskPayloadWorkgroupEXT))
 				{
 					bool already_declared = false;
-					auto BuiltIn::_type = BuiltIn::(get_Decoration(var->self, Decoration::BuiltIn));
+					auto builtin_type = BuiltIn(get_decoration(var->self, Decoration::BuiltIn));
 
 					uint32_t var_id = var->self;
-					if (var->storage != StorageClass::TaskPayloadWorkgroupEXT &&
-						BuiltIn::_type != BuiltIn::PrimitivePointIndicesEXT &&
-						BuiltIn::_type != BuiltIn::PrimitiveLineIndicesEXT &&
-						BuiltIn::_type != BuiltIn::PrimitiveTriangleIndicesEXT)
+					if (var->storage != StorageClassTaskPayloadWorkgroupEXT &&
+						builtin_type != BuiltInPrimitivePointIndicesEXT &&
+						builtin_type != BuiltInPrimitiveLineIndicesEXT &&
+						builtin_type != BuiltInPrimitiveTriangleIndicesEXT)
 					{
 						var_id = is_per_primitive_variable(*var) ? id_per_primitive : id_per_vertex;
 					}
@@ -2599,7 +2599,7 @@ void CompilerHLSL::analyze_meshlet_writes(uint32_t func_id, uint32_t id_per_vert
 						// basetype is effectively ignored here since we declare the argument
 						// with explicit types. Just pass down a valid type.
 						uint32_t type_id = expression_type_id(var_id);
-						if (var->storage == StorageClass::TaskPayloadWorkgroupEXT)
+						if (var->storage == StorageClassTaskPayloadWorkgroupEXT)
 							func.arguments.push_back({ type_id, var_id, 1u, 0u, true });
 						else
 							func.arguments.push_back({ type_id, var_id, 1u, 1u, true });
@@ -2617,16 +2617,16 @@ void CompilerHLSL::analyze_meshlet_writes(uint32_t func_id, uint32_t id_per_vert
 
 string CompilerHLSL::layout_for_member(const SPIRType &type, uint32_t index)
 {
-	auto &flags = get_member_Decoration::_bitset(type.self, index);
+	auto &flags = get_member_decoration_bitset(type.self, index);
 
-	// HLSL can emit row_major or column_major Decoration:: in any struct.
-	// Do not try to merge combined Decoration::s for children like in GLSL.
+	// HLSL can emit row_major or column_major decoration in any struct.
+	// Do not try to merge combined decorations for children like in GLSL.
 
 	// Flip the convention. HLSL is a bit odd in that the memory layout is column major ... but the language API is "row-major".
 	// The way to deal with this is to multiply everything in inverse order, and reverse the memory layout.
-	if (flags.get(Decoration::ColMajor))
+	if (flags.get(DecorationColMajor))
 		return "row_major ";
-	else if (flags.get(Decoration::RowMajor))
+	else if (flags.get(DecorationRowMajor))
 		return "column_major ";
 
 	return "";
@@ -2640,13 +2640,13 @@ void CompilerHLSL::emit_struct_member(const SPIRType &type, uint32_t member_type
 	Bitset memberflags;
 	auto &memb = ir.meta[type.self].members;
 	if (index < memb.size())
-		memberflags = memb[index].Decoration::_flags;
+		memberflags = memb[index].decoration_flags;
 
 	string packing_offset;
-	bool is_push_constant = type.storage == StorageClass::PushConstant;
+	bool is_push_constant = type.storage == StorageClassPushConstant;
 
-	if ((has_extended_Decoration(type.self, SPIRVCrossDecoration::ExplicitOffset) || is_push_constant) &&
-	    has_member_Decoration(type.self, index, Decoration::Offset))
+	if ((has_extended_decoration(type.self, SPIRVCrossDecorationExplicitOffset) || is_push_constant) &&
+	    has_member_decoration(type.self, index, DecorationOffset))
 	{
 		uint32_t offset = memb[index].offset - base_offset;
 		if (offset & 3)
@@ -2685,30 +2685,30 @@ void CompilerHLSL::emit_geometry_stream_append()
 	begin_scope();
 	statement("SPIRV_Cross_Output stage_output;");
 
-	active_output_BuiltIn::s.for_each_bit(
+	active_output_builtins.for_each_bit(
 	    [&](uint32_t i)
 	    {
-		    if (i == BuiltIn::PointSize && hlsl_Options.shader_model > 30)
+		    if (i == BuiltInPointSize && hlsl_options.shader_model > 30)
 			    return;
-		    switch (static_cast<BuiltIn::>(i))
+		    switch (static_cast<BuiltIn>(i))
 		    {
-		    case BuiltIn::ClipDistance:
+		    case BuiltInClipDistance:
 			    for (uint32_t clip = 0; clip < clip_distance_count; clip++)
 				    statement("stage_output.gl_ClipDistance", clip / 4, ".", "xyzw"[clip & 3], " = gl_ClipDistance[",
 				              clip, "];");
 			    break;
-		    case BuiltIn::CullDistance:
+		    case BuiltInCullDistance:
 			    for (uint32_t cull = 0; cull < cull_distance_count; cull++)
 				    statement("stage_output.gl_CullDistance", cull / 4, ".", "xyzw"[cull & 3], " = gl_CullDistance[",
 				              cull, "];");
 			    break;
-		    case BuiltIn::SampleMask:
+		    case BuiltInSampleMask:
 			    statement("stage_output.gl_SampleMask = gl_SampleMask[0];");
 			    break;
 		    default:
 		    {
-			    auto BuiltIn::_expr = BuiltIn::_to_glsl(static_cast<BuiltIn::>(i), StorageClass::Output);
-			    statement("stage_output.", BuiltIn::_expr, " = ", BuiltIn::_expr, ";");
+			    auto builtin_expr = builtin_to_glsl(static_cast<BuiltIn>(i), StorageClassOutput);
+			    statement("stage_output.", builtin_expr, " = ", builtin_expr, ";");
 		    }
 		    break;
 		    }
@@ -2718,12 +2718,12 @@ void CompilerHLSL::emit_geometry_stream_append()
 	    [&](uint32_t, SPIRVariable &var)
 	    {
 		    auto &type = this->get<SPIRType>(var.basetype);
-		    bool block = has_Decoration(type.self, Decoration::Block);
+		    bool block = has_decoration(type.self, Decoration::Block);
 
-		    if (var.storage != StorageClass::Output)
+		    if (var.storage != StorageClassOutput)
 			    return;
 
-		    if (!var.remapped_variable && type.pointer && !is_BuiltIn::_variable(var) &&
+		    if (!var.remapped_variable && type.pointer && !is_builtin_variable(var) &&
 		        interface_variable_exists_in_entry_point(var.self))
 		    {
 			    if (block)
@@ -2740,7 +2740,7 @@ void CompilerHLSL::emit_geometry_stream_append()
 			    else
 			    {
 				    auto name = to_name(var.self);
-				    if (hlsl_Options.shader_model <= 30 && get_entry_point().model == ExecutionModel::Fragment)
+				    if (hlsl_options.shader_model <= 30 && get_entry_point().model == ExecutionModelFragment)
 				    {
 					    string output_filler;
 					    for (uint32_t size = type.vecsize; size < 4; ++size)
@@ -2761,7 +2761,7 @@ void CompilerHLSL::emit_buffer_block(const SPIRVariable &var)
 {
 	auto &type = get<SPIRType>(var.basetype);
 
-	bool is_uav = var.storage == StorageClass::StorageBuffer || has_Decoration(type.self, Decoration::BufferBlock);
+	bool is_uav = var.storage == StorageClassStorageBuffer || has_decoration(type.self, DecorationBufferBlock);
 
 	if (flattened_buffer_blocks.count(var.self))
 	{
@@ -2770,8 +2770,8 @@ void CompilerHLSL::emit_buffer_block(const SPIRVariable &var)
 	else if (is_uav)
 	{
 		Bitset flags = ir.get_buffer_block_flags(var);
-		bool is_readonly = flags.get(Decoration::NonWritable) && !is_hlsl_force_storage_buffer_as_uav(var.self);
-		bool is_coherent = flags.get(Decoration::Coherent) && !is_readonly;
+		bool is_readonly = flags.get(DecorationNonWritable) && !is_hlsl_force_storage_buffer_as_uav(var.self);
+		bool is_coherent = flags.get(DecorationCoherent) && !is_readonly;
 		bool is_interlocked = interlocked_resources.count(var.self) > 0;
 
 		auto to_structuredbuffer_subtype_name = [this](const SPIRType &parent_type) -> std::string
@@ -2809,7 +2809,7 @@ void CompilerHLSL::emit_buffer_block(const SPIRVariable &var)
 
 			// Prefer the block name if possible.
 			auto buffer_name = to_name(type.self, false);
-			if (ir.meta[type.self].Decoration::.alias.empty() ||
+			if (ir.meta[type.self].decoration.alias.empty() ||
 			    resource_names.find(buffer_name) != end(resource_names) ||
 			    block_names.find(buffer_name) != end(block_names))
 			{
@@ -2825,7 +2825,7 @@ void CompilerHLSL::emit_buffer_block(const SPIRVariable &var)
 
 			uint32_t failed_index = 0;
 			if (buffer_is_packing_standard(type, BufferPackingHLSLCbufferPackOffset, &failed_index))
-				set_extended_Decoration(type.self, SPIRVCrossDecoration::ExplicitOffset);
+				set_extended_decoration(type.self, SPIRVCrossDecorationExplicitOffset);
 			else
 			{
 				SPIRV_CROSS_THROW(join("cbuffer ID ", var.self, " (name: ", buffer_name, "), member index ",
@@ -2866,7 +2866,7 @@ void CompilerHLSL::emit_buffer_block(const SPIRVariable &var)
 		}
 		else
 		{
-			if (hlsl_Options.shader_model < 51)
+			if (hlsl_options.shader_model < 51)
 				SPIRV_CROSS_THROW(
 				    "Need ConstantBuffer<T> to use arrays of UBOs, but this is only supported in SM 5.1.");
 
@@ -2908,7 +2908,7 @@ void CompilerHLSL::emit_push_constant_block(const SPIRVariable &var)
 			uint32_t failed_index = 0;
 			if (buffer_is_packing_standard(type, BufferPackingHLSLCbufferPackOffset, &failed_index, layout.start,
 			                               layout.end))
-				set_extended_Decoration(type.self, SPIRVCrossDecoration::ExplicitOffset);
+				set_extended_decoration(type.self, SPIRVCrossDecorationExplicitOffset);
 			else
 			{
 				SPIRV_CROSS_THROW(join("Root constant cbuffer ID ", var.self, " (name: ", to_name(type.self), ")",
@@ -2972,9 +2972,9 @@ string CompilerHLSL::to_sampler_expression(uint32_t id)
 
 void CompilerHLSL::emit_sampled_image_op(uint32_t result_type, uint32_t result_id, uint32_t image_id, uint32_t samp_id)
 {
-	if (hlsl_Options.shader_model >= 40 && combined_image_samplers.empty())
+	if (hlsl_options.shader_model >= 40 && combined_image_samplers.empty())
 	{
-		set<SPIRCombineDim::DimageSampler>(result_id, result_type, image_id, samp_id);
+		set<SPIRCombinedImageSampler>(result_id, result_type, image_id, samp_id);
 	}
 	else
 	{
@@ -2987,16 +2987,16 @@ string CompilerHLSL::to_func_call_arg(const SPIRFunction::Parameter &arg, uint32
 {
 	string arg_str = CompilerGLSL::to_func_call_arg(arg, id);
 
-	if (hlsl_Options.shader_model <= 30)
+	if (hlsl_options.shader_model <= 30)
 		return arg_str;
 
-	// Manufacture automatic sampler arg if the arg is a SampleDim::Dimage texture and we're in modern HLSL.
+	// Manufacture automatic sampler arg if the arg is a SampledImage texture and we're in modern HLSL.
 	auto &type = expression_type(id);
 
-	// We don't have to consider combined image samplers here via OpSampleDim::Dimage because
+	// We don't have to consider combined image samplers here via OpSampledImage because
 	// those variables cannot be passed as arguments to functions.
-	// Only global SampleDim::Dimage variables may be used as arguments.
-	if (type.basetype == SPIRType::SampleDimDimage && type.image.dim != Dim::Buffer)
+	// Only global SampledImage variables may be used as arguments.
+	if (type.basetype == SPIRType::SampledImage && type.image.dim != Dim::Buffer)
 		arg_str += ", " + to_sampler_expression(id);
 
 	return arg_str;
@@ -3006,24 +3006,24 @@ string CompilerHLSL::get_inner_entry_point_name() const
 {
 	auto &execution = get_entry_point();
 
-	if (hlsl_Options.use_entry_point_name)
+	if (hlsl_options.use_entry_point_name)
 	{
 		auto name = join(execution.name, "_inner");
 		ParsedIR::sanitize_underscores(name);
 		return name;
 	}
 
-	if (execution.model == ExecutionModel::Vertex)
+	if (execution.model == ExecutionModelVertex)
 		return "vert_main";
-	else if (execution.model == ExecutionModel::Fragment)
+	else if (execution.model == ExecutionModelFragment)
 		return "frag_main";
-	else if (execution.model == ExecutionModel::GLCompute)
+	else if (execution.model == ExecutionModelGLCompute)
 		return "comp_main";
-	else if (execution.model == ExecutionModel::Geometry)
+	else if (execution.model == ExecutionModelGeometry)
 		return "geom_main";
-	else if (execution.model == ExecutionModel::MeshEXT)
+	else if (execution.model == ExecutionModelMeshEXT)
 		return "mesh_main";
-	else if (execution.model == ExecutionModel::TaskEXT)
+	else if (execution.model == ExecutionModelTaskEXT)
 		return "task_main";
 	else
 		SPIRV_CROSS_THROW("Unsupported execution model.");
@@ -3111,10 +3111,10 @@ void CompilerHLSL::emit_function_prototype(SPIRFunction &func, const Bitset &ret
 
 		// Flatten a combined sampler to two separate arguments in modern HLSL.
 		auto &arg_type = get<SPIRType>(arg.type);
-		if (hlsl_Options.shader_model > 30 && arg_type.basetype == SPIRType::SampleDimDimage &&
+		if (hlsl_options.shader_model > 30 && arg_type.basetype == SPIRType::SampledImage &&
 		    arg_type.image.dim != Dim::Buffer)
 		{
-			// Manufacture automatic sampler arg for SampleDim::Dimage texture
+			// Manufacture automatic sampler arg for SampledImage texture
 			arglist.push_back(join(is_depth_image(arg_type, arg.id) ? "SamplerComparisonState " : "SamplerState ",
 			                       to_sampler_expression(arg.id), type_to_array_glsl(arg_type, arg.id)));
 		}
@@ -3142,7 +3142,7 @@ void CompilerHLSL::emit_function_prototype(SPIRFunction &func, const Bitset &ret
 	}
 
 	if ((func.self == ir.default_entry_point || func.emits_geometry) &&
-	    get_entry_point().model == ExecutionModel::Geometry)
+	    get_entry_point().model == ExecutionModelGeometry)
 	{
 		auto &execution = get_entry_point();
 
@@ -3182,7 +3182,7 @@ void CompilerHLSL::emit_hlsl_entry_point()
 {
 	SmallVector<string> arguments;
 
-	if (require_input && get_entry_point().model != ExecutionModel::Geometry)
+	if (require_input && get_entry_point().model != ExecutionModelGeometry)
 		arguments.push_back("SPIRV_Cross_Input stage_input");
 
 	auto &execution = get_entry_point();
@@ -3191,7 +3191,7 @@ void CompilerHLSL::emit_hlsl_entry_point()
 
 	switch (execution.model)
 	{
-	case ExecutionModel::Geometry:
+	case ExecutionModelGeometry:
 	{
 		input_vertices = input_vertices_from_execution_mode(execution);
 
@@ -3226,11 +3226,11 @@ void CompilerHLSL::emit_hlsl_entry_point()
 		arguments.push_back(join("inout ", stream_type, "<SPIRV_Cross_Output> ", "geometry_stream"));
 		break;
 	}
-	case ExecutionModel::TaskEXT:
-	case ExecutionModel::MeshEXT:
-	case ExecutionModel::GLCompute:
+	case ExecutionModelTaskEXT:
+	case ExecutionModelMeshEXT:
+	case ExecutionModelGLCompute:
 	{
-		if (execution.model == ExecutionModel::MeshEXT)
+		if (execution.model == ExecutionModelMeshEXT)
 		{
 			if (execution.flags.get(ExecutionModeOutputTrianglesEXT))
 				statement("[outputtopology(\"triangle\")]");
@@ -3244,15 +3244,15 @@ void CompilerHLSL::emit_hlsl_entry_point()
 			{
 				auto &var = get<SPIRVariable>(arg.id);
 				auto &base_type = get<SPIRType>(var.basetype);
-				bool block = has_Decoration(base_type.self, Decoration::Block);
-				if (var.storage == StorageClass::TaskPayloadWorkgroupEXT)
+				bool block = has_decoration(base_type.self, Decoration::Block);
+				if (var.storage == StorageClassTaskPayloadWorkgroupEXT)
 				{
 					arguments.push_back("in payload " + variable_decl(var));
 				}
 				else if (block)
 				{
 					auto flags = get_buffer_block_flags(var.self);
-					if (flags.get(Decoration::PerPrimitiveEXT) || has_Decoration(arg.id, Decoration::PerPrimitiveEXT))
+					if (flags.get(DecorationPerPrimitiveEXT) || has_decoration(arg.id, DecorationPerPrimitiveEXT))
 					{
 						arguments.push_back("out primitives gl_MeshPerPrimitiveEXT gl_MeshPrimitivesEXT[" +
 						                    std::to_string(execution.output_primitives) + "]");
@@ -3285,7 +3285,7 @@ void CompilerHLSL::emit_hlsl_entry_point()
 		uint32_t y = execution.workgroup_size.y;
 		uint32_t z = execution.workgroup_size.z;
 
-		if (!execution.workgroup_size.constant && execution.flags.get(ExecutionModel::ocalSizeId))
+		if (!execution.workgroup_size.constant && execution.flags.get(ExecutionModeLocalSizeId))
 		{
 			if (execution.workgroup_size.id_x)
 				x = get<SPIRConstant>(execution.workgroup_size.id_x).scalar();
@@ -3302,7 +3302,7 @@ void CompilerHLSL::emit_hlsl_entry_point()
 		statement("[numthreads(", x_expr, ", ", y_expr, ", ", z_expr, ")]");
 		break;
 	}
-	case ExecutionModel::Fragment:
+	case ExecutionModelFragment:
 		if (execution.flags.get(ExecutionModeEarlyFragmentTests))
 			statement("[earlydepthstencil]");
 		break;
@@ -3311,90 +3311,90 @@ void CompilerHLSL::emit_hlsl_entry_point()
 	}
 
 	const char *entry_point_name;
-	if (hlsl_Options.use_entry_point_name)
+	if (hlsl_options.use_entry_point_name)
 		entry_point_name = get_entry_point().name.c_str();
 	else
 		entry_point_name = "main";
 
 	statement(require_output ? "SPIRV_Cross_Output " : "void ", entry_point_name, "(", merge(arguments), ")");
 	begin_scope();
-	bool legacy = hlsl_Options.shader_model <= 30;
+	bool legacy = hlsl_options.shader_model <= 30;
 
-	// Copy BuiltIn::s from entry point arguments to globals.
-	active_input_BuiltIn::s.for_each_bit([&](uint32_t i) {
-		auto BuiltIn = BuiltIn::_to_glsl(static_cast<BuiltIn::>(i), StorageClass::Input);
-		switch (static_cast<BuiltIn::>(i))
+	// Copy builtins from entry point arguments to globals.
+	active_input_builtins.for_each_bit([&](uint32_t i) {
+		auto builtin = builtin_to_glsl(static_cast<BuiltIn>(i), StorageClassInput);
+		switch (static_cast<BuiltIn>(i))
 		{
-		case BuiltIn::FragCoord:
+		case BuiltInFragCoord:
 			// VPOS in D3D9 is sampled at integer locations, apply half-pixel offset to be consistent.
-			// TODO: Do we need an Op::OpTion here? Any reason why a D3D9 shader would be used
+			// TODO: Do we need an option here? Any reason why a D3D9 shader would be used
 			// on a D3D10+ system with a different rasterization config?
 			if (legacy)
-				statement(BuiltIn::, " = stage_input.", BuiltIn::, " + float4(0.5f, 0.5f, 0.0f, 0.0f);");
+				statement(builtin, " = stage_input.", builtin, " + float4(0.5f, 0.5f, 0.0f, 0.0f);");
 			else
 			{
-				statement(BuiltIn::, " = stage_input.", BuiltIn::, ";");
+				statement(builtin, " = stage_input.", builtin, ";");
 				// ZW are undefined in D3D9, only do this fixup here.
-				statement(BuiltIn::, ".w = 1.0 / ", BuiltIn::, ".w;");
+				statement(builtin, ".w = 1.0 / ", builtin, ".w;");
 			}
 			break;
 
-		case BuiltIn::VertexId:
-		case BuiltIn::VertexIndex:
-		case BuiltIn::InstanceIndex:
+		case BuiltInVertexId:
+		case BuiltInVertexIndex:
+		case BuiltInInstanceIndex:
 			// D3D semantics are uint, but shader wants int.
-			if (hlsl_Options.support_nonzero_base_vertex_base_instance || hlsl_Options.shader_model >= 68)
+			if (hlsl_options.support_nonzero_base_vertex_base_instance || hlsl_options.shader_model >= 68)
 			{
-				if (hlsl_Options.shader_model >= 68)
+				if (hlsl_options.shader_model >= 68)
 				{
-					if (static_cast<BuiltIn::>(i) == BuiltIn::InstanceIndex)
-						statement(BuiltIn::, " = int(stage_input.", BuiltIn::, " + stage_input.gl_BaseInstanceARB);");
+					if (static_cast<BuiltIn>(i) == BuiltInInstanceIndex)
+						statement(builtin, " = int(stage_input.", builtin, " + stage_input.gl_BaseInstanceARB);");
 					else
-						statement(BuiltIn::, " = int(stage_input.", BuiltIn::, " + stage_input.gl_BaseVertexARB);");
+						statement(builtin, " = int(stage_input.", builtin, " + stage_input.gl_BaseVertexARB);");
 				}
 				else
 				{
-					if (static_cast<BuiltIn::>(i) == BuiltIn::InstanceIndex)
-						statement(BuiltIn::, " = int(stage_input.", BuiltIn::, ") + SPIRV_Cross_BaseInstance;");
+					if (static_cast<BuiltIn>(i) == BuiltInInstanceIndex)
+						statement(builtin, " = int(stage_input.", builtin, ") + SPIRV_Cross_BaseInstance;");
 					else
-						statement(BuiltIn::, " = int(stage_input.", BuiltIn::, ") + SPIRV_Cross_BaseVertex;");
+						statement(builtin, " = int(stage_input.", builtin, ") + SPIRV_Cross_BaseVertex;");
 				}
 			}
 			else
-				statement(BuiltIn::, " = int(stage_input.", BuiltIn::, ");");
+				statement(builtin, " = int(stage_input.", builtin, ");");
 			break;
 
-		case BuiltIn::BaseVertex:
-			if (hlsl_Options.shader_model >= 68)
-				statement(BuiltIn::, " = stage_input.gl_BaseVertexARB;");
+		case BuiltInBaseVertex:
+			if (hlsl_options.shader_model >= 68)
+				statement(builtin, " = stage_input.gl_BaseVertexARB;");
 			else
-				statement(BuiltIn::, " = SPIRV_Cross_BaseVertex;");
+				statement(builtin, " = SPIRV_Cross_BaseVertex;");
 			break;
 
-		case BuiltIn::BaseInstance:
-			if (hlsl_Options.shader_model >= 68)
-				statement(BuiltIn::, " = stage_input.gl_BaseInstanceARB;");
+		case BuiltInBaseInstance:
+			if (hlsl_options.shader_model >= 68)
+				statement(builtin, " = stage_input.gl_BaseInstanceARB;");
 			else
-				statement(BuiltIn::, " = SPIRV_Cross_BaseInstance;");
+				statement(builtin, " = SPIRV_Cross_BaseInstance;");
 			break;
 
-		case BuiltIn::InstanceId:
+		case BuiltInInstanceId:
 			// D3D semantics are uint, but shader wants int.
-			statement(BuiltIn::, " = int(stage_input.", BuiltIn::, ");");
+			statement(builtin, " = int(stage_input.", builtin, ");");
 			break;
 
-		case BuiltIn::SampleMask:
-			statement(BuiltIn::, "[0] = stage_input.", BuiltIn::, ";");
+		case BuiltInSampleMask:
+			statement(builtin, "[0] = stage_input.", builtin, ";");
 			break;
 
-		case BuiltIn::NumWorkgroups:
-		case BuiltIn::PointCoord:
-		case BuiltIn::SubgroupSize:
-		case BuiltIn::SubgroupLocalInvocationId:
-		case BuiltIn::HelperInvocation:
+		case BuiltInNumWorkgroups:
+		case BuiltInPointCoord:
+		case BuiltInSubgroupSize:
+		case BuiltInSubgroupLocalInvocationId:
+		case BuiltInHelperInvocation:
 			break;
 
-		case BuiltIn::SubgroupEqMask:
+		case BuiltInSubgroupEqMask:
 			// Emulate these ...
 			// No 64-bit in HLSL, so have to do it in 32-bit and unroll.
 			statement("gl_SubgroupEqMask = 1u << (WaveGetLaneIndex() - uint4(0, 32, 64, 96));");
@@ -3404,7 +3404,7 @@ void CompilerHLSL::emit_hlsl_entry_point()
 			statement("if (WaveGetLaneIndex() < 96) gl_SubgroupEqMask.w = 0;");
 			break;
 
-		case BuiltIn::SubgroupGeMask:
+		case BuiltInSubgroupGeMask:
 			// Emulate these ...
 			// No 64-bit in HLSL, so have to do it in 32-bit and unroll.
 			statement("gl_SubgroupGeMask = ~((1u << (WaveGetLaneIndex() - uint4(0, 32, 64, 96))) - 1u);");
@@ -3416,7 +3416,7 @@ void CompilerHLSL::emit_hlsl_entry_point()
 			statement("if (WaveGetLaneIndex() < 96) gl_SubgroupGeMask.w = ~0u;");
 			break;
 
-		case BuiltIn::SubgroupGtMask:
+		case BuiltInSubgroupGtMask:
 			// Emulate these ...
 			// No 64-bit in HLSL, so have to do it in 32-bit and unroll.
 			statement("uint gt_lane_index = WaveGetLaneIndex() + 1;");
@@ -3430,7 +3430,7 @@ void CompilerHLSL::emit_hlsl_entry_point()
 			statement("if (gt_lane_index < 96) gl_SubgroupGtMask.w = ~0u;");
 			break;
 
-		case BuiltIn::SubgroupLeMask:
+		case BuiltInSubgroupLeMask:
 			// Emulate these ...
 			// No 64-bit in HLSL, so have to do it in 32-bit and unroll.
 			statement("uint le_lane_index = WaveGetLaneIndex() + 1;");
@@ -3444,7 +3444,7 @@ void CompilerHLSL::emit_hlsl_entry_point()
 			statement("if (le_lane_index < 96) gl_SubgroupLeMask.w = 0u;");
 			break;
 
-		case BuiltIn::SubgroupLtMask:
+		case BuiltInSubgroupLtMask:
 			// Emulate these ...
 			// No 64-bit in HLSL, so have to do it in 32-bit and unroll.
 			statement("gl_SubgroupLtMask = (1u << (WaveGetLaneIndex() - uint4(0, 32, 64, 96))) - 1u;");
@@ -3456,20 +3456,20 @@ void CompilerHLSL::emit_hlsl_entry_point()
 			statement("if (WaveGetLaneIndex() < 96) gl_SubgroupLtMask.w = 0u;");
 			break;
 
-		case BuiltIn::ClipDistance:
+		case BuiltInClipDistance:
 			for (uint32_t clip = 0; clip < clip_distance_count; clip++)
 				statement("gl_ClipDistance[", clip, "] = stage_input.gl_ClipDistance", clip / 4, ".", "xyzw"[clip & 3],
 				          ";");
 			break;
 
-		case BuiltIn::CullDistance:
+		case BuiltInCullDistance:
 			for (uint32_t cull = 0; cull < cull_distance_count; cull++)
 				statement("gl_CullDistance[", cull, "] = stage_input.gl_CullDistance", cull / 4, ".", "xyzw"[cull & 3],
 				          ";");
 			break;
 
 		default:
-			statement(BuiltIn::, " = stage_input.", BuiltIn::, ";");
+			statement(builtin, " = stage_input.", builtin, ";");
 			break;
 		}
 	});
@@ -3477,21 +3477,21 @@ void CompilerHLSL::emit_hlsl_entry_point()
 	// Copy from stage input struct to globals.
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t, SPIRVariable &var) {
 		auto &type = this->get<SPIRType>(var.basetype);
-		bool block = has_Decoration(type.self, Decoration::Block);
+		bool block = has_decoration(type.self, Decoration::Block);
 
-		if (var.storage != StorageClass::Input)
+		if (var.storage != StorageClassInput)
 			return;
 
-		bool need_matrix_unroll = var.storage == StorageClass::Input && execution.model == ExecutionModel::Vertex;
+		bool need_matrix_unroll = var.storage == StorageClassInput && execution.model == ExecutionModelVertex;
 
-		if (!var.remapped_variable && type.pointer && !is_BuiltIn::_variable(var) &&
+		if (!var.remapped_variable && type.pointer && !is_builtin_variable(var) &&
 		    interface_variable_exists_in_entry_point(var.self))
 		{
 			if (block)
 			{
 				auto type_name = to_name(type.self);
 				auto var_name = to_name(var.self);
-				bool is_per_vertex = has_Decoration(var.self, Decoration::PerVertexKHR);
+				bool is_per_vertex = has_decoration(var.self, DecorationPerVertexKHR);
 				uint32_t array_size = is_per_vertex ? to_array_size_literal(type) : 0;
 
 				for (uint32_t mbr_idx = 0; mbr_idx < uint32_t(type.member_types.size()); mbr_idx++)
@@ -3520,7 +3520,7 @@ void CompilerHLSL::emit_hlsl_entry_point()
 					for (uint32_t col = 0; col < mtype.columns; col++)
 						statement(name, "[", col, "] = stage_input.", name, "_", col, ";");
 				}
-				else if (has_Decoration(var.self, Decoration::PerVertexKHR))
+				else if (has_decoration(var.self, DecorationPerVertexKHR))
 				{
 					uint32_t array_size = to_array_size_literal(type);
 					for (uint32_t i = 0; i < array_size; i++)
@@ -3528,7 +3528,7 @@ void CompilerHLSL::emit_hlsl_entry_point()
 				}
 				else
 				{
-					if (execution.model == ExecutionModel::Geometry)
+					if (execution.model == ExecutionModelGeometry)
 					{
 						statement("for (int i = 0; i < ", input_vertices, "; i++)");
 						begin_scope();
@@ -3543,9 +3543,9 @@ void CompilerHLSL::emit_hlsl_entry_point()
 	});
 
 	// Run the shader.
-	if (execution.model == ExecutionModel::Vertex || execution.model == ExecutionModel::Fragment ||
-	    execution.model == ExecutionModel::GLCompute || execution.model == ExecutionModel::MeshEXT ||
-	    execution.model == ExecutionModel::Geometry || execution.model == ExecutionModel::TaskEXT)
+	if (execution.model == ExecutionModelVertex || execution.model == ExecutionModelFragment ||
+	    execution.model == ExecutionModelGLCompute || execution.model == ExecutionModelMeshEXT ||
+	    execution.model == ExecutionModelGeometry || execution.model == ExecutionModelTaskEXT)
 	{
 		// For mesh shaders, we receive special arguments that we must pass down as function arguments.
 		// HLSL does not support proper reference types for passing these IO blocks,
@@ -3557,7 +3557,7 @@ void CompilerHLSL::emit_hlsl_entry_point()
 		for (auto &arg : func.arguments)
 			arglist.push_back(to_expression(arg.id, false));
 
-		if (execution.model == ExecutionModel::Geometry)
+		if (execution.model == ExecutionModelGeometry)
 		{
 			arglist.push_back("stage_input");
 			arglist.push_back("geometry_stream");
@@ -3573,34 +3573,34 @@ void CompilerHLSL::emit_hlsl_entry_point()
 	{
 		statement("SPIRV_Cross_Output stage_output;");
 
-		// Copy BuiltIn::s from globals to return struct.
-		active_output_BuiltIn::s.for_each_bit([&](uint32_t i) {
+		// Copy builtins from globals to return struct.
+		active_output_builtins.for_each_bit([&](uint32_t i) {
 			// PointSize doesn't exist in HLSL SM 4+.
-			if (i == BuiltIn::PointSize && !legacy)
+			if (i == BuiltInPointSize && !legacy)
 				return;
 
-			switch (static_cast<BuiltIn::>(i))
+			switch (static_cast<BuiltIn>(i))
 			{
-			case BuiltIn::ClipDistance:
+			case BuiltInClipDistance:
 				for (uint32_t clip = 0; clip < clip_distance_count; clip++)
 					statement("stage_output.gl_ClipDistance", clip / 4, ".", "xyzw"[clip & 3], " = gl_ClipDistance[",
 					          clip, "];");
 				break;
 
-			case BuiltIn::CullDistance:
+			case BuiltInCullDistance:
 				for (uint32_t cull = 0; cull < cull_distance_count; cull++)
 					statement("stage_output.gl_CullDistance", cull / 4, ".", "xyzw"[cull & 3], " = gl_CullDistance[",
 					          cull, "];");
 				break;
 
-			case BuiltIn::SampleMask:
+			case BuiltInSampleMask:
 				statement("stage_output.gl_SampleMask = gl_SampleMask[0];");
 				break;
 
 			default:
 			{
-				auto BuiltIn::_expr = BuiltIn::_to_glsl(static_cast<BuiltIn::>(i), StorageClass::Output);
-				statement("stage_output.", BuiltIn::_expr, " = ", BuiltIn::_expr, ";");
+				auto builtin_expr = builtin_to_glsl(static_cast<BuiltIn>(i), StorageClassOutput);
+				statement("stage_output.", builtin_expr, " = ", builtin_expr, ";");
 				break;
 			}
 			}
@@ -3608,13 +3608,13 @@ void CompilerHLSL::emit_hlsl_entry_point()
 
 		ir.for_each_typed_id<SPIRVariable>([&](uint32_t, SPIRVariable &var) {
 			auto &type = this->get<SPIRType>(var.basetype);
-			bool block = has_Decoration(type.self, Decoration::Block);
+			bool block = has_decoration(type.self, Decoration::Block);
 
-			if (var.storage != StorageClass::Output)
+			if (var.storage != StorageClassOutput)
 				return;
 
 			if (!var.remapped_variable && type.pointer &&
-			    !is_BuiltIn::_variable(var) &&
+			    !is_builtin_variable(var) &&
 			    interface_variable_exists_in_entry_point(var.self))
 			{
 				if (block)
@@ -3633,7 +3633,7 @@ void CompilerHLSL::emit_hlsl_entry_point()
 				{
 					auto name = to_name(var.self);
 
-					if (legacy && execution.model == ExecutionModel::Fragment)
+					if (legacy && execution.model == ExecutionModelFragment)
 					{
 						string output_filler;
 						for (uint32_t size = type.vecsize; size < 4; ++size)
@@ -3657,10 +3657,10 @@ void CompilerHLSL::emit_hlsl_entry_point()
 
 void CompilerHLSL::emit_fixup()
 {
-	if (is_vertex_like_shader() && active_output_BuiltIn::s.get(BuiltIn::Position))
+	if (is_vertex_like_shader() && active_output_builtins.get(BuiltIn::Position))
 	{
 		// Do various mangling on the gl_Position.
-		if (hlsl_Options.shader_model <= 30)
+		if (hlsl_options.shader_model <= 30)
 		{
 			statement("gl_Position.x = gl_Position.x - gl_HalfPixel.x * "
 			          "gl_Position.w;");
@@ -3668,9 +3668,9 @@ void CompilerHLSL::emit_fixup()
 			          "gl_Position.w;");
 		}
 
-		if (Options.vertex.flip_vert_y)
+		if (options.vertex.flip_vert_y)
 			statement("gl_Position.y = -gl_Position.y;");
-		if (Options.vertex.fixup_clipspace)
+		if (options.vertex.fixup_clipspace)
 			statement("gl_Position.z = (gl_Position.z + gl_Position.w) * 0.5;");
 	}
 }
@@ -3694,13 +3694,13 @@ void CompilerHLSL::emit_texture_op(const Instruction &i, bool sparse)
 	uint32_t comp = 0;
 	bool gather = false;
 	bool proj = false;
-	const uint32_t *Op::OpT = nullptr;
-	auto *combined_image = maybe_get<SPIRCombineDim::DimageSampler>(img);
+	const uint32_t *opt = nullptr;
+	auto *combined_image = maybe_get<SPIRCombinedImageSampler>(img);
 
-	if (combined_image && has_Decoration(img, Decoration::NonUniform))
+	if (combined_image && has_decoration(img, DecorationNonUniform))
 	{
-		set_Decoration(combined_image->image, Decoration::NonUniform);
-		set_Decoration(combined_image->sampler, Decoration::NonUniform);
+		set_decoration(combined_image->image, DecorationNonUniform);
+		set_decoration(combined_image->sampler, DecorationNonUniform);
 	}
 
 	auto img_expr = to_non_uniform_aware_expression(combined_image ? combined_image->image : img);
@@ -3712,7 +3712,7 @@ void CompilerHLSL::emit_texture_op(const Instruction &i, bool sparse)
 	case Op::OpImageSampleDrefImplicitLod:
 	case Op::OpImageSampleDrefExplicitLod:
 		dref = ops[4];
-		Op::OpT = &ops[5];
+		opt = &ops[5];
 		length -= 5;
 		break;
 
@@ -3720,38 +3720,38 @@ void CompilerHLSL::emit_texture_op(const Instruction &i, bool sparse)
 	case Op::OpImageSampleProjDrefExplicitLod:
 		dref = ops[4];
 		proj = true;
-		Op::OpT = &ops[5];
+		opt = &ops[5];
 		length -= 5;
 		break;
 
 	case Op::OpImageDrefGather:
 		dref = ops[4];
-		Op::OpT = &ops[5];
+		opt = &ops[5];
 		gather = true;
 		length -= 5;
 		break;
 
 	case Op::OpImageGather:
 		comp = ops[4];
-		Op::OpT = &ops[5];
+		opt = &ops[5];
 		gather = true;
 		length -= 5;
 		break;
 
 	case Op::OpImageSampleProjImplicitLod:
 	case Op::OpImageSampleProjExplicitLod:
-		Op::OpT = &ops[4];
+		opt = &ops[4];
 		length -= 4;
 		proj = true;
 		break;
 
 	case Op::OpImageQueryLod:
-		Op::OpT = &ops[4];
+		opt = &ops[4];
 		length -= 4;
 		break;
 
 	default:
-		Op::OpT = &ops[4];
+		opt = &ops[4];
 		length -= 4;
 		break;
 	}
@@ -3799,15 +3799,15 @@ void CompilerHLSL::emit_texture_op(const Instruction &i, bool sparse)
 
 	if (length)
 	{
-		flags = Op::OpT[0];
-		Op::OpT++;
+		flags = opt[0];
+		opt++;
 		length--;
 	}
 
 	auto test = [&](uint32_t &v, uint32_t flag) {
 		if (length && (flags & flag))
 		{
-			v = *Op::OpT++;
+			v = *opt++;
 			inherited_expressions.push_back(v);
 			length--;
 		}
@@ -3829,16 +3829,16 @@ void CompilerHLSL::emit_texture_op(const Instruction &i, bool sparse)
 	if (minlod != 0)
 		SPIRV_CROSS_THROW("MinLod texture operand not supported in HLSL.");
 
-	if (op == Op::OpImageFetch)
+	if (op == OpImageFetch)
 	{
-		if (hlsl_Options.shader_model < 40)
+		if (hlsl_options.shader_model < 40)
 		{
 			SPIRV_CROSS_THROW("texelFetch is not supported in HLSL shader model 2/3.");
 		}
 		texop += img_expr;
 		texop += ".Load";
 	}
-	else if (op == Op::OpImageQueryLod)
+	else if (op == OpImageQueryLod)
 	{
 		texop += img_expr;
 		texop += ".CalculateLevelOfDetail";
@@ -3846,12 +3846,12 @@ void CompilerHLSL::emit_texture_op(const Instruction &i, bool sparse)
 	else
 	{
 		auto &imgformat = get<SPIRType>(imgtype.image.type);
-		if (hlsl_Options.shader_model < 67 && imgformat.basetype != SPIRType::Float)
+		if (hlsl_options.shader_model < 67 && imgformat.basetype != SPIRType::Float)
 		{
 			SPIRV_CROSS_THROW("Sampling non-float textures is not supported in HLSL SM < 6.7.");
 		}
 
-		if (hlsl_Options.shader_model >= 40)
+		if (hlsl_options.shader_model >= 40)
 		{
 			texop += img_expr;
 
@@ -3872,7 +3872,7 @@ void CompilerHLSL::emit_texture_op(const Instruction &i, bool sparse)
 			else if (gather)
 			{
 				uint32_t comp_num = evaluate_constant_u32(comp);
-				if (hlsl_Options.shader_model >= 50)
+				if (hlsl_options.shader_model >= 50)
 				{
 					switch (comp_num)
 					{
@@ -3925,12 +3925,12 @@ void CompilerHLSL::emit_texture_op(const Instruction &i, bool sparse)
 			case Dim::Cube:
 				texop += "texCUBE";
 				break;
-			case Dim::Rect:
+			case DimRect:
 			case Dim::Buffer:
 			case Dim::SubpassData:
 				SPIRV_CROSS_THROW("Buffer texture support is not yet implemented for HLSL"); // TODO
 			default:
-				SPIRV_CROSS_THROW("Invalid Dim::Dimension.");
+				SPIRV_CROSS_THROW("Invalid dimension.");
 			}
 
 			if (gather)
@@ -3951,13 +3951,13 @@ void CompilerHLSL::emit_texture_op(const Instruction &i, bool sparse)
 
 	expr += texop;
 	expr += "(";
-	if (hlsl_Options.shader_model < 40)
+	if (hlsl_options.shader_model < 40)
 	{
 		if (combined_image)
 			SPIRV_CROSS_THROW("Separate images/samplers are not supported in HLSL shader model 2/3.");
 		expr += to_expression(img);
 	}
-	else if (op != Op::OpImageFetch)
+	else if (op != OpImageFetch)
 	{
 		string sampler_expr;
 		if (combined_image)
@@ -3994,10 +3994,10 @@ void CompilerHLSL::emit_texture_op(const Instruction &i, bool sparse)
 	else
 		coord_expr = to_expression(coord);
 
-	if (proj && hlsl_Options.shader_model >= 40) // Legacy HLSL has "proj" operations which do this for us.
+	if (proj && hlsl_options.shader_model >= 40) // Legacy HLSL has "proj" operations which do this for us.
 		coord_expr = coord_expr + " / " + to_extract_component_expression(coord, coord_components);
 
-	if (hlsl_Options.shader_model < 40)
+	if (hlsl_options.shader_model < 40)
 	{
 		if (dref)
 		{
@@ -4045,7 +4045,7 @@ void CompilerHLSL::emit_texture_op(const Instruction &i, bool sparse)
 			SPIRV_CROSS_THROW("Legacy HLSL can only use one of lod/bias/proj modifiers.");
 	}
 
-	if (op == Op::OpImageFetch)
+	if (op == OpImageFetch)
 	{
 		if (imgtype.image.dim != Dim::Buffer && !imgtype.image.ms)
 			coord_expr =
@@ -4055,7 +4055,7 @@ void CompilerHLSL::emit_texture_op(const Instruction &i, bool sparse)
 		expr += ", ";
 	expr += coord_expr;
 
-	if (dref && hlsl_Options.shader_model >= 40)
+	if (dref && hlsl_options.shader_model >= 40)
 	{
 		forward = forward && should_forward(dref);
 		expr += ", ";
@@ -4076,14 +4076,14 @@ void CompilerHLSL::emit_texture_op(const Instruction &i, bool sparse)
 		expr += to_expression(grad_y);
 	}
 
-	if (!dref && lod && hlsl_Options.shader_model >= 40 && op != Op::OpImageFetch)
+	if (!dref && lod && hlsl_options.shader_model >= 40 && op != OpImageFetch)
 	{
 		forward = forward && should_forward(lod);
 		expr += ", ";
 		expr += to_expression(lod);
 	}
 
-	if (!dref && bias && hlsl_Options.shader_model >= 40)
+	if (!dref && bias && hlsl_options.shader_model >= 40)
 	{
 		forward = forward && should_forward(bias);
 		expr += ", ";
@@ -4111,10 +4111,10 @@ void CompilerHLSL::emit_texture_op(const Instruction &i, bool sparse)
 
 	expr += ")";
 
-	if (dref && hlsl_Options.shader_model < 40)
+	if (dref && hlsl_options.shader_model < 40)
 		expr += ".x";
 
-	if (op == Op::OpImageQueryLod)
+	if (op == OpImageQueryLod)
 	{
 		// This is rather awkward.
 		// textureQueryLod returns two values, the "accessed level",
@@ -4152,8 +4152,8 @@ string CompilerHLSL::to_resource_binding(const SPIRVariable &var)
 {
 	const auto &type = get<SPIRType>(var.basetype);
 
-	// We can remap push constant blocks, even if they don't have any binding Decoration::.
-	if (type.storage != StorageClass::PushConstant && !has_Decoration(var.self, Decoration::Binding))
+	// We can remap push constant blocks, even if they don't have any binding decoration.
+	if (type.storage != StorageClassPushConstant && !has_decoration(var.self, DecorationBinding))
 		return "";
 
 	char space = '\0';
@@ -4162,7 +4162,7 @@ string CompilerHLSL::to_resource_binding(const SPIRVariable &var)
 
 	switch (type.basetype)
 	{
-	case SPIRType::SampleDimDimage:
+	case SPIRType::SampledImage:
 		space = 't'; // SRV
 		resource_flags = HLSL_BINDING_AUTO_SRV_BIT;
 		break;
@@ -4170,7 +4170,7 @@ string CompilerHLSL::to_resource_binding(const SPIRVariable &var)
 	case SPIRType::Image:
 		if (type.image.sampled == 2 && type.image.dim != Dim::SubpassData)
 		{
-			if (has_Decoration(var.self, Decoration::NonWritable) && hlsl_Options.nonwritable_uav_texture_as_srv)
+			if (has_decoration(var.self, DecorationNonWritable) && hlsl_options.nonwritable_uav_texture_as_srv)
 			{
 				space = 't'; // SRV
 				resource_flags = HLSL_BINDING_AUTO_SRV_BIT;
@@ -4203,29 +4203,29 @@ string CompilerHLSL::to_resource_binding(const SPIRVariable &var)
 		auto storage = type.storage;
 		if (storage == StorageClass::Uniform)
 		{
-			if (has_Decoration(type.self, Decoration::BufferBlock))
+			if (has_decoration(type.self, DecorationBufferBlock))
 			{
 				Bitset flags = ir.get_buffer_block_flags(var);
-				bool is_readonly = flags.get(Decoration::NonWritable) && !is_hlsl_force_storage_buffer_as_uav(var.self);
+				bool is_readonly = flags.get(DecorationNonWritable) && !is_hlsl_force_storage_buffer_as_uav(var.self);
 				space = is_readonly ? 't' : 'u'; // UAV
 				resource_flags = is_readonly ? HLSL_BINDING_AUTO_SRV_BIT : HLSL_BINDING_AUTO_UAV_BIT;
 			}
-			else if (has_Decoration(type.self, Decoration::Block))
+			else if (has_decoration(type.self, Decoration::Block))
 			{
 				space = 'b'; // Constant buffers
 				resource_flags = HLSL_BINDING_AUTO_CBV_BIT;
 			}
 		}
-		else if (storage == StorageClass::PushConstant)
+		else if (storage == StorageClassPushConstant)
 		{
 			space = 'b'; // Constant buffers
 			resource_flags = HLSL_BINDING_AUTO_PUSH_CONSTANT_BIT;
 		}
-		else if (storage == StorageClass::StorageBuffer)
+		else if (storage == StorageClassStorageBuffer)
 		{
 			// UAV or SRV depending on readonly flag.
 			Bitset flags = ir.get_buffer_block_flags(var);
-			bool is_readonly = flags.get(Decoration::NonWritable) && !is_hlsl_force_storage_buffer_as_uav(var.self);
+			bool is_readonly = flags.get(DecorationNonWritable) && !is_hlsl_force_storage_buffer_as_uav(var.self);
 			space = is_readonly ? 't' : 'u';
 			resource_flags = is_readonly ? HLSL_BINDING_AUTO_SRV_BIT : HLSL_BINDING_AUTO_UAV_BIT;
 		}
@@ -4243,10 +4243,10 @@ string CompilerHLSL::to_resource_binding(const SPIRVariable &var)
 	    resource_flags == HLSL_BINDING_AUTO_PUSH_CONSTANT_BIT ? ResourceBindingPushConstantDescriptorSet : 0u;
 	uint32_t binding = resource_flags == HLSL_BINDING_AUTO_PUSH_CONSTANT_BIT ? ResourceBindingPushConstantBinding : 0u;
 
-	if (has_Decoration(var.self, Decoration::Binding))
-		binding = get_Decoration(var.self, Decoration::Binding);
-	if (has_Decoration(var.self, Decoration::DescriptorSet))
-		desc_set = get_Decoration(var.self, Decoration::DescriptorSet);
+	if (has_decoration(var.self, DecorationBinding))
+		binding = get_decoration(var.self, DecorationBinding);
+	if (has_decoration(var.self, DecorationDescriptorSet))
+		desc_set = get_decoration(var.self, DecorationDescriptorSet);
 
 	return to_resource_register(resource_flags, space, binding, desc_set);
 }
@@ -4254,11 +4254,11 @@ string CompilerHLSL::to_resource_binding(const SPIRVariable &var)
 string CompilerHLSL::to_resource_binding_sampler(const SPIRVariable &var)
 {
 	// For combined image samplers.
-	if (!has_Decoration(var.self, Decoration::Binding))
+	if (!has_decoration(var.self, DecorationBinding))
 		return "";
 
-	return to_resource_register(HLSL_BINDING_AUTO_SAMPLER_BIT, 's', get_Decoration(var.self, Decoration::Binding),
-	                            get_Decoration(var.self, Decoration::DescriptorSet));
+	return to_resource_register(HLSL_BINDING_AUTO_SAMPLER_BIT, 's', get_decoration(var.self, DecorationBinding),
+	                            get_decoration(var.self, DecorationDescriptorSet));
 }
 
 void CompilerHLSL::remap_hlsl_resource_binding(HLSLBindingFlagBits type, uint32_t &desc_set, uint32_t &binding)
@@ -4309,7 +4309,7 @@ string CompilerHLSL::to_resource_register(HLSLBindingFlagBits flag, char space, 
 		if (flag == HLSL_BINDING_AUTO_PUSH_CONSTANT_BIT && space_set == ResourceBindingPushConstantDescriptorSet)
 			return "";
 
-		if (hlsl_Options.shader_model >= 51)
+		if (hlsl_options.shader_model >= 51)
 			return join(" : register(", space, binding, ", space", space_set, ")");
 		else
 			return join(" : register(", space, binding, ")");
@@ -4323,17 +4323,17 @@ void CompilerHLSL::emit_modern_uniform(const SPIRVariable &var)
 	auto &type = get<SPIRType>(var.basetype);
 	switch (type.basetype)
 	{
-	case SPIRType::SampleDimDimage:
+	case SPIRType::SampledImage:
 	case SPIRType::Image:
 	{
 		bool is_coherent = false;
 		if (type.basetype == SPIRType::Image && type.image.sampled == 2)
-			is_coherent = has_Decoration(var.self, Decoration::Coherent);
+			is_coherent = has_decoration(var.self, DecorationCoherent);
 
 		statement(is_coherent ? "globallycoherent " : "", image_type_hlsl_modern(type, var.self), " ",
 		          to_name(var.self), type_to_array_glsl(type, var.self), to_resource_binding(var), ";");
 
-		if (type.basetype == SPIRType::SampleDimDimage && type.image.dim != Dim::Buffer)
+		if (type.basetype == SPIRType::SampledImage && type.image.dim != Dim::Buffer)
 		{
 			// For combined image samplers, also emit a combined image sampler.
 			if (is_depth_image(type, var.self))
@@ -4378,7 +4378,7 @@ void CompilerHLSL::emit_legacy_uniform(const SPIRVariable &var)
 void CompilerHLSL::emit_uniform(const SPIRVariable &var)
 {
 	add_resource_name(var.self);
-	if (hlsl_Options.shader_model >= 40)
+	if (hlsl_options.shader_model >= 40)
 		emit_modern_uniform(var);
 	else
 		emit_legacy_uniform(var);
@@ -4443,13 +4443,13 @@ string CompilerHLSL::bitcast_glsl_op(const SPIRType &out_type, const SPIRType &i
 	}
 	else if (out_type.basetype == SPIRType::UShort && in_type.basetype == SPIRType::Half)
 	{
-		if (hlsl_Options.shader_model < 40)
+		if (hlsl_options.shader_model < 40)
 			SPIRV_CROSS_THROW("Half to UShort requires Shader Model 4.");
 		return "(" + type_to_glsl(out_type) + ")f32tof16";
 	}
 	else if (out_type.basetype == SPIRType::Half && in_type.basetype == SPIRType::UShort)
 	{
-		if (hlsl_Options.shader_model < 40)
+		if (hlsl_options.shader_model < 40)
 			SPIRV_CROSS_THROW("UShort to Half requires Shader Model 4.");
 		return "(" + type_to_glsl(out_type) + ")f16tof32";
 	}
@@ -4479,7 +4479,7 @@ void CompilerHLSL::emit_glsl_op(uint32_t result_type, uint32_t id, uint32_t eop,
 		break;
 
 	case GLSLstd450RoundEven:
-		if (hlsl_Options.shader_model < 40)
+		if (hlsl_options.shader_model < 40)
 			SPIRV_CROSS_THROW("roundEven is not supported in HLSL shader model 2/3.");
 		emit_unary_func_op(result_type, id, args[0], "round");
 		break;
@@ -4744,7 +4744,7 @@ void CompilerHLSL::read_access_chain_array(const string &lhs, const SPIRAccessCh
 	subchain.dynamic_index = join(ident, " * ", chain.array_stride, " + ", chain.dynamic_index);
 	subchain.basetype = type.parent_type;
 	if (!get<SPIRType>(subchain.basetype).array.empty())
-		subchain.array_stride = get_Decoration(subchain.basetype, Decoration::ArrayStride);
+		subchain.array_stride = get_decoration(subchain.basetype, DecorationArrayStride);
 	read_access_chain(nullptr, join(lhs, "[", ident, "]"), subchain);
 	end_scope();
 }
@@ -4769,7 +4769,7 @@ void CompilerHLSL::read_access_chain_struct(const string &lhs, const SPIRAccessC
 		if (member_type.columns > 1)
 		{
 			subchain.matrix_stride = type_struct_member_matrix_stride(type, i);
-			subchain.row_major_matrix = has_member_Decoration(type.self, i, Decoration::RowMajor);
+			subchain.row_major_matrix = has_member_decoration(type.self, i, DecorationRowMajor);
 		}
 
 		if (!member_type.array.empty())
@@ -4783,7 +4783,7 @@ void CompilerHLSL::read_access_chain(string *expr, const string &lhs, const SPIR
 {
 	auto &type = get<SPIRType>(chain.basetype);
 
-	SPIRType target_type { is_scalar(type) ? Op::OpTypeInt : type.op };
+	SPIRType target_type { is_scalar(type) ? OpTypeInt : type.op };
 	target_type.basetype = SPIRType::UInt;
 	target_type.vecsize = type.vecsize;
 	target_type.columns = type.columns;
@@ -4798,15 +4798,15 @@ void CompilerHLSL::read_access_chain(string *expr, const string &lhs, const SPIR
 		read_access_chain_struct(lhs, chain);
 		return;
 	}
-	else if (type.width != 32 && !hlsl_Options.enable_16bit_types)
+	else if (type.width != 32 && !hlsl_options.enable_16bit_types)
 		SPIRV_CROSS_THROW("Reading types other than 32-bit from ByteAddressBuffer not yet supported, unless SM 6.2 and "
 		                  "native 16-bit types are enabled.");
 
 	string base = chain.base;
-	if (has_Decoration(chain.self, Decoration::NonUniform))
+	if (has_decoration(chain.self, DecorationNonUniform))
 		convert_non_uniform_expression(base, chain.self);
 
-	bool templated_load = hlsl_Options.shader_model >= 62;
+	bool templated_load = hlsl_options.shader_model >= 62;
 	string load_expr;
 
 	string template_expr;
@@ -5017,9 +5017,9 @@ void CompilerHLSL::emit_load(const Instruction &instruction)
 		// Mesh shader clip/cull arrays ... Cursed.
 		auto &res_type = get<SPIRType>(result_type);
 		if (get_execution_model() == ExecutionModel::MeshEXT &&
-		    has_Decoration(ptr, Decoration::BuiltIn) &&
-		    (get_Decoration(ptr, Decoration::BuiltIn) == BuiltIn::ClipDistance ||
-		     get_Decoration(ptr, Decoration::BuiltIn) == BuiltIn::CullDistance) &&
+		    has_decoration(ptr, Decoration::BuiltIn) &&
+		    (get_decoration(ptr, Decoration::BuiltIn) == BuiltInClipDistance ||
+		     get_decoration(ptr, Decoration::BuiltIn) == BuiltInCullDistance) &&
 		    is_array(res_type) && !is_array(get<SPIRType>(res_type.parent_type)) &&
 		    to_array_size_literal(res_type) > 1)
 		{
@@ -5059,7 +5059,7 @@ void CompilerHLSL::write_access_chain_array(const SPIRAccessChain &chain, uint32
 
 	uint32_t id = ir.increase_bound_by(2);
 	uint32_t int_type_id = id + 1;
-	SPIRType int_type { Op::OpTypeInt };
+	SPIRType int_type { OpTypeInt };
 	int_type.basetype = SPIRType::Int;
 	int_type.width = 32;
 	set<SPIRType>(int_type_id, int_type);
@@ -5080,7 +5080,7 @@ void CompilerHLSL::write_access_chain_array(const SPIRAccessChain &chain, uint32
 	subcomposite_chain.push_back(0x80000000u | id);
 
 	if (!get<SPIRType>(subchain.basetype).array.empty())
-		subchain.array_stride = get_Decoration(subchain.basetype, Decoration::ArrayStride);
+		subchain.array_stride = get_decoration(subchain.basetype, DecorationArrayStride);
 
 	write_access_chain(subchain, value, subcomposite_chain);
 	end_scope();
@@ -5110,7 +5110,7 @@ void CompilerHLSL::write_access_chain_struct(const SPIRAccessChain &chain, uint3
 		if (member_type.columns > 1)
 		{
 			subchain.matrix_stride = type_struct_member_matrix_stride(type, i);
-			subchain.row_major_matrix = has_member_Decoration(type.self, i, Decoration::RowMajor);
+			subchain.row_major_matrix = has_member_decoration(type.self, i, DecorationRowMajor);
 		}
 
 		if (!member_type.array.empty())
@@ -5147,7 +5147,7 @@ void CompilerHLSL::write_access_chain(const SPIRAccessChain &chain, uint32_t val
 	// Make sure we trigger a read of the constituents in the access chain.
 	track_expression_read(chain.self);
 
-	SPIRType target_type { is_scalar(type) ? Op::OpTypeInt : type.op };
+	SPIRType target_type { is_scalar(type) ? OpTypeInt : type.op };
 	target_type.basetype = SPIRType::UInt;
 	target_type.vecsize = type.vecsize;
 	target_type.columns = type.columns;
@@ -5164,14 +5164,14 @@ void CompilerHLSL::write_access_chain(const SPIRAccessChain &chain, uint32_t val
 		register_write(chain.self);
 		return;
 	}
-	else if (type.width != 32 && !hlsl_Options.enable_16bit_types)
+	else if (type.width != 32 && !hlsl_options.enable_16bit_types)
 		SPIRV_CROSS_THROW("Writing types other than 32-bit to RWByteAddressBuffer not yet supported, unless SM 6.2 and "
 		                  "native 16-bit types are enabled.");
 
-	bool templated_store = hlsl_Options.shader_model >= 62;
+	bool templated_store = hlsl_options.shader_model >= 62;
 
 	auto base = chain.base;
-	if (has_Decoration(chain.self, Decoration::NonUniform))
+	if (has_decoration(chain.self, DecorationNonUniform))
 		convert_non_uniform_expression(base, chain.self);
 
 	string template_expr;
@@ -5320,7 +5320,7 @@ void CompilerHLSL::write_access_chain(const SPIRAccessChain &chain, uint32_t val
 void CompilerHLSL::emit_store(const Instruction &instruction)
 {
 	auto ops = stream(instruction);
-	if (Options.vertex.flip_vert_y)
+	if (options.vertex.flip_vert_y)
 	{
 		auto *expr = maybe_get<SPIRExpression>(ops[0]);
 		if (expr != nullptr && expr->access_meshlet_position_y)
@@ -5354,7 +5354,7 @@ void CompilerHLSL::emit_access_chain(const Instruction &instruction)
 		// Keep tacking on an existing access chain.
 		need_byte_access_chain = true;
 	}
-	else if (type.storage == StorageClass::StorageBuffer || has_Decoration(type.self, Decoration::BufferBlock))
+	else if (type.storage == StorageClassStorageBuffer || has_decoration(type.self, DecorationBufferBlock))
 	{
 		// If we are starting to poke into an SSBO, we are dealing with ByteAddressBuffers, and we need
 		// to emit SPIRAccessChain rather than a plain SPIRExpression.
@@ -5448,62 +5448,62 @@ void CompilerHLSL::emit_atomic(const uint32_t *ops, uint32_t length, spv::Op op)
 
 	switch (op)
 	{
-	case OpAtomicIIncrement:
+	case Op::OpAtomicIIncrement:
 		atomic_op = "InterlockedAdd";
 		value_expr = "1";
 		break;
 
-	case OpAtomicIDecrement:
+	case Op::OpAtomicIDecrement:
 		atomic_op = "InterlockedAdd";
 		value_expr = "-1";
 		break;
 
-	case OpAtomicLoad:
+	case Op::OpAtomicLoad:
 		atomic_op = "InterlockedAdd";
 		value_expr = "0";
 		break;
 
-	case OpAtomicISub:
+	case Op::OpAtomicISub:
 		atomic_op = "InterlockedAdd";
 		value_expr = join("-", enclose_expression(value_expr));
 		break;
 
-	case OpAtomicSMin:
-	case OpAtomicUMin:
+	case Op::OpAtomicSMin:
+	case Op::OpAtomicUMin:
 		atomic_op = "InterlockedMin";
 		break;
 
-	case OpAtomicSMax:
-	case OpAtomicUMax:
+	case Op::OpAtomicSMax:
+	case Op::OpAtomicUMax:
 		atomic_op = "InterlockedMax";
 		break;
 
-	case OpAtomicAnd:
+	case Op::OpAtomicAnd:
 		atomic_op = "InterlockedAnd";
 		break;
 
-	case OpAtomicOr:
+	case Op::OpAtomicOr:
 		atomic_op = "InterlockedOr";
 		break;
 
-	case OpAtomicXor:
+	case Op::OpAtomicXor:
 		atomic_op = "InterlockedXor";
 		break;
 
-	case OpAtomicIAdd:
+	case Op::OpAtomicIAdd:
 		atomic_op = "InterlockedAdd";
 		break;
 
-	case OpAtomicExchange:
+	case Op::OpAtomicExchange:
 		atomic_op = "InterlockedExchange";
 		break;
 
-	case OpAtomicStore:
+	case Op::OpAtomicStore:
 		atomic_op = "InterlockedExchange";
 		is_atomic_store = true;
 		break;
 
-	case OpAtomicCompareExchange:
+	case Op::OpAtomicCompareExchange:
 		if (length < 8)
 			SPIRV_CROSS_THROW("Not enough data for opcode.");
 		atomic_op = "InterlockedCompareExchange";
@@ -5526,7 +5526,7 @@ void CompilerHLSL::emit_atomic(const uint32_t *ops, uint32_t length, spv::Op op)
 			emit_uninitialized_temporary_expression(get_pointee_type(data_type).self, tmp_id);
 		}
 
-		if (data_type.storage == StorageClass::Image || !chain)
+		if (data_type.storage == StorageClassImage || !chain)
 		{
 			statement(atomic_op, "(", to_non_uniform_aware_expression(ops[0]), ", ",
 			          to_expression(ops[3]), ", ", to_expression(tmp_id), ");");
@@ -5534,7 +5534,7 @@ void CompilerHLSL::emit_atomic(const uint32_t *ops, uint32_t length, spv::Op op)
 		else
 		{
 			string base = chain->base;
-			if (has_Decoration(chain->self, Decoration::NonUniform))
+			if (has_decoration(chain->self, DecorationNonUniform))
 				convert_non_uniform_expression(base, chain->self);
 			// RWByteAddress buffer is always uint in its underlying type.
 			statement(base, ".", atomic_op, "(", chain->dynamic_index, chain->static_index, ", ",
@@ -5553,7 +5553,7 @@ void CompilerHLSL::emit_atomic(const uint32_t *ops, uint32_t length, spv::Op op)
 		auto &data_type = expression_type(ops[2]);
 		auto *chain = maybe_get<SPIRAccessChain>(ops[2]);
 		SPIRType::BaseType expr_type;
-		if (data_type.storage == StorageClass::Image || !chain)
+		if (data_type.storage == StorageClassImage || !chain)
 		{
 			statement(atomic_op, "(", to_non_uniform_aware_expression(ops[2]), ", ", value_expr, ", ", to_name(id), ");");
 			expr_type = data_type.basetype;
@@ -5562,7 +5562,7 @@ void CompilerHLSL::emit_atomic(const uint32_t *ops, uint32_t length, spv::Op op)
 		{
 			// RWByteAddress buffer is always uint in its underlying type.
 			string base = chain->base;
-			if (has_Decoration(chain->self, Decoration::NonUniform))
+			if (has_decoration(chain->self, DecorationNonUniform))
 				convert_non_uniform_expression(base, chain->self);
 			expr_type = SPIRType::UInt;
 			statement(base, ".", atomic_op, "(", chain->dynamic_index, chain->static_index, ", ", value_expr,
@@ -5577,7 +5577,7 @@ void CompilerHLSL::emit_atomic(const uint32_t *ops, uint32_t length, spv::Op op)
 
 void CompilerHLSL::emit_subgroup_op(const Instruction &i)
 {
-	if (hlsl_Options.shader_model < 60)
+	if (hlsl_options.shader_model < 60)
 		SPIRV_CROSS_THROW("Wave ops requires SM 6.0 or higher.");
 
 	const uint32_t *ops = stream(i);
@@ -5611,35 +5611,35 @@ void CompilerHLSL::emit_subgroup_op(const Instruction &i)
 
 	switch (op)
 	{
-	case OpGroupNonUniformElect:
+	case Op::OpGroupNonUniformElect:
 		emit_op(result_type, id, "WaveIsFirstLane()", true);
 		break;
 
-	case OpGroupNonUniformBroadcast:
+	case Op::OpGroupNonUniformBroadcast:
 		emit_binary_func_op(result_type, id, ops[3], ops[4], "WaveReadLaneAt");
 		break;
 
-	case OpGroupNonUniformBroadcastFirst:
+	case Op::OpGroupNonUniformBroadcastFirst:
 		emit_unary_func_op(result_type, id, ops[3], "WaveReadLaneFirst");
 		break;
 
-	case OpGroupNonUniformBallot:
+	case Op::OpGroupNonUniformBallot:
 		emit_unary_func_op(result_type, id, ops[3], "WaveActiveBallot");
 		break;
 
-	case OpGroupNonUniformInverseBallot:
+	case Op::OpGroupNonUniformInverseBallot:
 		SPIRV_CROSS_THROW("Cannot trivially implement InverseBallot in HLSL.");
 
-	case OpGroupNonUniformBallotBitExtract:
+	case Op::OpGroupNonUniformBallotBitExtract:
 		SPIRV_CROSS_THROW("Cannot trivially implement BallotBitExtract in HLSL.");
 
-	case OpGroupNonUniformBallotFindLSB:
+	case Op::OpGroupNonUniformBallotFindLSB:
 		SPIRV_CROSS_THROW("Cannot trivially implement BallotFindLSB in HLSL.");
 
-	case OpGroupNonUniformBallotFindMSB:
+	case Op::OpGroupNonUniformBallotFindMSB:
 		SPIRV_CROSS_THROW("Cannot trivially implement BallotFindMSB in HLSL.");
 
-	case OpGroupNonUniformBallotBitCount:
+	case Op::OpGroupNonUniformBallotBitCount:
 	{
 		auto operation = static_cast<GroupOperation>(ops[3]);
 		bool forward = should_forward(ops[4]);
@@ -5659,9 +5659,9 @@ void CompilerHLSL::emit_subgroup_op(const Instruction &i)
 			auto right = join("countbits(", to_enclosed_expression(ops[4]), ".z & gl_SubgroupLeMask.z) + countbits(",
 			                  to_enclosed_expression(ops[4]), ".w & gl_SubgroupLeMask.w)");
 			emit_op(result_type, id, join(left, " + ", right), forward);
-			if (!active_input_BuiltIn::s.get(BuiltIn::SubgroupLeMask))
+			if (!active_input_builtins.get(BuiltIn::SubgroupLeMask))
 			{
-				active_input_BuiltIn::s.set(BuiltIn::SubgroupLeMask);
+				active_input_builtins.set(BuiltIn::SubgroupLeMask);
 				force_recompile_guarantee_forward_progress();
 			}
 		}
@@ -5672,9 +5672,9 @@ void CompilerHLSL::emit_subgroup_op(const Instruction &i)
 			auto right = join("countbits(", to_enclosed_expression(ops[4]), ".z & gl_SubgroupLtMask.z) + countbits(",
 			                  to_enclosed_expression(ops[4]), ".w & gl_SubgroupLtMask.w)");
 			emit_op(result_type, id, join(left, " + ", right), forward);
-			if (!active_input_BuiltIn::s.get(BuiltIn::SubgroupLtMask))
+			if (!active_input_builtins.get(BuiltIn::SubgroupLtMask))
 			{
-				active_input_BuiltIn::s.set(BuiltIn::SubgroupLtMask);
+				active_input_builtins.set(BuiltIn::SubgroupLtMask);
 				force_recompile_guarantee_forward_progress();
 			}
 		}
@@ -5683,10 +5683,10 @@ void CompilerHLSL::emit_subgroup_op(const Instruction &i)
 		break;
 	}
 
-	case OpGroupNonUniformShuffle:
+	case Op::OpGroupNonUniformShuffle:
 		emit_binary_func_op(result_type, id, ops[3], ops[4], "WaveReadLaneAt");
 		break;
-	case OpGroupNonUniformShuffleXor:
+	case Op::OpGroupNonUniformShuffleXor:
 	{
 		bool forward = should_forward(ops[3]);
 		emit_op(ops[0], ops[1],
@@ -5695,7 +5695,7 @@ void CompilerHLSL::emit_subgroup_op(const Instruction &i)
 		inherit_expression_dependencies(ops[1], ops[3]);
 		break;
 	}
-	case OpGroupNonUniformShuffleUp:
+	case Op::OpGroupNonUniformShuffleUp:
 	{
 		bool forward = should_forward(ops[3]);
 		emit_op(ops[0], ops[1],
@@ -5704,7 +5704,7 @@ void CompilerHLSL::emit_subgroup_op(const Instruction &i)
 		inherit_expression_dependencies(ops[1], ops[3]);
 		break;
 	}
-	case OpGroupNonUniformShuffleDown:
+	case Op::OpGroupNonUniformShuffleDown:
 	{
 		bool forward = should_forward(ops[3]);
 		emit_op(ops[0], ops[1],
@@ -5714,21 +5714,21 @@ void CompilerHLSL::emit_subgroup_op(const Instruction &i)
 		break;
 	}
 
-	case OpGroupNonUniformAll:
+	case Op::OpGroupNonUniformAll:
 		emit_unary_func_op(result_type, id, ops[3], "WaveActiveAllTrue");
 		break;
 
-	case OpGroupNonUniformAny:
+	case Op::OpGroupNonUniformAny:
 		emit_unary_func_op(result_type, id, ops[3], "WaveActiveAnyTrue");
 		break;
 
-	case OpGroupNonUniformAllEqual:
+	case Op::OpGroupNonUniformAllEqual:
 		emit_unary_func_op(result_type, id, ops[3], "WaveActiveAllEqual");
 		break;
 
 	// clang-format off
 #define HLSL_GROUP_OP(op, hlsl_op, supports_scan) \
-case OpGroupNonUniform##op: \
+case Op::OpGroupNonUniform##op: \
 	{ \
 		auto operation = static_cast<GroupOperation>(ops[3]); \
 		if (operation == GroupOperationReduce) \
@@ -5749,7 +5749,7 @@ case OpGroupNonUniform##op: \
 	}
 
 #define HLSL_GROUP_OP_CAST(op, hlsl_op, type) \
-case OpGroupNonUniform##op: \
+case Op::OpGroupNonUniform##op: \
 	{ \
 		auto operation = static_cast<GroupOperation>(ops[3]); \
 		if (operation == GroupOperationReduce) \
@@ -5780,7 +5780,7 @@ case OpGroupNonUniform##op: \
 #undef HLSL_GROUP_OP_CAST
 		// clang-format on
 
-	case OpGroupNonUniformQuadSwap:
+	case Op::OpGroupNonUniformQuadSwap:
 	{
 		uint32_t direction = evaluate_constant_u32(ops[4]);
 		if (direction == 0)
@@ -5794,7 +5794,7 @@ case OpGroupNonUniform##op: \
 		break;
 	}
 
-	case OpGroupNonUniformQuadBroadcast:
+	case Op::OpGroupNonUniformQuadBroadcast:
 	{
 		emit_binary_func_op(result_type, id, ops[3], ops[4], "QuadReadLaneAt");
 		break;
@@ -5833,13 +5833,13 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 
 	switch (opcode)
 	{
-	case OpAccessChain:
+	case Op::OpAccessChain:
 	case Op::OpInBoundsAccessChain:
 	{
 		emit_access_chain(instruction);
 		break;
 	}
-	case OpBitcast:
+	case Op::OpBitcast:
 	{
 		auto bitcast_type = get_bitcast_type(ops[0], ops[2]);
 		if (bitcast_type == CompilerHLSL::TypeNormal)
@@ -5861,7 +5861,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpSelect:
+	case Op::OpSelect:
 	{
 		auto &value_type = expression_type(ops[3]);
 		if (value_type.basetype == SPIRType::Struct || is_array(value_type))
@@ -5889,40 +5889,40 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpStore:
+	case Op::OpStore:
 	{
 		emit_store(instruction);
 		break;
 	}
 
-	case OpLoad:
+	case Op::OpLoad:
 	{
 		emit_load(instruction);
 		break;
 	}
 
-	case OpMatrixTimesVector:
+	case Op::OpMatrixTimesVector:
 	{
 		// Matrices are kept in a transposed state all the time, flip multiplication order always.
 		emit_binary_func_op(ops[0], ops[1], ops[3], ops[2], "mul");
 		break;
 	}
 
-	case OpVectorTimesMatrix:
+	case Op::OpVectorTimesMatrix:
 	{
 		// Matrices are kept in a transposed state all the time, flip multiplication order always.
 		emit_binary_func_op(ops[0], ops[1], ops[3], ops[2], "mul");
 		break;
 	}
 
-	case OpMatrixTimesMatrix:
+	case Op::OpMatrixTimesMatrix:
 	{
 		// Matrices are kept in a transposed state all the time, flip multiplication order always.
 		emit_binary_func_op(ops[0], ops[1], ops[3], ops[2], "mul");
 		break;
 	}
 
-	case OpOuterProduct:
+	case Op::OpOuterProduct:
 	{
 		uint32_t result_type = ops[0];
 		uint32_t id = ops[1];
@@ -5947,7 +5947,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpFMod:
+	case Op::OpFMod:
 	{
 		if (!requires_op_fmod)
 		{
@@ -5958,7 +5958,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpFRem:
+	case Op::OpFRem:
 		emit_binary_func_op(ops[0], ops[1], ops[2], ops[3], "fmod");
 		break;
 
@@ -5966,7 +5966,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 	{
 		uint32_t result_type = ops[0];
 		uint32_t id = ops[1];
-		auto *combined = maybe_get<SPIRCombineDim::DimageSampler>(ops[2]);
+		auto *combined = maybe_get<SPIRCombinedImageSampler>(ops[2]);
 
 		if (combined)
 		{
@@ -5985,44 +5985,44 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpDPdx:
+	case Op::OpDPdx:
 		HLSL_UFOP(ddx);
 		register_control_dependent_expression(ops[1]);
 		break;
 
-	case OpDPdy:
+	case Op::OpDPdy:
 		HLSL_UFOP(ddy);
 		register_control_dependent_expression(ops[1]);
 		break;
 
-	case OpDPdxFine:
+	case Op::OpDPdxFine:
 		HLSL_UFOP(ddx_fine);
 		register_control_dependent_expression(ops[1]);
 		break;
 
-	case OpDPdyFine:
+	case Op::OpDPdyFine:
 		HLSL_UFOP(ddy_fine);
 		register_control_dependent_expression(ops[1]);
 		break;
 
-	case OpDPdxCoarse:
+	case Op::OpDPdxCoarse:
 		HLSL_UFOP(ddx_coarse);
 		register_control_dependent_expression(ops[1]);
 		break;
 
-	case OpDPdyCoarse:
+	case Op::OpDPdyCoarse:
 		HLSL_UFOP(ddy_coarse);
 		register_control_dependent_expression(ops[1]);
 		break;
 
-	case OpFwidth:
-	case OpFwidthCoarse:
-	case OpFwidthFine:
+	case Op::OpFwidth:
+	case Op::OpFwidthCoarse:
+	case Op::OpFwidthFine:
 		HLSL_UFOP(fwidth);
 		register_control_dependent_expression(ops[1]);
 		break;
 
-	case OpLogicalNot:
+	case Op::OpLogicalNot:
 	{
 		auto result_type = ops[0];
 		auto id = ops[1];
@@ -6047,9 +6047,9 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpLogicalEqual:
-	case OpFOrdEqual:
-	case OpFUnordEqual:
+	case Op::OpLogicalEqual:
+	case Op::OpFOrdEqual:
+	case Op::OpFUnordEqual:
 	{
 		// HLSL != operator is unordered.
 		// https://docs.microsoft.com/en-us/windows/win32/direct3d10/d3d10-graphics-programming-guide-resources-float-rules.
@@ -6079,9 +6079,9 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpLogicalNotEqual:
-	case OpFOrdNotEqual:
-	case OpFUnordNotEqual:
+	case Op::OpLogicalNotEqual:
+	case Op::OpFOrdNotEqual:
+	case Op::OpFUnordNotEqual:
 	{
 		// HLSL != operator is unordered.
 		// https://docs.microsoft.com/en-us/windows/win32/direct3d10/d3d10-graphics-programming-guide-resources-float-rules.
@@ -6103,12 +6103,12 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpUGreaterThan:
-	case OpSGreaterThan:
+	case Op::OpUGreaterThan:
+	case Op::OpSGreaterThan:
 	{
 		auto result_type = ops[0];
 		auto id = ops[1];
-		auto type = opcode == OpUGreaterThan ? uint_type : int_type;
+		auto type = opcode == Op::OpUGreaterThan ? uint_type : int_type;
 
 		if (expression_type(ops[2]).vecsize > 1)
 			emit_unrolled_binary_op(result_type, id, ops[2], ops[3], ">", false, type);
@@ -6117,7 +6117,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpFOrdGreaterThan:
+	case Op::OpFOrdGreaterThan:
 	{
 		auto result_type = ops[0];
 		auto id = ops[1];
@@ -6129,7 +6129,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpFUnordGreaterThan:
+	case Op::OpFUnordGreaterThan:
 	{
 		auto result_type = ops[0];
 		auto id = ops[1];
@@ -6141,13 +6141,13 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpUGreaterThanEqual:
-	case OpSGreaterThanEqual:
+	case Op::OpUGreaterThanEqual:
+	case Op::OpSGreaterThanEqual:
 	{
 		auto result_type = ops[0];
 		auto id = ops[1];
 
-		auto type = opcode == OpUGreaterThanEqual ? uint_type : int_type;
+		auto type = opcode == Op::OpUGreaterThanEqual ? uint_type : int_type;
 		if (expression_type(ops[2]).vecsize > 1)
 			emit_unrolled_binary_op(result_type, id, ops[2], ops[3], ">=", false, type);
 		else
@@ -6155,7 +6155,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpFOrdGreaterThanEqual:
+	case Op::OpFOrdGreaterThanEqual:
 	{
 		auto result_type = ops[0];
 		auto id = ops[1];
@@ -6167,7 +6167,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpFUnordGreaterThanEqual:
+	case Op::OpFUnordGreaterThanEqual:
 	{
 		auto result_type = ops[0];
 		auto id = ops[1];
@@ -6179,13 +6179,13 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpULessThan:
-	case OpSLessThan:
+	case Op::OpULessThan:
+	case Op::OpSLessThan:
 	{
 		auto result_type = ops[0];
 		auto id = ops[1];
 
-		auto type = opcode == OpULessThan ? uint_type : int_type;
+		auto type = opcode == Op::OpULessThan ? uint_type : int_type;
 		if (expression_type(ops[2]).vecsize > 1)
 			emit_unrolled_binary_op(result_type, id, ops[2], ops[3], "<", false, type);
 		else
@@ -6193,7 +6193,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpFOrdLessThan:
+	case Op::OpFOrdLessThan:
 	{
 		auto result_type = ops[0];
 		auto id = ops[1];
@@ -6205,7 +6205,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpFUnordLessThan:
+	case Op::OpFUnordLessThan:
 	{
 		auto result_type = ops[0];
 		auto id = ops[1];
@@ -6217,13 +6217,13 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpULessThanEqual:
-	case OpSLessThanEqual:
+	case Op::OpULessThanEqual:
+	case Op::OpSLessThanEqual:
 	{
 		auto result_type = ops[0];
 		auto id = ops[1];
 
-		auto type = opcode == OpULessThanEqual ? uint_type : int_type;
+		auto type = opcode == Op::OpULessThanEqual ? uint_type : int_type;
 		if (expression_type(ops[2]).vecsize > 1)
 			emit_unrolled_binary_op(result_type, id, ops[2], ops[3], "<=", false, type);
 		else
@@ -6231,7 +6231,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpFOrdLessThanEqual:
+	case Op::OpFOrdLessThanEqual:
 	{
 		auto result_type = ops[0];
 		auto id = ops[1];
@@ -6243,7 +6243,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpFUnordLessThanEqual:
+	case Op::OpFUnordLessThanEqual:
 	{
 		auto result_type = ops[0];
 		auto id = ops[1];
@@ -6286,7 +6286,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		bool uav = expression_type(ops[2]).image.sampled == 2;
 
 		if (const auto *var = maybe_get_backing_variable(ops[2]))
-			if (hlsl_Options.nonwritable_uav_texture_as_srv && has_Decoration(var->self, Decoration::NonWritable))
+			if (hlsl_options.nonwritable_uav_texture_as_srv && has_decoration(var->self, DecorationNonWritable))
 				uav = false;
 
 		auto dummy_samples_levels = join(get_fallback_name(id), "_dummy_parameter");
@@ -6316,7 +6316,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 			SPIRV_CROSS_THROW("Cannot query levels for UAV images.");
 
 		if (const auto *var = maybe_get_backing_variable(ops[2]))
-			if (hlsl_Options.nonwritable_uav_texture_as_srv && has_Decoration(var->self, Decoration::NonWritable))
+			if (hlsl_options.nonwritable_uav_texture_as_srv && has_decoration(var->self, DecorationNonWritable))
 				uav = false;
 
 		// Keep it simple and do not emit special variants to make this look nicer ...
@@ -6349,7 +6349,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 
 		if (subpass_data)
 		{
-			if (hlsl_Options.shader_model < 40)
+			if (hlsl_options.shader_model < 40)
 				SPIRV_CROSS_THROW("Subpass loads are not supported in HLSL shader model 2/3.");
 
 			// Similar to GLSL, implement subpass loads using texelFetch.
@@ -6357,7 +6357,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 			{
 				uint32_t operands = ops[4];
 				if (operands != ImageOperandsSampleMask || instruction.length != 6)
-					SPIRV_CROSS_THROW("Multisampled image used in Op::OpImageRead, but unexpected operand mask was used.");
+					SPIRV_CROSS_THROW("Multisampled image used in OpImageRead, but unexpected operand mask was used.");
 				uint32_t sample = ops[5];
 				imgexpr = join(to_non_uniform_aware_expression(ops[2]), ".Load(int2(gl_FragCoord.xy), ", to_expression(sample), ")");
 			}
@@ -6373,7 +6373,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 			// except that the underlying type changes how the data is interpreted.
 
 			bool force_srv =
-			    hlsl_Options.nonwritable_uav_texture_as_srv && var && has_Decoration(var->self, Decoration::NonWritable);
+			    hlsl_options.nonwritable_uav_texture_as_srv && var && has_decoration(var->self, DecorationNonWritable);
 			pure = force_srv;
 
 			if (var && !subpass_data && !force_srv)
@@ -6439,38 +6439,38 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpAtomicFAddEXT:
-	case OpAtomicFMinEXT:
-	case OpAtomicFMaxEXT:
+	case Op::OpAtomicFAddEXT:
+	case Op::OpAtomicFMinEXT:
+	case Op::OpAtomicFMaxEXT:
 		SPIRV_CROSS_THROW("Floating-point atomics are not supported in HLSL.");
 
-	case OpAtomicCompareExchange:
-	case OpAtomicExchange:
-	case OpAtomicISub:
-	case OpAtomicSMin:
-	case OpAtomicUMin:
-	case OpAtomicSMax:
-	case OpAtomicUMax:
-	case OpAtomicAnd:
-	case OpAtomicOr:
-	case OpAtomicXor:
-	case OpAtomicIAdd:
-	case OpAtomicIIncrement:
-	case OpAtomicIDecrement:
-	case OpAtomicLoad:
-	case OpAtomicStore:
+	case Op::OpAtomicCompareExchange:
+	case Op::OpAtomicExchange:
+	case Op::OpAtomicISub:
+	case Op::OpAtomicSMin:
+	case Op::OpAtomicUMin:
+	case Op::OpAtomicSMax:
+	case Op::OpAtomicUMax:
+	case Op::OpAtomicAnd:
+	case Op::OpAtomicOr:
+	case Op::OpAtomicXor:
+	case Op::OpAtomicIAdd:
+	case Op::OpAtomicIIncrement:
+	case Op::OpAtomicIDecrement:
+	case Op::OpAtomicLoad:
+	case Op::OpAtomicStore:
 	{
 		emit_atomic(ops, instruction.length, opcode);
 		break;
 	}
 
-	case OpControlBarrier:
-	case OpMemoryBarrier:
+	case Op::OpControlBarrier:
+	case Op::OpMemoryBarrier:
 	{
 		uint32_t memory;
 		uint32_t semantics;
 
-		if (opcode == OpMemoryBarrier)
+		if (opcode == Op::OpMemoryBarrier)
 		{
 			memory = evaluate_constant_u32(ops[0]);
 			semantics = evaluate_constant_u32(ops[1]);
@@ -6490,7 +6490,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		// We only care about these flags, acquire/release and friends are not relevant to GLSL.
 		semantics = mask_relevant_memory_semantics(semantics);
 
-		if (opcode == OpMemoryBarrier)
+		if (opcode == Op::OpMemoryBarrier)
 		{
 			// If we are a memory barrier, and the next instruction is a control barrier, check if that memory barrier
 			// does what we need, so we avoid redundant barriers.
@@ -6505,12 +6505,12 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 				// There is no "just execution barrier" in HLSL.
 				// If there are no memory semantics for next instruction, we will imply group shared memory is synced.
 				if (next_semantics == 0)
-					next_semantics = MemorySemanticsWorkgroupMemoryMask;
+					next_semantics = MemorySemanticsMask::WorkgroupMemory;
 
 				bool memory_scope_covered = false;
 				if (next_memory == memory)
 					memory_scope_covered = true;
-				else if (next_semantics == MemorySemanticsWorkgroupMemoryMask)
+				else if (next_semantics == MemorySemanticsMask::WorkgroupMemory)
 				{
 					// If we only care about workgroup memory, either Device or Workgroup scope is fine,
 					// scope does not have to match.
@@ -6534,28 +6534,28 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 
 		// We are synchronizing some memory or syncing execution,
 		// so we cannot forward any loads beyond the memory barrier.
-		if (semantics || opcode == OpControlBarrier)
+		if (semantics || opcode == Op::OpControlBarrier)
 		{
 			assert(current_emitting_block);
 			flush_control_dependent_expressions(current_emitting_block->self);
 			flush_all_active_variables();
 		}
 
-		if (opcode == OpControlBarrier)
+		if (opcode == Op::OpControlBarrier)
 		{
-			// We cannot emit just execution barrier, for no memory semantics pick the cheapest Op::OpTion.
-			if (semantics == MemorySemanticsWorkgroupMemoryMask || semantics == 0)
+			// We cannot emit just execution barrier, for no memory semantics pick the cheapest option.
+			if (semantics == MemorySemanticsMask::WorkgroupMemory || semantics == 0)
 				statement("GroupMemoryBarrierWithGroupSync();");
-			else if (semantics != 0 && (semantics & MemorySemanticsWorkgroupMemoryMask) == 0)
+			else if (semantics != 0 && (semantics & MemorySemanticsMask::WorkgroupMemory) == 0)
 				statement("DeviceMemoryBarrierWithGroupSync();");
 			else
 				statement("AllMemoryBarrierWithGroupSync();");
 		}
 		else
 		{
-			if (semantics == MemorySemanticsWorkgroupMemoryMask)
+			if (semantics == MemorySemanticsMask::WorkgroupMemory)
 				statement("GroupMemoryBarrier();");
-			else if (semantics != 0 && (semantics & MemorySemanticsWorkgroupMemoryMask) == 0)
+			else if (semantics != 0 && (semantics & MemorySemanticsMask::WorkgroupMemory) == 0)
 				statement("DeviceMemoryBarrier();");
 			else
 				statement("AllMemoryBarrier();");
@@ -6563,7 +6563,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpBitFieldInsert:
+	case Op::OpBitFieldInsert:
 	{
 		if (!requires_bitfield_insert)
 		{
@@ -6583,8 +6583,8 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		break;
 	}
 
-	case OpBitFieldSExtract:
-	case OpBitFieldUExtract:
+	case Op::OpBitFieldSExtract:
+	case Op::OpBitFieldUExtract:
 	{
 		if (!requires_bitfield_extract)
 		{
@@ -6592,37 +6592,37 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 			force_recompile();
 		}
 
-		if (opcode == OpBitFieldSExtract)
+		if (opcode == Op::OpBitFieldSExtract)
 			HLSL_TFOP(spvBitfieldSExtract);
 		else
 			HLSL_TFOP(spvBitfieldUExtract);
 		break;
 	}
 
-	case OpBitCount:
+	case Op::OpBitCount:
 	{
 		auto basetype = expression_type(ops[2]).basetype;
 		emit_unary_func_op_cast(ops[0], ops[1], ops[2], "countbits", basetype, basetype);
 		break;
 	}
 
-	case OpBitReverse:
+	case Op::OpBitReverse:
 		HLSL_UFOP(reversebits);
 		break;
 
-	case OpArrayLength:
+	case Op::OpArrayLength:
 	{
 		auto *var = maybe_get_backing_variable(ops[2]);
 		if (!var)
 			SPIRV_CROSS_THROW("Array length must point directly to an SSBO block.");
 
 		auto &type = get<SPIRType>(var->basetype);
-		if (!has_Decoration(type.self, Decoration::Block) && !has_Decoration(type.self, Decoration::BufferBlock))
+		if (!has_decoration(type.self, Decoration::Block) && !has_decoration(type.self, DecorationBufferBlock))
 			SPIRV_CROSS_THROW("Array length expression must point to a block type.");
 
 		// This must be 32-bit uint, so we're good to go.
 		emit_uninitialized_temporary_expression(ops[0], ops[1]);
-		statement(to_non_uniform_aware_expression(ops[2]), ".GetDim::Dimensions(", to_expression(ops[1]), ");");
+		statement(to_non_uniform_aware_expression(ops[2]), ".GetDimensions(", to_expression(ops[1]), ");");
 		uint32_t offset = type_struct_member_offset(type, ops[3]);
 		uint32_t stride = type_struct_member_array_stride(type, ops[3]);
 		statement(to_expression(ops[1]), " = (", to_expression(ops[1]), " - ", offset, ") / ", stride, ";");
@@ -6630,20 +6630,20 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 	}
 
 	case Op::OpIsHelperInvocationEXT:
-		if (hlsl_Options.shader_model < 50 || get_entry_point().model != ExecutionModel::Fragment)
+		if (hlsl_options.shader_model < 50 || get_entry_point().model != ExecutionModelFragment)
 			SPIRV_CROSS_THROW("Helper Invocation input is only supported in PS 5.0 or higher.");
 		// Helper lane state with demote is volatile by nature.
 		// Do not forward this.
 		emit_op(ops[0], ops[1], "IsHelperLane()", false);
 		break;
 
-	case OpBeginInvocationInterlockEXT:
-	case OpEndInvocationInterlockEXT:
-		if (hlsl_Options.shader_model < 51)
+	case Op::OpBeginInvocationInterlockEXT:
+	case Op::OpEndInvocationInterlockEXT:
+		if (hlsl_options.shader_model < 51)
 			SPIRV_CROSS_THROW("Rasterizer order views require Shader Model 5.1.");
 		break; // Nothing to do in the body
 
-	case OpRayQueryInitializeKHR:
+	case Op::OpRayQueryInitializeKHR:
 	{
 		flush_variable_declaration(ops[0]);
 
@@ -6658,139 +6658,139 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 			ray_desc_name, ");"); // ray
 		break;
 	}
-	case OpRayQueryProceedKHR:
+	case Op::OpRayQueryProceedKHR:
 	{
 		flush_variable_declaration(ops[0]);
 		emit_op(ops[0], ops[1], join(to_expression(ops[2]), ".Proceed()"), false);
 		break;
 	}	
-	case OpRayQueryTerminateKHR:
+	case Op::OpRayQueryTerminateKHR:
 	{
 		flush_variable_declaration(ops[0]);
 		statement(to_expression(ops[0]), ".Abort();");
 		break;
 	}
-	case OpRayQueryGenerateIntersectionKHR:
+	case Op::OpRayQueryGenerateIntersectionKHR:
 	{
 		flush_variable_declaration(ops[0]);
 		statement(to_expression(ops[0]), ".CommitProceduralPrimitiveHit(", to_expression(ops[1]), ");");
 		break;
 	}
-	case OpRayQueryConfirmIntersectionKHR:
+	case Op::OpRayQueryConfirmIntersectionKHR:
 	{
 		flush_variable_declaration(ops[0]);
 		statement(to_expression(ops[0]), ".CommitNonOpaqueTriangleHit();");
 		break;
 	}
-	case OpRayQueryGetIntersectionTypeKHR:
+	case Op::OpRayQueryGetIntersectionTypeKHR:
 	{
 		emit_rayquery_function(".CommittedStatus()", ".CandidateType()", ops);
 		break;
 	}
-	case OpRayQueryGetIntersectionTKHR:
+	case Op::OpRayQueryGetIntersectionTKHR:
 	{
 		emit_rayquery_function(".CommittedRayT()", ".CandidateTriangleRayT()", ops);
 		break;
 	}
-	case OpRayQueryGetIntersectionInstanceCustomIndexKHR:
+	case Op::OpRayQueryGetIntersectionInstanceCustomIndexKHR:
 	{
 		emit_rayquery_function(".CommittedInstanceID()", ".CandidateInstanceID()", ops);
 		break;
 	}
-	case OpRayQueryGetIntersectionInstanceIdKHR:
+	case Op::OpRayQueryGetIntersectionInstanceIdKHR:
 	{
 		emit_rayquery_function(".CommittedInstanceIndex()", ".CandidateInstanceIndex()", ops);
 		break;
 	}
-	case OpRayQueryGetIntersectionInstanceShaderBindingTableRecordOffsetKHR:
+	case Op::OpRayQueryGetIntersectionInstanceShaderBindingTableRecordOffsetKHR:
 	{
 		emit_rayquery_function(".CommittedInstanceContributionToHitGroupIndex()", 
 			".CandidateInstanceContributionToHitGroupIndex()", ops);
 		break;
 	}
-	case OpRayQueryGetIntersectionGeometryIndexKHR:
+	case Op::OpRayQueryGetIntersectionGeometryIndexKHR:
 	{
 		emit_rayquery_function(".CommittedGeometryIndex()",
 				".CandidateGeometryIndex()", ops);
 		break;
 	}
-	case OpRayQueryGetIntersectionPrimitiveIndexKHR:
+	case Op::OpRayQueryGetIntersectionPrimitiveIndexKHR:
 	{
 		emit_rayquery_function(".CommittedPrimitiveIndex()", ".CandidatePrimitiveIndex()", ops);
 		break;
 	}
-	case OpRayQueryGetIntersectionBarycentricsKHR:
+	case Op::OpRayQueryGetIntersectionBarycentricsKHR:
 	{
 		emit_rayquery_function(".CommittedTriangleBarycentrics()", ".CandidateTriangleBarycentrics()", ops);
 		break;
 	}
-	case OpRayQueryGetIntersectionFrontFaceKHR:
+	case Op::OpRayQueryGetIntersectionFrontFaceKHR:
 	{
 		emit_rayquery_function(".CommittedTriangleFrontFace()", ".CandidateTriangleFrontFace()", ops);
 		break;
 	}
-	case OpRayQueryGetIntersectionCandidateAABBOpaqueKHR:
+	case Op::OpRayQueryGetIntersectionCandidateAABBOpaqueKHR:
 	{
 		flush_variable_declaration(ops[0]);
 		emit_op(ops[0], ops[1], join(to_expression(ops[2]), ".CandidateProceduralPrimitiveNonOpaque()"), false);
 		break;
 	}
-	case OpRayQueryGetIntersectionObjectRayDirectionKHR:
+	case Op::OpRayQueryGetIntersectionObjectRayDirectionKHR:
 	{
 		emit_rayquery_function(".CommittedObjectRayDirection()", ".CandidateObjectRayDirection()", ops);
 		break;
 	}
-	case OpRayQueryGetIntersectionObjectRayOriginKHR:
+	case Op::OpRayQueryGetIntersectionObjectRayOriginKHR:
 	{
 		flush_variable_declaration(ops[0]);
 		emit_rayquery_function(".CommittedObjectRayOrigin()", ".CandidateObjectRayOrigin()", ops);
 		break;
 	}
-	case OpRayQueryGetIntersectionObjectToWorldKHR:
+	case Op::OpRayQueryGetIntersectionObjectToWorldKHR:
 	{
 		emit_rayquery_function(".CommittedObjectToWorld4x3()", ".CandidateObjectToWorld4x3()", ops);
 		break;
 	}
-	case OpRayQueryGetIntersectionWorldToObjectKHR:
+	case Op::OpRayQueryGetIntersectionWorldToObjectKHR:
 	{
 		emit_rayquery_function(".CommittedWorldToObject4x3()", ".CandidateWorldToObject4x3()", ops);
 		break;
 	}
-	case OpRayQueryGetRayFlagsKHR:
+	case Op::OpRayQueryGetRayFlagsKHR:
 	{
 		flush_variable_declaration(ops[0]);
 		emit_op(ops[0], ops[1], join(to_expression(ops[2]), ".RayFlags()"), false);
 		break;
 	}
-	case OpRayQueryGetRayTMinKHR:
+	case Op::OpRayQueryGetRayTMinKHR:
 	{
 		flush_variable_declaration(ops[0]);
 		emit_op(ops[0], ops[1], join(to_expression(ops[2]), ".RayTMin()"), false);
 		break;
 	}
-	case OpRayQueryGetWorldRayOriginKHR:
+	case Op::OpRayQueryGetWorldRayOriginKHR:
 	{
 		flush_variable_declaration(ops[0]);
 		emit_op(ops[0], ops[1], join(to_expression(ops[2]), ".WorldRayOrigin()"), false);
 		break;
 	}
-	case OpRayQueryGetWorldRayDirectionKHR:
+	case Op::OpRayQueryGetWorldRayDirectionKHR:
 	{
 		flush_variable_declaration(ops[0]);
 		emit_op(ops[0], ops[1], join(to_expression(ops[2]), ".WorldRayDirection()"), false);
 		break;
 	}
-	case OpSetMeshOutputsEXT:
+	case Op::OpSetMeshOutputsEXT:
 	{
 		statement("SetMeshOutputCounts(", to_unpacked_expression(ops[0]), ", ", to_unpacked_expression(ops[1]), ");");
 		break;
 	}
-	case OpEmitVertex:
+	case Op::OpEmitVertex:
 	{
 		emit_geometry_stream_append();
 		break;
 	}
-	case OpEndPrimitive:
+	case Op::OpEndPrimitive:
 	{
 		statement("geometry_stream.RestartStrip();");
 		break;
@@ -6808,7 +6808,7 @@ void CompilerHLSL::require_texture_query_variant(uint32_t var_id)
 
 	auto &type = expression_type(var_id);
 	bool uav = type.image.sampled == 2;
-	if (hlsl_Options.nonwritable_uav_texture_as_srv && has_Decoration(var_id, Decoration::NonWritable))
+	if (hlsl_options.nonwritable_uav_texture_as_srv && has_decoration(var_id, DecorationNonWritable))
 		uav = false;
 
 	uint32_t bit = 0;
@@ -6882,11 +6882,11 @@ void CompilerHLSL::add_vertex_attribute_remap(const HLSLVertexAttributeRemap &ve
 	remap_vertex_attributes.push_back(vertex_attributes);
 }
 
-VariableID CompilerHLSL::remap_num_workgroups_BuiltIn::()
+VariableID CompilerHLSL::remap_num_workgroups_builtin()
 {
-	update_active_BuiltIn::s();
+	update_active_builtins();
 
-	if (!active_input_BuiltIn::s.get(BuiltIn::NumWorkgroups))
+	if (!active_input_builtins.get(BuiltIn::NumWorkgroups))
 		return 0;
 
 	// Create a new, fake UBO.
@@ -6908,9 +6908,9 @@ VariableID CompilerHLSL::remap_num_workgroups_BuiltIn::()
 	block_type.basetype = SPIRType::Struct;
 	block_type.member_types.push_back(uint_type_id);
 	set<SPIRType>(block_type_id, block_type);
-	set_Decoration(block_type_id, Decoration::Block);
+	set_decoration(block_type_id, Decoration::Block);
 	set_member_name(block_type_id, 0, "count");
-	set_member_Decoration(block_type_id, 0, Decoration::Offset, 0);
+	set_member_decoration(block_type_id, 0, DecorationOffset, 0);
 
 	SPIRType block_pointer_type = block_type;
 	block_pointer_type.pointer = true;
@@ -6922,10 +6922,10 @@ VariableID CompilerHLSL::remap_num_workgroups_BuiltIn::()
 	ptr_type.self = block_type_id;
 
 	set<SPIRVariable>(variable_id, block_pointer_type_id, StorageClass::Uniform);
-	ir.meta[variable_id].Decoration::.alias = "SPIRV_Cross_NumWorkgroups";
+	ir.meta[variable_id].decoration.alias = "SPIRV_Cross_NumWorkgroups";
 
-	num_workgroups_BuiltIn = variable_id;
-	get_entry_point().interface_variables.push_back(num_workgroups_BuiltIn);
+	num_workgroups_builtin = variable_id;
+	get_entry_point().interface_variables.push_back(num_workgroups_builtin);
 	return variable_id;
 }
 
@@ -6937,21 +6937,21 @@ void CompilerHLSL::set_resource_binding_flags(HLSLBindingFlags flags)
 void CompilerHLSL::validate_shader_model()
 {
 	// Check for nonuniform qualifier.
-	// Instead of loOp::OpIng over all Decoration::s to find this, just look at capabilities.
+	// Instead of looping over all decorations to find this, just look at capabilities.
 	for (auto &cap : ir.declared_capabilities)
 	{
 		switch (cap)
 		{
 		case Capability::ShaderNonUniformEXT:
 		case Capability::RuntimeDescriptorArrayEXT:
-			if (hlsl_Options.shader_model < 51)
+			if (hlsl_options.shader_model < 51)
 				SPIRV_CROSS_THROW(
 				    "Shader model 5.1 or higher is required to use bindless resources or NonUniformResourceIndex.");
 			break;
 
 		case Capability::VariablePointers:
 		case Capability::VariablePointersStorageBuffer:
-			SPIRV_CROSS_THROW("VariablePointers Capability is not supported in HLSL.");
+			SPIRV_CROSS_THROW("VariablePointers capability is not supported in HLSL.");
 
 		default:
 			break;
@@ -6961,7 +6961,7 @@ void CompilerHLSL::validate_shader_model()
 	if (ir.addressing_model != AddressingModelLogical)
 		SPIRV_CROSS_THROW("Only Logical addressing model can be used with HLSL.");
 
-	if (hlsl_Options.enable_16bit_types && hlsl_Options.shader_model < 62)
+	if (hlsl_options.enable_16bit_types && hlsl_options.shader_model < 62)
 		SPIRV_CROSS_THROW("Need at least shader model 6.2 when enabling native 16-bit type support.");
 }
 
@@ -6970,9 +6970,9 @@ string CompilerHLSL::compile()
 	ir.fixup_reserved_names();
 
 	// Do not deal with ES-isms like precision, older extensions and such.
-	Options.es = false;
-	Options.version = 450;
-	Options.vulkan_semantics = true;
+	options.es = false;
+	options.version = 450;
+	options.vulkan_semantics = true;
 	backend.float_literal_suffix = true;
 	backend.double_literal_suffix = false;
 	backend.long_long_literal_suffix = true;
@@ -6997,17 +6997,17 @@ string CompilerHLSL::compile()
 	backend.support_case_fallthrough = false;
 	backend.force_merged_mesh_block = get_execution_model() == ExecutionModel::MeshEXT;
 	backend.force_gl_in_out_block = backend.force_merged_mesh_block;
-	backend.supports_empty_struct = hlsl_Options.shader_model <= 30;
+	backend.supports_empty_struct = hlsl_options.shader_model <= 30;
 
 	// SM 4.1 does not support precise for some reason.
-	backend.support_precise_qualifier = hlsl_Options.shader_model >= 50 || hlsl_Options.shader_model == 40;
+	backend.support_precise_qualifier = hlsl_options.shader_model >= 50 || hlsl_options.shader_model == 40;
 
 	fixup_anonymous_struct_names();
 	fixup_type_alias();
 	reorder_type_alias();
 	build_function_control_flow_graphs_and_analyze();
 	validate_shader_model();
-	update_active_BuiltIn::s();
+	update_active_builtins();
 	analyze_image_and_sampler_usage();
 	analyze_interlocked_resource_usage();
 	if (get_execution_model() == ExecutionModel::MeshEXT)
@@ -7018,15 +7018,15 @@ string CompilerHLSL::compile()
 
 	// Subpass input needs SV_Position.
 	if (need_subpass_input)
-		active_input_BuiltIn::s.set(BuiltIn::FragCoord);
+		active_input_builtins.set(BuiltIn::FragCoord);
 
 	// Need to offset by BaseVertex/BaseInstance in SM 6.8+.
-	if (hlsl_Options.shader_model >= 68)
+	if (hlsl_options.shader_model >= 68)
 	{
-		if (active_input_BuiltIn::s.get(BuiltIn::VertexIndex))
-			active_input_BuiltIn::s.set(BuiltIn::BaseVertex);
-		if (active_input_BuiltIn::s.get(BuiltIn::InstanceIndex))
-			active_input_BuiltIn::s.set(BuiltIn::BaseInstance);
+		if (active_input_builtins.get(BuiltIn::VertexIndex))
+			active_input_builtins.set(BuiltIn::BaseVertex);
+		if (active_input_builtins.get(BuiltIn::InstanceIndex))
+			active_input_builtins.set(BuiltIn::BaseInstance);
 	}
 
 	uint32_t pass_count = 0;
@@ -7108,13 +7108,13 @@ CompilerHLSL::BitcastType CompilerHLSL::get_bitcast_type(uint32_t result_type, u
 
 bool CompilerHLSL::is_hlsl_force_storage_buffer_as_uav(ID id) const
 {
-	if (hlsl_Options.force_storage_buffer_as_uav)
+	if (hlsl_options.force_storage_buffer_as_uav)
 	{
 		return true;
 	}
 
-	const uint32_t desc_set = get_Decoration(id, spv::Decoration::DescriptorSet);
-	const uint32_t binding = get_Decoration(id, spv::Decoration::Binding);
+	const uint32_t desc_set = get_decoration(id, spv::DecorationDescriptorSet);
+	const uint32_t binding = get_decoration(id, spv::DecorationBinding);
 
 	return (force_uav_buffer_bindings.find({ desc_set, binding }) != force_uav_buffer_bindings.end());
 }
@@ -7127,11 +7127,11 @@ void CompilerHLSL::set_hlsl_force_storage_buffer_as_uav(uint32_t desc_set, uint3
 
 bool CompilerHLSL::is_user_type_structured(uint32_t id) const
 {
-	if (hlsl_Options.preserve_structured_buffers)
+	if (hlsl_options.preserve_structured_buffers)
 	{
 		// Compare left hand side of string only as these user types can contain more meta data such as their subtypes,
 		// e.g. "structuredbuffer:int"
-		const std::string &user_type = get_Decoration::_string(id, Decoration::UserTypeGOOGLE);
+		const std::string &user_type = get_decoration_string(id, DecorationUserTypeGOOGLE);
 		return user_type.compare(0, 16, "structuredbuffer") == 0 ||
 		       user_type.compare(0, 18, "rwstructuredbuffer") == 0 ||
 		       user_type.compare(0, 33, "rasterizerorderedstructuredbuffer") == 0;
@@ -7145,15 +7145,15 @@ void CompilerHLSL::cast_to_variable_store(uint32_t target_id, std::string &expr,
 	// since we cannot lower them by wrapping the variables in global statics.
 	// Fortunately, clip/cull is a proper vector in HLSL so we can lower with simple rvalue casts.
 	if (get_execution_model() != ExecutionModel::MeshEXT ||
-	    !has_Decoration(target_id, Decoration::BuiltIn) ||
+	    !has_decoration(target_id, Decoration::BuiltIn) ||
 	    !is_array(expr_type))
 	{
 		CompilerGLSL::cast_to_variable_store(target_id, expr, expr_type);
 		return;
 	}
 
-	auto BuiltIn = BuiltIn::(get_Decoration(target_id, Decoration::BuiltIn));
-	if (BuiltIn != BuiltIn::ClipDistance && BuiltIn != BuiltIn::CullDistance)
+	auto builtin = BuiltIn(get_decoration(target_id, Decoration::BuiltIn));
+	if (builtin != BuiltIn::ClipDistance && builtin != BuiltIn::CullDistance)
 	{
 		CompilerGLSL::cast_to_variable_store(target_id, expr, expr_type);
 		return;
