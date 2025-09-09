@@ -13844,7 +13844,7 @@ uint32_t CompilerMSL::get_or_allocate_builtin_input_member_location(spv::BuiltIn
 		builtin_to_automatic_input_location[static_cast<uint32_t>(BuiltIn::TessLevelOuter)] = loc;
 	}
 	else
-		builtin_to_automatic_input_location[builtin] = loc;
+		builtin_to_automatic_input_location[static_cast<uint32_t>(builtin)] = loc;
 
 	mark_location_as_used_by_shader(loc, mbr_type, StorageClass::Input, true);
 	return loc;
@@ -13883,11 +13883,11 @@ uint32_t CompilerMSL::get_or_allocate_builtin_output_member_location(spv::BuiltI
 	// mark both builtins as sharing one location.
 	if (is_tessellating_triangles() && (builtin == BuiltIn::TessLevelInner || builtin == BuiltIn::TessLevelOuter))
 	{
-		builtin_to_automatic_output_location[BuiltIn::TessLevelInner] = loc;
-		builtin_to_automatic_output_location[BuiltIn::TessLevelOuter] = loc;
+		builtin_to_automatic_output_location[static_cast<uint32_t>(BuiltIn::TessLevelInner)] = loc;
+		builtin_to_automatic_output_location[static_cast<uint32_t>(BuiltIn::TessLevelOuter)] = loc;
 	}
 	else
-		builtin_to_automatic_output_location[builtin] = loc;
+		builtin_to_automatic_output_location[static_cast<uint32_t>(builtin)] = loc;
 
 	mark_location_as_used_by_shader(loc, mbr_type, StorageClass::Output, true);
 	return loc;
@@ -20020,7 +20020,7 @@ uint32_t CompilerMSL::get_fp_fast_math_flags(bool incl_ops) const
 	if (incl_ops)
 		for (auto &p_m : ir.meta)
 			if (p_m.second.decoration.decoration_flags.get(static_cast<uint32_t>(Decoration::FPFastMathMode)))
-				fp_flags &= p_m.second.decoration.fp_fast_math_mode;
+				fp_flags &= static_cast<uint32_t>(p_m.second.decoration.fp_fast_math_mode);
 
 	return fp_flags;
 }
