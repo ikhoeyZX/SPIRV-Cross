@@ -253,9 +253,9 @@ string CompilerHLSL::image_type_hlsl_modern(const SPIRType &type, uint32_t id)
 	bool typed_load = false;
 	uint32_t components = 4;
 
-	bool force_image_srv = hlsl_Options.nonwritable_uav_texture_as_srv && has_Decoration::(id, Decoration::NonWritable);
+	bool force_image_srv = hlsl_Options.nonwritable_uav_texture_as_srv && has_Decoration(id, Decoration::NonWritable);
 
-	switch (type.image.Dim::Dim)
+	switch (type.image.dim)
 	{
 	case Dim::Dim1D:
 		typed_load = type.image.sampled == 2;
@@ -269,14 +269,14 @@ string CompilerHLSL::image_type_hlsl_modern(const SPIRType &type, uint32_t id)
 		typed_load = type.image.sampled == 2;
 		Dim = "3D";
 		break;
-	case Dim::DimCube:
+	case Dim::Cube:
 		if (type.image.sampled == 2)
 			SPIRV_CROSS_THROW("RWTextureCube does not exist in HLSL.");
 		Dim = "Cube";
 		break;
-	case Dim::DimRect:
+	case Dim::Rect:
 		SPIRV_CROSS_THROW("Rectangle texture support is not yet implemented for HLSL."); // TODO
-	case Dim::DimBuffer:
+	case Dim::Buffer:
 		if (type.image.sampled == 1)
 			return join("Buffer<", type_to_glsl(imagetype), components, ">");
 		else if (type.image.sampled == 2)
@@ -312,7 +312,7 @@ string CompilerHLSL::image_type_hlsl_modern(const SPIRType &type, uint32_t id)
 	if (typed_load && interlocked_resources.count(id))
 		rw = "RasterizerOrdered";
 
-	return join(rw, "Texture", Dim::Dim, ms, arrayed, "<",
+	return join(rw, "Texture", Dim, ms, arrayed, "<",
 	            typed_load ? image_format_to_type(type.image.format, imagetype.basetype) :
 	                         join(type_to_glsl(imagetype), components),
 	            ">");
@@ -335,15 +335,15 @@ string CompilerHLSL::image_type_hlsl_legacy(const SPIRType &type, uint32_t /*id*
 		break;
 	}
 
-	if (type.basetype == SPIRType::Image && type.image.Dim == Dim::SubpassData)
+	if (type.basetype == SPIRType::Image && type.image.dim == Dim::SubpassData)
 		return res + "subpassInput" + (type.image.ms ? "MS" : "");
 
 	// If we're emulating subpassInput with samplers, force sampler2D
 	// so we don't have to specify format.
-	if (type.basetype == SPIRType::Image && type.image.Dim != Dim::SubpassData)
+	if (type.basetype == SPIRType::Image && type.image.dim != Dim::SubpassData)
 	{
 		// Sampler buffers are always declared as samplerBuffer even though they might be separate images in the SPIR-V.
-		if (type.image.Dim == Dim::DimBuffer && type.image.sampled == 1)
+		if (type.image.dim == Dim::Buffer && type.image.sampled == 1)
 			res += "sampler";
 		else
 			res += type.image.sampled == 2 ? "image" : "texture";
@@ -351,7 +351,7 @@ string CompilerHLSL::image_type_hlsl_legacy(const SPIRType &type, uint32_t /*id*
 	else
 		res += "sampler";
 
-	switch (type.image.Dim::Dim)
+	switch (type.image.dim)
 	{
 	case Dim::Dim1D:
 		res += "1D";
@@ -362,11 +362,11 @@ string CompilerHLSL::image_type_hlsl_legacy(const SPIRType &type, uint32_t /*id*
 	case Dim::Dim3D:
 		res += "3D";
 		break;
-	case Dim::DimCube:
+	case Dim::Cube:
 		res += "CUBE";
 		break;
 
-	case Dim::DimBuffer:
+	case Dim::Buffer:
 		res += "Buffer";
 		break;
 
@@ -410,7 +410,7 @@ string CompilerHLSL::type_to_glsl(const SPIRType &type, uint32_t id)
 			return to_name(type.self);
 
 	case SPIRType::Image:
-	case SPIRType::SampleDim::Dimage:
+	case SPIRType::SampleDimDimage:
 		return image_type_hlsl(type, id);
 
 	case SPIRType::Sampler:
@@ -571,7 +571,7 @@ void CompilerHLSL::emit_BuiltIn::_outputs_in_struct()
 		const char *type = nullptr;
 		const char *semantic = nullptr;
 		auto BuiltIn = static_cast<BuiltIn::>(i);
-		switch (BuiltIn::)
+		switch (BuiltIn)
 		{
 		case BuiltIn::Position:
 			type = is_position_invariant() && backend.support_precise_qualifier ? "precise float4" : "float4";
@@ -720,7 +720,7 @@ void CompilerHLSL::emit_BuiltIn::_primitive_outputs_in_struct()
 		const char *type = nullptr;
 		const char *semantic = nullptr;
 		auto BuiltIn = static_cast<BuiltIn::>(i);
-		switch (BuiltIn::)
+		switch (BuiltIn)
 		{
 		case BuiltIn::Layer:
 		{
@@ -767,7 +767,7 @@ void CompilerHLSL::emit_BuiltIn::_inputs_in_struct()
 		const char *type = nullptr;
 		const char *semantic = nullptr;
 		auto BuiltIn = static_cast<BuiltIn::>(i);
-		switch (BuiltIn::)
+		switch (BuiltIn)
 		{
 		case BuiltIn::FragCoord:
 			type = "float4";
@@ -1007,7 +1007,7 @@ std::string CompilerHLSL::to_initializer_expression(const SPIRVariable &var)
 	// FIXME: There is a theoretical problem here if someone tries to composite extract
 	// into this initializer since we don't declare it properly, but that is somewhat non-sensical.
 	auto &type = get<SPIRType>(var.basetype);
-	bool is_block = has_Decoration::(type.self, Decoration::Block);
+	bool is_block = has_Decoration(type.self, Decoration::Block);
 	auto *c = maybe_get<SPIRConstant>(var.initializer);
 	if (is_block && c)
 		return constant_expression(*c);
@@ -1026,7 +1026,7 @@ void CompilerHLSL::emit_interface_block_member_in_struct(const SPIRVariable &var
 	auto &mbr_type = get<SPIRType>(type.member_types[member_index]);
 
 	Bitset member_Decoration::s = get_member_Decoration::_bitset(type.self, member_index);
-	if (has_Decoration::(var.self, Decoration::PerVertexKHR))
+	if (has_Decoration(var.self, Decoration::PerVertexKHR))
 		member_Decoration::s.set(Decoration::PerVertexKHR);
 
 	statement(to_interpolation_qualifiers(member_Decoration::s),
@@ -1052,8 +1052,8 @@ void CompilerHLSL::emit_interface_block_in_struct(const SPIRVariable &var, unord
 	if (execution.model == ExecutionModel::Fragment && var.storage == StorageClass::Output)
 	{
 		// Dual-source blending is achieved in HLSL by emitting to SV_Target0 and 1.
-		uint32_t index = get_Decoration::(var.self, Decoration::Index);
-		uint32_t location = get_Decoration::(var.self, Decoration::Location);
+		uint32_t index = get_Decoration(var.self, Decoration::Index);
+		uint32_t location = get_Decoration(var.self, Decoration::Location);
 
 		if (index != 0 && location != 0)
 			SPIRV_CROSS_THROW("Dual-source blending is only supported on MRT #0 in HLSL.");
@@ -1084,8 +1084,8 @@ void CompilerHLSL::emit_interface_block_in_struct(const SPIRVariable &var, unord
 
 		// If an explicit location exists, use it with TEXCOORD[N] semantic.
 		// Otherwise, pick a vacant location.
-		if (has_Decoration::(var.self, Decoration::Location))
-			location_number = get_Decoration::(var.self, Decoration::Location);
+		if (has_Decoration(var.self, Decoration::Location))
+			location_number = get_Decoration(var.self, Decoration::Location);
 		else
 			location_number = get_vacant_location();
 
@@ -1119,7 +1119,7 @@ void CompilerHLSL::emit_interface_block_in_struct(const SPIRVariable &var, unord
 			auto decl_type = type;
 			if (execution.model == ExecutionModel::MeshEXT ||
 			    (execution.model == ExecutionModel::Geometry && var.storage == StorageClass::Input) ||
-			    has_Decoration::(var.self, Decoration::PerVertexKHR))
+			    has_Decoration(var.self, Decoration::PerVertexKHR))
 			{
 				decl_type.array.erase(decl_type.array.begin());
 				decl_type.array_size_literal.erase(decl_type.array_size_literal.begin());
@@ -1141,7 +1141,7 @@ void CompilerHLSL::emit_interface_block_in_struct(const SPIRVariable &var, unord
 
 std::string CompilerHLSL::BuiltIn::_to_glsl(spv::BuiltIn BuiltIn::, spv::StorageClass storage)
 {
-	switch (BuiltIn::)
+	switch (BuiltIn)
 	{
 	case BuiltIn::VertexId:
 		return "gl_VertexID";
@@ -1149,13 +1149,13 @@ std::string CompilerHLSL::BuiltIn::_to_glsl(spv::BuiltIn BuiltIn::, spv::Storage
 		return "gl_InstanceID";
 	case BuiltIn::NumWorkgroups:
 	{
-		if (!num_workgroups_BuiltIn::)
+		if (!num_workgroups_BuiltIn)
 			SPIRV_CROSS_THROW("NumWorkgroups BuiltIn is used, but remap_num_workgroups_BuiltIn::() was not called. "
 			                  "Cannot emit code for this BuiltIn::.");
 
-		auto &var = get<SPIRVariable>(num_workgroups_BuiltIn::);
+		auto &var = get<SPIRVariable>(num_workgroups_BuiltIn);
 		auto &type = get<SPIRType>(var.basetype);
-		auto ret = join(to_name(num_workgroups_BuiltIn::), "_", get_member_name(type.self, 0));
+		auto ret = join(to_name(num_workgroups_BuiltIn), "_", get_member_name(type.self, 0));
 		ParsedIR::sanitize_underscores(ret);
 		return ret;
 	}
@@ -1192,7 +1192,7 @@ void CompilerHLSL::emit_BuiltIn::_variables()
 			return;
 
 		auto &type = this->get<SPIRType>(var.basetype);
-		auto BuiltIn = BuiltIn::(get_Decoration::(var.self, Decoration::BuiltIn::));
+		auto BuiltIn = BuiltIn::(get_Decoration(var.self, Decoration::BuiltIn));
 
 		if (var.storage == StorageClass::Input && BuiltIn == BuiltIn::SampleMask)
 			sample_mask_in_basetype = type.basetype;
@@ -1210,14 +1210,14 @@ void CompilerHLSL::emit_BuiltIn::_variables()
 				uint32_t member_count = uint32_t(type.member_types.size());
 				for (uint32_t i = 0; i < member_count; i++)
 				{
-					if (has_member_Decoration::(type.self, i, Decoration::BuiltIn::))
+					if (has_member_Decoration(type.self, i, Decoration::BuiltIn))
 					{
-						BuiltIn::_to_initializer[get_member_Decoration::(type.self, i, Decoration::BuiltIn::)] =
+						BuiltIn::_to_initializer[get_member_Decoration(type.self, i, Decoration::BuiltIn)] =
 								c->subconstants[i];
 					}
 				}
 			}
-			else if (has_Decoration::(var.self, Decoration::BuiltIn::))
+			else if (has_Decoration(var.self, Decoration::BuiltIn))
 			{
 				BuiltIn::_to_initializer[BuiltIn::] = var.initializer;
 			}
@@ -1231,7 +1231,7 @@ void CompilerHLSL::emit_BuiltIn::_variables()
 		uint32_t array_size = 0;
 
 		string init_expr;
-		auto init_itr = BuiltIn::_to_initializer.find(BuiltIn::);
+		auto init_itr = BuiltIn::_to_initializer.find(BuiltIn);
 		if (init_itr != BuiltIn::_to_initializer.end())
 			init_expr = join(" = ", to_expression(init_itr->second));
 
@@ -1247,7 +1247,7 @@ void CompilerHLSL::emit_BuiltIn::_variables()
 			}
 		}
 
-		switch (BuiltIn::)
+		switch (BuiltIn)
 		{
 		case BuiltIn::FragCoord:
 		case BuiltIn::Position:
@@ -1285,7 +1285,7 @@ void CompilerHLSL::emit_BuiltIn::_variables()
 				break;
 			}
 			else
-				SPIRV_CROSS_THROW(join("Unsupported BuiltIn in HLSL: ", unsigned(BuiltIn::)));
+				SPIRV_CROSS_THROW(join("Unsupported BuiltIn in HLSL: ", unsigned(BuiltIn)));
 
 		case BuiltIn::GlobalInvocationId:
 		case BuiltIn::LocalInvocationId:
@@ -1366,7 +1366,7 @@ void CompilerHLSL::emit_BuiltIn::_variables()
 			break;
 
 		default:
-			SPIRV_CROSS_THROW(join("Unsupported BuiltIn in HLSL: ", unsigned(BuiltIn::)));
+			SPIRV_CROSS_THROW(join("Unsupported BuiltIn in HLSL: ", unsigned(BuiltIn)));
 		}
 
 		StorageClass storage = active_input_BuiltIn::s.get(i) ? StorageClass::Input : StorageClass::Output;
@@ -1474,7 +1474,7 @@ void CompilerHLSL::emit_specialization_constants_and_structs()
 		if ((var.storage == StorageClass::Input || var.storage == StorageClass::Output) &&
 		    !var.remapped_variable && type.pointer && !is_BuiltIn::_variable(var) &&
 		    interface_variable_exists_in_entry_point(var.self) &&
-		    has_Decoration::(type.self, Decoration::Block))
+		    has_Decoration(type.self, Decoration::Block))
 		{
 			io_block_types.insert(type.self);
 		}
@@ -1501,11 +1501,11 @@ void CompilerHLSL::emit_specialization_constants_and_structs()
 				add_resource_name(c.self);
 				auto name = to_name(c.self);
 
-				if (has_Decoration::(c.self, Decoration::SpecId))
+				if (has_Decoration(c.self, Decoration::SpecId))
 				{
 					// HLSL does not support specialization constants, so fallback to macros.
 					c.specialization_constant_macro_name =
-							constant_value_macro_name(get_Decoration::(c.self, Decoration::SpecId));
+							constant_value_macro_name(get_Decoration(c.self, Decoration::SpecId));
 
 					statement("#ifndef ", c.specialization_constant_macro_name);
 					statement("#define ", c.specialization_constant_macro_name, " ", constant_expression(c));
@@ -1530,9 +1530,9 @@ void CompilerHLSL::emit_specialization_constants_and_structs()
 		else if (id.get_type() == TypeType)
 		{
 			auto &type = id.get<SPIRType>();
-			bool is_non_io_block = has_Decoration::(type.self, Decoration::Block) &&
+			bool is_non_io_block = has_Decoration(type.self, Decoration::Block) &&
 			                       io_block_types.count(type.self) == 0;
-			bool is_buffer_block = has_Decoration::(type.self, Decoration::BufferBlock);
+			bool is_buffer_block = has_Decoration(type.self, Decoration::BufferBlock);
 			if (type.basetype == SPIRType::Struct && type.array.empty() &&
 			    !type.pointer && !is_non_io_block && !is_buffer_block)
 			{
@@ -1603,7 +1603,7 @@ void CompilerHLSL::replace_illegal_names()
 
 SPIRType::BaseType CompilerHLSL::get_BuiltIn::_basetype(BuiltIn BuiltIn::, SPIRType::BaseType default_type)
 {
-	switch (BuiltIn::)
+	switch (BuiltIn)
 	{
 	case BuiltIn::SampleMask:
 		// We declare sample mask array with module type, so always use default_type here.
@@ -1681,7 +1681,7 @@ void CompilerHLSL::emit_resources()
 		if (skip_separate_image_sampler)
 		{
 			// Sampler buffers are always used without a sampler, and they will also work in regular D3D.
-			bool sampler_buffer = type.basetype == SPIRType::Image && type.image.Dim == Dim::DimBuffer;
+			bool sampler_buffer = type.basetype == SPIRType::Image && type.image.dim == Dim::Buffer;
 			bool separate_image = type.basetype == SPIRType::Image && type.image.sampled == 1;
 			bool separate_sampler = type.basetype == SPIRType::Sampler;
 			if (!sampler_buffer && (separate_image || separate_sampler))
@@ -1742,7 +1742,7 @@ void CompilerHLSL::emit_resources()
 
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t, SPIRVariable &var) {
 		auto &type = this->get<SPIRType>(var.basetype);
-		bool block = has_Decoration::(type.self, Decoration::Block);
+		bool block = has_Decoration(type.self, Decoration::Block);
 
 		if (var.storage != StorageClass::Input && var.storage != StorageClass::Output)
 			return;
@@ -1763,7 +1763,7 @@ void CompilerHLSL::emit_resources()
 			}
 			else
 			{
-				uint32_t location = get_Decoration::(var.self, Decoration::Location);
+				uint32_t location = get_Decoration(var.self, Decoration::Location);
 				if (var.storage == StorageClass::Input)
 					input_variables.push_back({ &var, location, 0, false });
 				else
@@ -1779,8 +1779,8 @@ void CompilerHLSL::emit_resources()
 		// - Name comparison
 		// - Variable has a name
 		// - Fallback: ID
-		bool has_location_a = a.block || has_Decoration::(a.var->self, Decoration::Location);
-		bool has_location_b = b.block || has_Decoration::(b.var->self, Decoration::Location);
+		bool has_location_a = a.block || has_Decoration(a.var->self, Decoration::Location);
+		bool has_location_b = b.block || has_Decoration(b.var->self, Decoration::Location);
 
 		if (has_location_a && has_location_b)
 			return a.location < b.location;
@@ -2434,7 +2434,7 @@ void CompilerHLSL::analyze_meshlet_writes()
 
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t, SPIRVariable &var) {
 		auto &type = this->get<SPIRType>(var.basetype);
-		bool block = has_Decoration::(type.self, Decoration::Block);
+		bool block = has_Decoration(type.self, Decoration::Block);
 		if (var.storage == StorageClass::Output && block && is_BuiltIn::_variable(var))
 		{
 			auto flags = get_buffer_block_flags(var.self);
@@ -2473,9 +2473,9 @@ void CompilerHLSL::analyze_meshlet_writes()
 		auto &type = set<SPIRType>(op_type, Op::OpTypeStruct);
 		type.basetype = SPIRType::Struct;
 		set_name(op_type, block_name);
-		set_Decoration::(op_type, Decoration::Block);
+		set_Decoration(op_type, Decoration::Block);
 		if (per_primitive)
-			set_Decoration::(op_type, Decoration::PerPrimitiveEXT);
+			set_Decoration(op_type, Decoration::PerPrimitiveEXT);
 
 		auto &arr = set<SPIRType>(op_arr, type);
 		arr.op = Op::OpTypeArray;
@@ -2489,12 +2489,12 @@ void CompilerHLSL::analyze_meshlet_writes()
 		ptr.pointer = true;
 		ptr.pointer_depth++;
 		ptr.storage = StorageClass::Output;
-		set_Decoration::(op_ptr, Decoration::Block);
+		set_Decoration(op_ptr, Decoration::Block);
 		set_name(op_ptr, block_name);
 
 		auto &var = set<SPIRVariable>(op_var, op_ptr, StorageClass::Output);
 		if (per_primitive)
-			set_Decoration::(op_var, Decoration::PerPrimitiveEXT);
+			set_Decoration(op_var, Decoration::PerPrimitiveEXT);
 		set_name(op_var, instance_name);
 		execution.interface_variables.push_back(var.self);
 
@@ -2574,7 +2574,7 @@ void CompilerHLSL::analyze_meshlet_writes(uint32_t func_id, uint32_t id_per_vert
 				if (var && (var->storage == StorageClass::Output || var->storage == StorageClass::TaskPayloadWorkgroupEXT))
 				{
 					bool already_declared = false;
-					auto BuiltIn::_type = BuiltIn::(get_Decoration::(var->self, Decoration::BuiltIn::));
+					auto BuiltIn::_type = BuiltIn::(get_Decoration(var->self, Decoration::BuiltIn));
 
 					uint32_t var_id = var->self;
 					if (var->storage != StorageClass::TaskPayloadWorkgroupEXT &&
@@ -2645,8 +2645,8 @@ void CompilerHLSL::emit_struct_member(const SPIRType &type, uint32_t member_type
 	string packing_offset;
 	bool is_push_constant = type.storage == StorageClass::PushConstant;
 
-	if ((has_extended_Decoration::(type.self, SPIRVCrossDecoration::ExplicitOffset) || is_push_constant) &&
-	    has_member_Decoration::(type.self, index, Decoration::Offset))
+	if ((has_extended_Decoration(type.self, SPIRVCrossDecoration::ExplicitOffset) || is_push_constant) &&
+	    has_member_Decoration(type.self, index, Decoration::Offset))
 	{
 		uint32_t offset = memb[index].offset - base_offset;
 		if (offset & 3)
@@ -2718,7 +2718,7 @@ void CompilerHLSL::emit_geometry_stream_append()
 	    [&](uint32_t, SPIRVariable &var)
 	    {
 		    auto &type = this->get<SPIRType>(var.basetype);
-		    bool block = has_Decoration::(type.self, Decoration::Block);
+		    bool block = has_Decoration(type.self, Decoration::Block);
 
 		    if (var.storage != StorageClass::Output)
 			    return;
@@ -2761,7 +2761,7 @@ void CompilerHLSL::emit_buffer_block(const SPIRVariable &var)
 {
 	auto &type = get<SPIRType>(var.basetype);
 
-	bool is_uav = var.storage == StorageClass::StorageBuffer || has_Decoration::(type.self, Decoration::BufferBlock);
+	bool is_uav = var.storage == StorageClass::StorageBuffer || has_Decoration(type.self, Decoration::BufferBlock);
 
 	if (flattened_buffer_blocks.count(var.self))
 	{
@@ -2825,7 +2825,7 @@ void CompilerHLSL::emit_buffer_block(const SPIRVariable &var)
 
 			uint32_t failed_index = 0;
 			if (buffer_is_packing_standard(type, BufferPackingHLSLCbufferPackOffset, &failed_index))
-				set_extended_Decoration::(type.self, SPIRVCrossDecoration::ExplicitOffset);
+				set_extended_Decoration(type.self, SPIRVCrossDecoration::ExplicitOffset);
 			else
 			{
 				SPIRV_CROSS_THROW(join("cbuffer ID ", var.self, " (name: ", buffer_name, "), member index ",
@@ -2908,7 +2908,7 @@ void CompilerHLSL::emit_push_constant_block(const SPIRVariable &var)
 			uint32_t failed_index = 0;
 			if (buffer_is_packing_standard(type, BufferPackingHLSLCbufferPackOffset, &failed_index, layout.start,
 			                               layout.end))
-				set_extended_Decoration::(type.self, SPIRVCrossDecoration::ExplicitOffset);
+				set_extended_Decoration(type.self, SPIRVCrossDecoration::ExplicitOffset);
 			else
 			{
 				SPIRV_CROSS_THROW(join("Root constant cbuffer ID ", var.self, " (name: ", to_name(type.self), ")",
@@ -2996,7 +2996,7 @@ string CompilerHLSL::to_func_call_arg(const SPIRFunction::Parameter &arg, uint32
 	// We don't have to consider combined image samplers here via OpSampleDim::Dimage because
 	// those variables cannot be passed as arguments to functions.
 	// Only global SampleDim::Dimage variables may be used as arguments.
-	if (type.basetype == SPIRType::SampleDim::Dimage && type.image.Dim != Dim::DimBuffer)
+	if (type.basetype == SPIRType::SampleDimDimage && type.image.dim != Dim::Buffer)
 		arg_str += ", " + to_sampler_expression(id);
 
 	return arg_str;
@@ -3111,8 +3111,8 @@ void CompilerHLSL::emit_function_prototype(SPIRFunction &func, const Bitset &ret
 
 		// Flatten a combined sampler to two separate arguments in modern HLSL.
 		auto &arg_type = get<SPIRType>(arg.type);
-		if (hlsl_Options.shader_model > 30 && arg_type.basetype == SPIRType::SampleDim::Dimage &&
-		    arg_type.image.Dim != Dim::DimBuffer)
+		if (hlsl_Options.shader_model > 30 && arg_type.basetype == SPIRType::SampleDimDimage &&
+		    arg_type.image.dim != Dim::Buffer)
 		{
 			// Manufacture automatic sampler arg for SampleDim::Dimage texture
 			arglist.push_back(join(is_depth_image(arg_type, arg.id) ? "SamplerComparisonState " : "SamplerState ",
@@ -3244,7 +3244,7 @@ void CompilerHLSL::emit_hlsl_entry_point()
 			{
 				auto &var = get<SPIRVariable>(arg.id);
 				auto &base_type = get<SPIRType>(var.basetype);
-				bool block = has_Decoration::(base_type.self, Decoration::Block);
+				bool block = has_Decoration(base_type.self, Decoration::Block);
 				if (var.storage == StorageClass::TaskPayloadWorkgroupEXT)
 				{
 					arguments.push_back("in payload " + variable_decl(var));
@@ -3252,7 +3252,7 @@ void CompilerHLSL::emit_hlsl_entry_point()
 				else if (block)
 				{
 					auto flags = get_buffer_block_flags(var.self);
-					if (flags.get(Decoration::PerPrimitiveEXT) || has_Decoration::(arg.id, Decoration::PerPrimitiveEXT))
+					if (flags.get(Decoration::PerPrimitiveEXT) || has_Decoration(arg.id, Decoration::PerPrimitiveEXT))
 					{
 						arguments.push_back("out primitives gl_MeshPerPrimitiveEXT gl_MeshPrimitivesEXT[" +
 						                    std::to_string(execution.output_primitives) + "]");
@@ -3477,7 +3477,7 @@ void CompilerHLSL::emit_hlsl_entry_point()
 	// Copy from stage input struct to globals.
 	ir.for_each_typed_id<SPIRVariable>([&](uint32_t, SPIRVariable &var) {
 		auto &type = this->get<SPIRType>(var.basetype);
-		bool block = has_Decoration::(type.self, Decoration::Block);
+		bool block = has_Decoration(type.self, Decoration::Block);
 
 		if (var.storage != StorageClass::Input)
 			return;
@@ -3491,7 +3491,7 @@ void CompilerHLSL::emit_hlsl_entry_point()
 			{
 				auto type_name = to_name(type.self);
 				auto var_name = to_name(var.self);
-				bool is_per_vertex = has_Decoration::(var.self, Decoration::PerVertexKHR);
+				bool is_per_vertex = has_Decoration(var.self, Decoration::PerVertexKHR);
 				uint32_t array_size = is_per_vertex ? to_array_size_literal(type) : 0;
 
 				for (uint32_t mbr_idx = 0; mbr_idx < uint32_t(type.member_types.size()); mbr_idx++)
@@ -3520,7 +3520,7 @@ void CompilerHLSL::emit_hlsl_entry_point()
 					for (uint32_t col = 0; col < mtype.columns; col++)
 						statement(name, "[", col, "] = stage_input.", name, "_", col, ";");
 				}
-				else if (has_Decoration::(var.self, Decoration::PerVertexKHR))
+				else if (has_Decoration(var.self, Decoration::PerVertexKHR))
 				{
 					uint32_t array_size = to_array_size_literal(type);
 					for (uint32_t i = 0; i < array_size; i++)
@@ -3608,7 +3608,7 @@ void CompilerHLSL::emit_hlsl_entry_point()
 
 		ir.for_each_typed_id<SPIRVariable>([&](uint32_t, SPIRVariable &var) {
 			auto &type = this->get<SPIRType>(var.basetype);
-			bool block = has_Decoration::(type.self, Decoration::Block);
+			bool block = has_Decoration(type.self, Decoration::Block);
 
 			if (var.storage != StorageClass::Output)
 				return;
@@ -3697,10 +3697,10 @@ void CompilerHLSL::emit_texture_op(const Instruction &i, bool sparse)
 	const uint32_t *Op::OpT = nullptr;
 	auto *combined_image = maybe_get<SPIRCombineDim::DimageSampler>(img);
 
-	if (combined_image && has_Decoration::(img, Decoration::NonUniform))
+	if (combined_image && has_Decoration(img, Decoration::NonUniform))
 	{
-		set_Decoration::(combined_image->image, Decoration::NonUniform);
-		set_Decoration::(combined_image->sampler, Decoration::NonUniform);
+		set_Decoration(combined_image->image, Decoration::NonUniform);
+		set_Decoration(combined_image->sampler, Decoration::NonUniform);
 	}
 
 	auto img_expr = to_non_uniform_aware_expression(combined_image ? combined_image->image : img);
@@ -3758,7 +3758,7 @@ void CompilerHLSL::emit_texture_op(const Instruction &i, bool sparse)
 
 	auto &imgtype = expression_type(img);
 	uint32_t coord_components = 0;
-	switch (imgtype.image.Dim::Dim)
+	switch (imgtype.image.dim)
 	{
 	case spv::Dim::Dim1D:
 		coord_components = 1;
@@ -3769,10 +3769,10 @@ void CompilerHLSL::emit_texture_op(const Instruction &i, bool sparse)
 	case spv::Dim::Dim3D:
 		coord_components = 3;
 		break;
-	case spv::Dim::DimCube:
+	case spv::Dim::Cube:
 		coord_components = 3;
 		break;
-	case spv::Dim::DimBuffer:
+	case spv::Dim::Buffer:
 		coord_components = 1;
 		break;
 	default:
@@ -3911,7 +3911,7 @@ void CompilerHLSL::emit_texture_op(const Instruction &i, bool sparse)
 		}
 		else
 		{
-			switch (imgtype.image.Dim::Dim)
+			switch (imgtype.image.dim)
 			{
 			case Dim::Dim1D:
 				texop += "tex1D";
@@ -3922,11 +3922,11 @@ void CompilerHLSL::emit_texture_op(const Instruction &i, bool sparse)
 			case Dim::Dim3D:
 				texop += "tex3D";
 				break;
-			case Dim::DimCube:
+			case Dim::Cube:
 				texop += "texCUBE";
 				break;
-			case Dim::DimRect:
-			case Dim::DimBuffer:
+			case Dim::Rect:
+			case Dim::Buffer:
 			case Dim::SubpassData:
 				SPIRV_CROSS_THROW("Buffer texture support is not yet implemented for HLSL"); // TODO
 			default:
@@ -4001,7 +4001,7 @@ void CompilerHLSL::emit_texture_op(const Instruction &i, bool sparse)
 	{
 		if (dref)
 		{
-			if (imgtype.image.Dim != spv::Dim::Dim1D && imgtype.image.Dim != spv::Dim::Dim2D)
+			if (imgtype.image.dim != spv::Dim::Dim1D && imgtype.image.dim != spv::Dim::Dim2D)
 			{
 				SPIRV_CROSS_THROW(
 				    "Depth comparison is only supported for 1D and 2D textures in HLSL shader model 2/3.");
@@ -4047,7 +4047,7 @@ void CompilerHLSL::emit_texture_op(const Instruction &i, bool sparse)
 
 	if (op == Op::OpImageFetch)
 	{
-		if (imgtype.image.Dim != Dim::DimBuffer && !imgtype.image.ms)
+		if (imgtype.image.dim != Dim::Buffer && !imgtype.image.ms)
 			coord_expr =
 			    join("int", coord_components + 1, "(", coord_expr, ", ", lod ? to_expression(lod) : string("0"), ")");
 	}
@@ -4153,7 +4153,7 @@ string CompilerHLSL::to_resource_binding(const SPIRVariable &var)
 	const auto &type = get<SPIRType>(var.basetype);
 
 	// We can remap push constant blocks, even if they don't have any binding Decoration::.
-	if (type.storage != StorageClass::PushConstant && !has_Decoration::(var.self, Decoration::Binding))
+	if (type.storage != StorageClass::PushConstant && !has_Decoration(var.self, Decoration::Binding))
 		return "";
 
 	char space = '\0';
@@ -4162,15 +4162,15 @@ string CompilerHLSL::to_resource_binding(const SPIRVariable &var)
 
 	switch (type.basetype)
 	{
-	case SPIRType::SampleDim::Dimage:
+	case SPIRType::SampleDimDimage:
 		space = 't'; // SRV
 		resource_flags = HLSL_BINDING_AUTO_SRV_BIT;
 		break;
 
 	case SPIRType::Image:
-		if (type.image.sampled == 2 && type.image.Dim != Dim::SubpassData)
+		if (type.image.sampled == 2 && type.image.dim != Dim::SubpassData)
 		{
-			if (has_Decoration::(var.self, Decoration::NonWritable) && hlsl_Options.nonwritable_uav_texture_as_srv)
+			if (has_Decoration(var.self, Decoration::NonWritable) && hlsl_Options.nonwritable_uav_texture_as_srv)
 			{
 				space = 't'; // SRV
 				resource_flags = HLSL_BINDING_AUTO_SRV_BIT;
@@ -4203,14 +4203,14 @@ string CompilerHLSL::to_resource_binding(const SPIRVariable &var)
 		auto storage = type.storage;
 		if (storage == StorageClass::Uniform)
 		{
-			if (has_Decoration::(type.self, Decoration::BufferBlock))
+			if (has_Decoration(type.self, Decoration::BufferBlock))
 			{
 				Bitset flags = ir.get_buffer_block_flags(var);
 				bool is_readonly = flags.get(Decoration::NonWritable) && !is_hlsl_force_storage_buffer_as_uav(var.self);
 				space = is_readonly ? 't' : 'u'; // UAV
 				resource_flags = is_readonly ? HLSL_BINDING_AUTO_SRV_BIT : HLSL_BINDING_AUTO_UAV_BIT;
 			}
-			else if (has_Decoration::(type.self, Decoration::Block))
+			else if (has_Decoration(type.self, Decoration::Block))
 			{
 				space = 'b'; // Constant buffers
 				resource_flags = HLSL_BINDING_AUTO_CBV_BIT;
@@ -4243,10 +4243,10 @@ string CompilerHLSL::to_resource_binding(const SPIRVariable &var)
 	    resource_flags == HLSL_BINDING_AUTO_PUSH_CONSTANT_BIT ? ResourceBindingPushConstantDescriptorSet : 0u;
 	uint32_t binding = resource_flags == HLSL_BINDING_AUTO_PUSH_CONSTANT_BIT ? ResourceBindingPushConstantBinding : 0u;
 
-	if (has_Decoration::(var.self, Decoration::Binding))
-		binding = get_Decoration::(var.self, Decoration::Binding);
-	if (has_Decoration::(var.self, Decoration::DescriptorSet))
-		desc_set = get_Decoration::(var.self, Decoration::DescriptorSet);
+	if (has_Decoration(var.self, Decoration::Binding))
+		binding = get_Decoration(var.self, Decoration::Binding);
+	if (has_Decoration(var.self, Decoration::DescriptorSet))
+		desc_set = get_Decoration(var.self, Decoration::DescriptorSet);
 
 	return to_resource_register(resource_flags, space, binding, desc_set);
 }
@@ -4254,11 +4254,11 @@ string CompilerHLSL::to_resource_binding(const SPIRVariable &var)
 string CompilerHLSL::to_resource_binding_sampler(const SPIRVariable &var)
 {
 	// For combined image samplers.
-	if (!has_Decoration::(var.self, Decoration::Binding))
+	if (!has_Decoration(var.self, Decoration::Binding))
 		return "";
 
-	return to_resource_register(HLSL_BINDING_AUTO_SAMPLER_BIT, 's', get_Decoration::(var.self, Decoration::Binding),
-	                            get_Decoration::(var.self, Decoration::DescriptorSet));
+	return to_resource_register(HLSL_BINDING_AUTO_SAMPLER_BIT, 's', get_Decoration(var.self, Decoration::Binding),
+	                            get_Decoration(var.self, Decoration::DescriptorSet));
 }
 
 void CompilerHLSL::remap_hlsl_resource_binding(HLSLBindingFlagBits type, uint32_t &desc_set, uint32_t &binding)
@@ -4323,17 +4323,17 @@ void CompilerHLSL::emit_modern_uniform(const SPIRVariable &var)
 	auto &type = get<SPIRType>(var.basetype);
 	switch (type.basetype)
 	{
-	case SPIRType::SampleDim::Dimage:
+	case SPIRType::SampleDimDimage:
 	case SPIRType::Image:
 	{
 		bool is_coherent = false;
 		if (type.basetype == SPIRType::Image && type.image.sampled == 2)
-			is_coherent = has_Decoration::(var.self, Decoration::Coherent);
+			is_coherent = has_Decoration(var.self, Decoration::Coherent);
 
 		statement(is_coherent ? "globallycoherent " : "", image_type_hlsl_modern(type, var.self), " ",
 		          to_name(var.self), type_to_array_glsl(type, var.self), to_resource_binding(var), ";");
 
-		if (type.basetype == SPIRType::SampleDim::Dimage && type.image.Dim != Dim::DimBuffer)
+		if (type.basetype == SPIRType::SampleDimDimage && type.image.dim != Dim::Buffer)
 		{
 			// For combined image samplers, also emit a combined image sampler.
 			if (is_depth_image(type, var.self))
@@ -4744,7 +4744,7 @@ void CompilerHLSL::read_access_chain_array(const string &lhs, const SPIRAccessCh
 	subchain.dynamic_index = join(ident, " * ", chain.array_stride, " + ", chain.dynamic_index);
 	subchain.basetype = type.parent_type;
 	if (!get<SPIRType>(subchain.basetype).array.empty())
-		subchain.array_stride = get_Decoration::(subchain.basetype, Decoration::ArrayStride);
+		subchain.array_stride = get_Decoration(subchain.basetype, Decoration::ArrayStride);
 	read_access_chain(nullptr, join(lhs, "[", ident, "]"), subchain);
 	end_scope();
 }
@@ -4769,7 +4769,7 @@ void CompilerHLSL::read_access_chain_struct(const string &lhs, const SPIRAccessC
 		if (member_type.columns > 1)
 		{
 			subchain.matrix_stride = type_struct_member_matrix_stride(type, i);
-			subchain.row_major_matrix = has_member_Decoration::(type.self, i, Decoration::RowMajor);
+			subchain.row_major_matrix = has_member_Decoration(type.self, i, Decoration::RowMajor);
 		}
 
 		if (!member_type.array.empty())
@@ -4803,7 +4803,7 @@ void CompilerHLSL::read_access_chain(string *expr, const string &lhs, const SPIR
 		                  "native 16-bit types are enabled.");
 
 	string base = chain.base;
-	if (has_Decoration::(chain.self, Decoration::NonUniform))
+	if (has_Decoration(chain.self, Decoration::NonUniform))
 		convert_non_uniform_expression(base, chain.self);
 
 	bool templated_load = hlsl_Options.shader_model >= 62;
@@ -5017,9 +5017,9 @@ void CompilerHLSL::emit_load(const Instruction &instruction)
 		// Mesh shader clip/cull arrays ... Cursed.
 		auto &res_type = get<SPIRType>(result_type);
 		if (get_execution_model() == ExecutionModel::MeshEXT &&
-		    has_Decoration::(ptr, Decoration::BuiltIn::) &&
-		    (get_Decoration::(ptr, Decoration::BuiltIn::) == BuiltIn::ClipDistance ||
-		     get_Decoration::(ptr, Decoration::BuiltIn::) == BuiltIn::CullDistance) &&
+		    has_Decoration(ptr, Decoration::BuiltIn) &&
+		    (get_Decoration(ptr, Decoration::BuiltIn) == BuiltIn::ClipDistance ||
+		     get_Decoration(ptr, Decoration::BuiltIn) == BuiltIn::CullDistance) &&
 		    is_array(res_type) && !is_array(get<SPIRType>(res_type.parent_type)) &&
 		    to_array_size_literal(res_type) > 1)
 		{
@@ -5080,7 +5080,7 @@ void CompilerHLSL::write_access_chain_array(const SPIRAccessChain &chain, uint32
 	subcomposite_chain.push_back(0x80000000u | id);
 
 	if (!get<SPIRType>(subchain.basetype).array.empty())
-		subchain.array_stride = get_Decoration::(subchain.basetype, Decoration::ArrayStride);
+		subchain.array_stride = get_Decoration(subchain.basetype, Decoration::ArrayStride);
 
 	write_access_chain(subchain, value, subcomposite_chain);
 	end_scope();
@@ -5110,7 +5110,7 @@ void CompilerHLSL::write_access_chain_struct(const SPIRAccessChain &chain, uint3
 		if (member_type.columns > 1)
 		{
 			subchain.matrix_stride = type_struct_member_matrix_stride(type, i);
-			subchain.row_major_matrix = has_member_Decoration::(type.self, i, Decoration::RowMajor);
+			subchain.row_major_matrix = has_member_Decoration(type.self, i, Decoration::RowMajor);
 		}
 
 		if (!member_type.array.empty())
@@ -5171,7 +5171,7 @@ void CompilerHLSL::write_access_chain(const SPIRAccessChain &chain, uint32_t val
 	bool templated_store = hlsl_Options.shader_model >= 62;
 
 	auto base = chain.base;
-	if (has_Decoration::(chain.self, Decoration::NonUniform))
+	if (has_Decoration(chain.self, Decoration::NonUniform))
 		convert_non_uniform_expression(base, chain.self);
 
 	string template_expr;
@@ -5354,7 +5354,7 @@ void CompilerHLSL::emit_access_chain(const Instruction &instruction)
 		// Keep tacking on an existing access chain.
 		need_byte_access_chain = true;
 	}
-	else if (type.storage == StorageClass::StorageBuffer || has_Decoration::(type.self, Decoration::BufferBlock))
+	else if (type.storage == StorageClass::StorageBuffer || has_Decoration(type.self, Decoration::BufferBlock))
 	{
 		// If we are starting to poke into an SSBO, we are dealing with ByteAddressBuffers, and we need
 		// to emit SPIRAccessChain rather than a plain SPIRExpression.
@@ -5534,7 +5534,7 @@ void CompilerHLSL::emit_atomic(const uint32_t *ops, uint32_t length, spv::Op op)
 		else
 		{
 			string base = chain->base;
-			if (has_Decoration::(chain->self, Decoration::NonUniform))
+			if (has_Decoration(chain->self, Decoration::NonUniform))
 				convert_non_uniform_expression(base, chain->self);
 			// RWByteAddress buffer is always uint in its underlying type.
 			statement(base, ".", atomic_op, "(", chain->dynamic_index, chain->static_index, ", ",
@@ -5562,7 +5562,7 @@ void CompilerHLSL::emit_atomic(const uint32_t *ops, uint32_t length, spv::Op op)
 		{
 			// RWByteAddress buffer is always uint in its underlying type.
 			string base = chain->base;
-			if (has_Decoration::(chain->self, Decoration::NonUniform))
+			if (has_Decoration(chain->self, Decoration::NonUniform))
 				convert_non_uniform_expression(base, chain->self);
 			expr_type = SPIRType::UInt;
 			statement(base, ".", atomic_op, "(", chain->dynamic_index, chain->static_index, ", ", value_expr,
@@ -6286,7 +6286,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		bool uav = expression_type(ops[2]).image.sampled == 2;
 
 		if (const auto *var = maybe_get_backing_variable(ops[2]))
-			if (hlsl_Options.nonwritable_uav_texture_as_srv && has_Decoration::(var->self, Decoration::NonWritable))
+			if (hlsl_Options.nonwritable_uav_texture_as_srv && has_Decoration(var->self, Decoration::NonWritable))
 				uav = false;
 
 		auto dummy_samples_levels = join(get_fallback_name(id), "_dummy_parameter");
@@ -6316,7 +6316,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 			SPIRV_CROSS_THROW("Cannot query levels for UAV images.");
 
 		if (const auto *var = maybe_get_backing_variable(ops[2]))
-			if (hlsl_Options.nonwritable_uav_texture_as_srv && has_Decoration::(var->self, Decoration::NonWritable))
+			if (hlsl_Options.nonwritable_uav_texture_as_srv && has_Decoration(var->self, Decoration::NonWritable))
 				uav = false;
 
 		// Keep it simple and do not emit special variants to make this look nicer ...
@@ -6342,7 +6342,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		uint32_t id = ops[1];
 		auto *var = maybe_get_backing_variable(ops[2]);
 		auto &type = expression_type(ops[2]);
-		bool subpass_data = type.image.Dim == Dim::SubpassData;
+		bool subpass_data = type.image.dim == Dim::SubpassData;
 		bool pure = false;
 
 		string imgexpr;
@@ -6373,7 +6373,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 			// except that the underlying type changes how the data is interpreted.
 
 			bool force_srv =
-			    hlsl_Options.nonwritable_uav_texture_as_srv && var && has_Decoration::(var->self, Decoration::NonWritable);
+			    hlsl_Options.nonwritable_uav_texture_as_srv && var && has_Decoration(var->self, Decoration::NonWritable);
 			pure = force_srv;
 
 			if (var && !subpass_data && !force_srv)
@@ -6617,7 +6617,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 			SPIRV_CROSS_THROW("Array length must point directly to an SSBO block.");
 
 		auto &type = get<SPIRType>(var->basetype);
-		if (!has_Decoration::(type.self, Decoration::Block) && !has_Decoration::(type.self, Decoration::BufferBlock))
+		if (!has_Decoration(type.self, Decoration::Block) && !has_Decoration(type.self, Decoration::BufferBlock))
 			SPIRV_CROSS_THROW("Array length expression must point to a block type.");
 
 		// This must be 32-bit uint, so we're good to go.
@@ -6808,11 +6808,11 @@ void CompilerHLSL::require_texture_query_variant(uint32_t var_id)
 
 	auto &type = expression_type(var_id);
 	bool uav = type.image.sampled == 2;
-	if (hlsl_Options.nonwritable_uav_texture_as_srv && has_Decoration::(var_id, Decoration::NonWritable))
+	if (hlsl_Options.nonwritable_uav_texture_as_srv && has_Decoration(var_id, Decoration::NonWritable))
 		uav = false;
 
 	uint32_t bit = 0;
-	switch (type.image.Dim)
+	switch (type.image.dim)
 	{
 	case Dim::Dim1D:
 		bit = type.image.arrayed ? Query1DArray : Query1D;
@@ -6829,11 +6829,11 @@ void CompilerHLSL::require_texture_query_variant(uint32_t var_id)
 		bit = Query3D;
 		break;
 
-	case Dim::DimCube:
+	case Dim::Cube:
 		bit = type.image.arrayed ? QueryCubeArray : QueryCube;
 		break;
 
-	case Dim::DimBuffer:
+	case Dim::Buffer:
 		bit = QueryBuffer;
 		break;
 
@@ -6908,9 +6908,9 @@ VariableID CompilerHLSL::remap_num_workgroups_BuiltIn::()
 	block_type.basetype = SPIRType::Struct;
 	block_type.member_types.push_back(uint_type_id);
 	set<SPIRType>(block_type_id, block_type);
-	set_Decoration::(block_type_id, Decoration::Block);
+	set_Decoration(block_type_id, Decoration::Block);
 	set_member_name(block_type_id, 0, "count");
-	set_member_Decoration::(block_type_id, 0, Decoration::Offset, 0);
+	set_member_Decoration(block_type_id, 0, Decoration::Offset, 0);
 
 	SPIRType block_pointer_type = block_type;
 	block_pointer_type.pointer = true;
@@ -6925,7 +6925,7 @@ VariableID CompilerHLSL::remap_num_workgroups_BuiltIn::()
 	ir.meta[variable_id].Decoration::.alias = "SPIRV_Cross_NumWorkgroups";
 
 	num_workgroups_BuiltIn = variable_id;
-	get_entry_point().interface_variables.push_back(num_workgroups_BuiltIn::);
+	get_entry_point().interface_variables.push_back(num_workgroups_BuiltIn);
 	return variable_id;
 }
 
@@ -7113,8 +7113,8 @@ bool CompilerHLSL::is_hlsl_force_storage_buffer_as_uav(ID id) const
 		return true;
 	}
 
-	const uint32_t desc_set = get_Decoration::(id, spv::Decoration::DescriptorSet);
-	const uint32_t binding = get_Decoration::(id, spv::Decoration::Binding);
+	const uint32_t desc_set = get_Decoration(id, spv::Decoration::DescriptorSet);
+	const uint32_t binding = get_Decoration(id, spv::Decoration::Binding);
 
 	return (force_uav_buffer_bindings.find({ desc_set, binding }) != force_uav_buffer_bindings.end());
 }
@@ -7145,14 +7145,14 @@ void CompilerHLSL::cast_to_variable_store(uint32_t target_id, std::string &expr,
 	// since we cannot lower them by wrapping the variables in global statics.
 	// Fortunately, clip/cull is a proper vector in HLSL so we can lower with simple rvalue casts.
 	if (get_execution_model() != ExecutionModel::MeshEXT ||
-	    !has_Decoration::(target_id, Decoration::BuiltIn::) ||
+	    !has_Decoration(target_id, Decoration::BuiltIn) ||
 	    !is_array(expr_type))
 	{
 		CompilerGLSL::cast_to_variable_store(target_id, expr, expr_type);
 		return;
 	}
 
-	auto BuiltIn = BuiltIn::(get_Decoration::(target_id, Decoration::BuiltIn::));
+	auto BuiltIn = BuiltIn::(get_Decoration(target_id, Decoration::BuiltIn));
 	if (BuiltIn != BuiltIn::ClipDistance && BuiltIn != BuiltIn::CullDistance)
 	{
 		CompilerGLSL::cast_to_variable_store(target_id, expr, expr_type);
