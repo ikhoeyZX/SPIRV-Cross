@@ -8433,10 +8433,10 @@ void CompilerMSL::emit_specialization_constants_and_structs()
 						          ") ? ", sc_true_expr, " : ", constant_expression(c), ";");
 					}
 				}
-				else if (has_decoration(c.self, DecorationSpecId))
+				else if (has_decoration(c.self, Decoration::SpecId))
 				{
 					// Fallback to macro overrides.
-					uint32_t constant_id = get_decoration(c.self, DecorationSpecId);
+					uint32_t constant_id = get_decoration(c.self, Decoration::SpecId);
 					c.specialization_constant_macro_name =
 					    constant_value_macro_name(constant_id);
 
@@ -10449,7 +10449,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		auto input_size = input_type1.vecsize;
 		if (instruction.length == 5)
 		{
-			if (ops[4] == static_cast<uint32_t>(PackedVector::FormatPackedVectorFormat4x8Bit))
+			if (ops[4] == static_cast<uint32_t>(PackedVector::PackedVectorFormat4x8Bit))
 			{
 				string type = opcode == Op::OpSDot || opcode == Op::OpSUDot ? "char4" : "uchar4";
 				vec1input = join("as_type<", type, ">(", to_expression(vec1), ")");
@@ -10509,7 +10509,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		string vec1input, vec2input;
 		if (instruction.length == 6)
 		{
-			if (ops[5] == static_cast<uint32_t>(PackedVector::FormatPackedVectorFormat4x8Bit))
+			if (ops[5] == static_cast<uint32_t>(PackedVector::PackedVectorFormat4x8Bit))
 			{
 				string type = opcode == Op::OpSDotAccSat || opcode == Op::OpSUDotAccSat ? "char4" : "uchar4";
 				vec1input = join("as_type<", type, ">(", to_expression(vec1), ")");
@@ -10637,8 +10637,8 @@ void CompilerMSL::emit_barrier(uint32_t id_exe_scope, uint32_t id_mem_scope, uin
 		return;
 	}
 
-	uint32_t exe_scope = id_exe_scope ? evaluate_constant_u32(id_exe_scope) : uint32_t(ScopeInvocation);
-	uint32_t mem_scope = id_mem_scope ? evaluate_constant_u32(id_mem_scope) : uint32_t(ScopeInvocation);
+	uint32_t exe_scope = id_exe_scope ? evaluate_constant_u32(id_exe_scope) : uint32_t(Scope::Invocation);
+	uint32_t mem_scope = id_mem_scope ? evaluate_constant_u32(id_mem_scope) : uint32_t(Scope::Invocation);
 	// Use the wider of the two scopes (smaller value)
 	exe_scope = min(exe_scope, mem_scope);
 
@@ -10673,7 +10673,7 @@ void CompilerMSL::emit_barrier(uint32_t id_exe_scope, uint32_t id_mem_scope, uin
 		// For tesc shaders, this also affects objects in the Output storage class.
 		// Since in Metal, these are placed in a device buffer, we have to sync device memory here.
 		if (is_tesc_shader() ||
-		    (mem_sem & (MemorySemanticsMask::UniformMemory | MemorySemanticsMask::CrossWorkgroupMemory)))
+		    (mem_sem & static_cast<uint32_t>((MemorySemanticsMask::UniformMemory | MemorySemanticsMask::CrossWorkgroupMemory))))
 			mem_flags += "mem_flags::mem_device";
 
 		// Fix tessellation patch function processing
@@ -10683,7 +10683,7 @@ void CompilerMSL::emit_barrier(uint32_t id_exe_scope, uint32_t id_mem_scope, uin
 				mem_flags += " | ";
 			mem_flags += "mem_flags::mem_threadgroup";
 		}
-		if (mem_sem & MemorySemanticsMask::ImageMemory)
+		if (mem_sem & static_cast<uint32_t>(MemorySemanticsMask::ImageMemory))
 		{
 			if (!mem_flags.empty())
 				mem_flags += " | ";
@@ -10697,14 +10697,14 @@ void CompilerMSL::emit_barrier(uint32_t id_exe_scope, uint32_t id_mem_scope, uin
 	}
 	else
 	{
-		if ((mem_sem & (MemorySemanticsMask::UniformMemory | MemorySemanticsMask::CrossWorkgroupMemory)) &&
+		if ((mem_sem & static_cast<uint32_t>((MemorySemanticsMask::UniformMemory | MemorySemanticsMask::CrossWorkgroupMemory))) &&
 		    (mem_sem & static_cast<uint32_t>((MemorySemanticsMask::SubgroupMemory | MemorySemanticsMask::WorkgroupMemory))))
 			bar_stmt += "mem_flags::mem_device_and_threadgroup";
-		else if (mem_sem & (MemorySemanticsMask::UniformMemory | MemorySemanticsMask::CrossWorkgroupMemory))
+		else if (mem_sem & static_cast<uint32_t>((MemorySemanticsMask::UniformMemory | MemorySemanticsMask::CrossWorkgroupMemory)))
 			bar_stmt += "mem_flags::mem_device";
 		else if (mem_sem & static_cast<uint32_t>((MemorySemanticsMask::SubgroupMemory | MemorySemanticsMask::WorkgroupMemory)))
 			bar_stmt += "mem_flags::mem_threadgroup";
-		else if (mem_sem & MemorySemanticsMask::ImageMemory)
+		else if (mem_sem & static_cast<uint32_t>(MemorySemanticsMask::ImageMemory))
 			bar_stmt += "mem_flags::mem_texture";
 		else
 			bar_stmt += "mem_flags::mem_none";
