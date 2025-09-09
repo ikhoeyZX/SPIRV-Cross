@@ -977,7 +977,7 @@ string CompilerHLSL::to_interpolation_qualifiers(const Bitset &flags)
 		res += "centroid ";
 	if (flags.get(static_cast<uint32_t>(Decoration::Patch)))
 		res += "patch "; // Seems to be different in actual HLSL.
-	if (flags.get(static_cast<uint32_t>(DecorationSample)))
+	if (flags.get(static_cast<uint32_t>(Decoration::Sample)))
 		res += "sample ";
 	if (flags.get(static_cast<uint32_t>(Decoration::Invariant)) && backend.support_precise_qualifier)
 		res += "precise "; // Not supported?
@@ -1231,7 +1231,7 @@ void CompilerHLSL::emit_builtin_variables()
 		uint32_t array_size = 0;
 
 		string init_expr;
-		auto init_itr = builtin_to_initializer.find(builtin);
+		auto init_itr = builtin_to_initializer.find(static_cast<uint32_t>(builtin));
 		if (init_itr != builtin_to_initializer.end())
 			init_expr = join(" = ", to_expression(init_itr->second));
 
@@ -1338,7 +1338,7 @@ void CompilerHLSL::emit_builtin_variables()
 			break;
 
 		case BuiltIn::SampleMask:
-			if (active_input_builtins.get(BuiltIn::SampleMask))
+			if (active_input_builtins.get(static_cast<uint32_t>(BuiltIn::SampleMask)))
 				type = sample_mask_in_basetype == SPIRType::UInt ? "uint" : "int";
 			else
 				type = sample_mask_out_basetype == SPIRType::UInt ? "uint" : "int";
@@ -1381,7 +1381,7 @@ void CompilerHLSL::emit_builtin_variables()
 
 		// SampleMask can be both in and out with sample builtin, in this case we have already
 		// declared the input variable and we need to add the output one now.
-		if (builtin == BuiltInSampleMask && storage == StorageClass::Input && this->active_output_builtins.get(i))
+		if (builtin == BuiltInSampleMask && storage == StorageClass::Input && this->active_output_builtins.get(static_cast<uint32_t>(i)))
 		{
 			type = sample_mask_out_basetype == SPIRType::UInt ? "uint" : "int";
 			if (array_size)
@@ -1501,7 +1501,7 @@ void CompilerHLSL::emit_specialization_constants_and_structs()
 				add_resource_name(c.self);
 				auto name = to_name(c.self);
 
-				if (has_decoration(c.self, DecorationSpecId))
+				if (has_decoration(c.self, Decoration::SpecId))
 				{
 					// HLSL does not support specialization constants, so fallback to macros.
 					c.specialization_constant_macro_name =
@@ -1532,7 +1532,7 @@ void CompilerHLSL::emit_specialization_constants_and_structs()
 			auto &type = id.get<SPIRType>();
 			bool is_non_io_block = has_decoration(type.self, Decoration::Block) &&
 			                       io_block_types.count(type.self) == 0;
-			bool is_buffer_block = has_decoration(type.self, DecorationBufferBlock);
+			bool is_buffer_block = has_decoration(type.self, Decoration::BufferBlock);
 			if (type.basetype == SPIRType::Struct && type.array.empty() &&
 			    !type.pointer && !is_non_io_block && !is_buffer_block)
 			{
@@ -1621,10 +1621,10 @@ void CompilerHLSL::emit_resources()
 
 	switch (execution.model)
 	{
-	case ExecutionModelGeometry:
-	case ExecutionModelTessellationControl:
-	case ExecutionModelTessellationEvaluation:
-	case ExecutionModelMeshEXT:
+	case ExecutionModel::Geometry:
+	case ExecutionModel::TessellationControl:
+	case ExecutionModel::TessellationEvaluation:
+	case ExecutionModel::MeshEXT:
 		fixup_implicit_builtin_block_names(execution.model);
 		break;
 
