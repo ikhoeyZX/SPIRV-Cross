@@ -553,7 +553,7 @@ const char *CompilerHLSL::to_storage_qualifiers_glsl(const SPIRVariable &var)
 {
 	// Input and output variables are handled specially in HLSL backend.
 	// The variables are declared as global, private variables, and do not need any qualifiers.
-	if (var.storage == StorageClass::::UniformConstant || var.storage == StorageClass::::Uniform ||
+	if (var.storage == StorageClass::UniformConstant || var.storage == StorageClass::Uniform ||
 	    var.storage == StorageClass::PushConstant)
 	{
 		return "uniform ";
@@ -579,7 +579,7 @@ void CompilerHLSL::emit_builtin_outputs_in_struct()
 			break;
 
 		case BuiltIn::SampleMask:
-			if (hlsl_options.shader_model < 41 || execution.model != ExecutionModelFragment)
+			if (hlsl_options.shader_model < 41 || execution.model != ExecutionModel::Fragment)
 				SPIRV_CROSS_THROW("Sample Mask output is only supported in PS 4.1 or higher.");
 			type = "uint";
 			semantic = "SV_Coverage";
@@ -593,9 +593,9 @@ void CompilerHLSL::emit_builtin_outputs_in_struct()
 			}
 			else
 			{
-				if (hlsl_options.shader_model >= 50 && execution.flags.get(ExecutionModeDepthGreater))
+				if (hlsl_options.shader_model >= 50 && execution.flags.get(static_cast<uint32_t>(ExecutionMode::DepthGreater)))
 					semantic = "SV_DepthGreaterEqual";
-				else if (hlsl_options.shader_model >= 50 && execution.flags.get(ExecutionModeDepthLess))
+				else if (hlsl_options.shader_model >= 50 && execution.flags.get(ExecutionMode::DepthLess))
 					semantic = "SV_DepthLessEqual";
 				else
 					semantic = "SV_Depth";
@@ -633,7 +633,7 @@ void CompilerHLSL::emit_builtin_outputs_in_struct()
 
 					uint32_t semantic_index = clip / 4;
 
-					statement(types[to_declare - 1], " ", builtin_to_glsl(builtin, StorageClassOutput), semantic_index,
+					statement(types[to_declare - 1], " ", builtin_to_glsl(builtin, StorageClass::Output), semantic_index,
 					          " : SV_ClipDistance", semantic_index, ";");
 				}
 			}
@@ -671,7 +671,7 @@ void CompilerHLSL::emit_builtin_outputs_in_struct()
 
 					uint32_t semantic_index = cull / 4;
 
-					statement(types[to_declare - 1], " ", builtin_to_glsl(builtin, StorageClassOutput), semantic_index,
+					statement(types[to_declare - 1], " ", builtin_to_glsl(builtin, StorageClass::Output), semantic_index,
 					          " : SV_CullDistance", semantic_index, ";");
 				}
 			}
@@ -710,7 +710,7 @@ void CompilerHLSL::emit_builtin_outputs_in_struct()
 		}
 
 		if (type && semantic)
-			statement(type, " ", builtin_to_glsl(builtin, StorageClassOutput), " : ", semantic, ";");
+			statement(type, " ", builtin_to_glsl(builtin, StorageClass::Output), " : ", semantic, ";");
 	    });
 }
 
@@ -756,7 +756,7 @@ void CompilerHLSL::emit_builtin_primitive_outputs_in_struct()
 		}
 
 		if (type && semantic)
-			statement(type, " ", builtin_to_glsl(builtin, StorageClassOutput), " : ", semantic, ";");
+			statement(type, " ", builtin_to_glsl(builtin, StorageClass::Output), " : ", semantic, ";");
 	});
 }
 
@@ -803,7 +803,7 @@ void CompilerHLSL::emit_builtin_inputs_in_struct()
 			break;
 
 		case BuiltIn::SampleMask:
-			if (hlsl_options.shader_model < 50 || get_entry_point().model != ExecutionModelFragment)
+			if (hlsl_options.shader_model < 50 || get_entry_point().model != ExecutionModel::Fragment)
 				SPIRV_CROSS_THROW("Sample Mask input is only supported in PS 5.0 or higher.");
 			type = "uint";
 			semantic = "SV_Coverage";
@@ -835,7 +835,7 @@ void CompilerHLSL::emit_builtin_inputs_in_struct()
 			break;
 
 		case BuiltIn::ViewIndex:
-			if (hlsl_options.shader_model < 61 || (get_entry_point().model != ExecutionModelVertex && get_entry_point().model != ExecutionModelFragment))
+			if (hlsl_options.shader_model < 61 || (get_entry_point().model != ExecutionModel::Vertex && get_entry_point().model != ExecutionModel::Fragment))
 				SPIRV_CROSS_THROW("View Index input is only supported in VS and PS 6.1 or higher.");
 			type = "uint";
 			semantic = "SV_ViewID";
@@ -869,7 +869,7 @@ void CompilerHLSL::emit_builtin_inputs_in_struct()
 			break;
 
 		case BuiltIn::HelperInvocation:
-			if (hlsl_options.shader_model < 50 || get_entry_point().model != ExecutionModelFragment)
+			if (hlsl_options.shader_model < 50 || get_entry_point().model != ExecutionModel::Fragment)
 				SPIRV_CROSS_THROW("Helper Invocation input is only supported in PS 5.0 or higher.");
 			break;
 
@@ -913,7 +913,7 @@ void CompilerHLSL::emit_builtin_inputs_in_struct()
 				SPIRV_CROSS_THROW("Unsupported builtin in HLSL.");
 
 		case BuiltIn::Layer:
-			if (hlsl_options.shader_model < 50 || get_entry_point().model != ExecutionModelFragment)
+			if (hlsl_options.shader_model < 50 || get_entry_point().model != ExecutionModel::Fragment)
 				SPIRV_CROSS_THROW("Render target array index input is only supported in PS 5.0 or higher.");
 			type = "uint";
 			semantic = "SV_RenderTargetArrayIndex";
@@ -1369,7 +1369,7 @@ void CompilerHLSL::emit_builtin_variables()
 			SPIRV_CROSS_THROW(join("Unsupported builtin in HLSL: ", unsigned(builtin)));
 		}
 
-		StorageClass storage = active_input_builtins.get(i) ? StorageClassInput : StorageClassOutput;
+		StorageClass storage = active_input_builtins.get(i) ? StorageClassInput : StorageClass::Output;
 
 		if (type)
 		{
@@ -1385,9 +1385,9 @@ void CompilerHLSL::emit_builtin_variables()
 		{
 			type = sample_mask_out_basetype == SPIRType::UInt ? "uint" : "int";
 			if (array_size)
-				statement("static ", type, " ", this->builtin_to_glsl(builtin, StorageClassOutput), "[", array_size, "]", init_expr, ";");
+				statement("static ", type, " ", this->builtin_to_glsl(builtin, StorageClass::Output), "[", array_size, "]", init_expr, ";");
 			else
-				statement("static ", type, " ", this->builtin_to_glsl(builtin, StorageClassOutput), init_expr, ";");
+				statement("static ", type, " ", this->builtin_to_glsl(builtin, StorageClass::Output), init_expr, ";");
 		}
 	});
 
@@ -1704,7 +1704,7 @@ void CompilerHLSL::emit_resources()
 	// Emit builtin input and output variables here.
 	emit_builtin_variables();
 
-	if (execution.model != ExecutionModelMeshEXT)
+	if (execution.model != ExecutionModel::MeshEXT)
 	{
 		ir.for_each_typed_id<SPIRVariable>([&](uint32_t, SPIRVariable &var) {
 			auto &type = this->get<SPIRType>(var.basetype);
@@ -2488,11 +2488,11 @@ void CompilerHLSL::analyze_meshlet_writes()
 		ptr.op = OpTypePointer;
 		ptr.pointer = true;
 		ptr.pointer_depth++;
-		ptr.storage = StorageClassOutput;
+		ptr.storage = StorageClass::Output;
 		set_decoration(op_ptr, Decoration::Block);
 		set_name(op_ptr, block_name);
 
-		auto &var = set<SPIRVariable>(op_var, op_ptr, StorageClassOutput);
+		auto &var = set<SPIRVariable>(op_var, op_ptr, StorageClass::Output);
 		if (per_primitive)
 			set_decoration(op_var, DecorationPerPrimitiveEXT);
 		set_name(op_var, instance_name);
@@ -2571,7 +2571,7 @@ void CompilerHLSL::analyze_meshlet_writes(uint32_t func_id, uint32_t id_per_vert
 			case Op::OpArrayLength:
 			{
 				auto *var = maybe_get<SPIRVariable>(ops[op == OpStore ? 0 : 2]);
-				if (var && (var->storage == StorageClassOutput || var->storage == StorageClassTaskPayloadWorkgroupEXT))
+				if (var && (var->storage == StorageClass::Output || var->storage == StorageClassTaskPayloadWorkgroupEXT))
 				{
 					bool already_declared = false;
 					auto builtin_type = BuiltIn(get_decoration(var->self, Decoration::BuiltIn));
@@ -2707,7 +2707,7 @@ void CompilerHLSL::emit_geometry_stream_append()
 			    break;
 		    default:
 		    {
-			    auto builtin_expr = builtin_to_glsl(static_cast<BuiltIn>(i), StorageClassOutput);
+			    auto builtin_expr = builtin_to_glsl(static_cast<BuiltIn>(i), StorageClass::Output);
 			    statement("stage_output.", builtin_expr, " = ", builtin_expr, ";");
 		    }
 		    break;
@@ -3182,7 +3182,7 @@ void CompilerHLSL::emit_hlsl_entry_point()
 {
 	SmallVector<string> arguments;
 
-	if (require_input && get_entry_point().model != ExecutionModelGeometry)
+	if (require_input && get_entry_point().model != ExecutionModel::Geometry)
 		arguments.push_back("SPIRV_Cross_Input stage_input");
 
 	auto &execution = get_entry_point();
@@ -3599,7 +3599,7 @@ void CompilerHLSL::emit_hlsl_entry_point()
 
 			default:
 			{
-				auto builtin_expr = builtin_to_glsl(static_cast<BuiltIn>(i), StorageClassOutput);
+				auto builtin_expr = builtin_to_glsl(static_cast<BuiltIn>(i), StorageClass::Output);
 				statement("stage_output.", builtin_expr, " = ", builtin_expr, ";");
 				break;
 			}
@@ -6630,7 +6630,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 	}
 
 	case Op::OpIsHelperInvocationEXT:
-		if (hlsl_options.shader_model < 50 || get_entry_point().model != ExecutionModelFragment)
+		if (hlsl_options.shader_model < 50 || get_entry_point().model != ExecutionModel::Fragment)
 			SPIRV_CROSS_THROW("Helper Invocation input is only supported in PS 5.0 or higher.");
 		// Helper lane state with demote is volatile by nature.
 		// Do not forward this.
