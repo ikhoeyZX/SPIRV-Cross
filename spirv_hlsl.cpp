@@ -924,7 +924,7 @@ void CompilerHLSL::emit_builtin_inputs_in_struct()
 			if (hlsl_options.shader_model < 61)
 				SPIRV_CROSS_THROW("SM 6.1 is required for barycentrics.");
 			type = builtin == BuiltIn::BaryCoordNoPerspKHR ? "noperspective float3" : "float3";
-			if (active_input_builtins.get(BuiltIn::BaryCoordKHR) && active_input_builtins.get(BuiltIn::BaryCoordNoPerspKHR))
+			if (active_input_builtins.get(static_cast<uint32_t>(BuiltIn::BaryCoordKHR)) && active_input_builtins.get(static_cast<uint32_t>(BuiltIn::BaryCoordNoPerspKHR)))
 				semantic = builtin == BuiltIn::BaryCoordKHR ? "SV_Barycentrics0" : "SV_Barycentrics1";
 			else
 				semantic = "SV_Barycentrics";
@@ -969,17 +969,17 @@ string CompilerHLSL::to_interpolation_qualifiers(const Bitset &flags)
 	string res;
 	//if (flags & (1ull << DecorationSmooth))
 	//    res += "linear ";
-	if (flags.get(Decoration::Flat) || flags.get(Decoration::PerVertexKHR))
+	if (flags.get(static_cast<uint32_t>(Decoration::Flat)) || flags.get(static_cast<uint32_t>(Decoration::PerVertexKHR)))
 		res += "nointerpolation ";
-	if (flags.get(static_cast<uint32_t>(Decoration::NoPerspective)))
+	if (flags.get(static_cast<uint32_t>(static_cast<uint32_t>(Decoration::NoPerspective))))
 		res += "noperspective ";
-	if (flags.get(Decoration::Centroid))
+	if (flags.get(static_cast<uint32_t>(Decoration::Centroid)))
 		res += "centroid ";
-	if (flags.get(Decoration::Patch))
+	if (flags.get(static_cast<uint32_t>(Decoration::Patch)))
 		res += "patch "; // Seems to be different in actual HLSL.
-	if (flags.get(DecorationSample))
+	if (flags.get(static_cast<uint32_t>(DecorationSample)))
 		res += "sample ";
-	if (flags.get(Decoration::Invariant) && backend.support_precise_qualifier)
+	if (flags.get(static_cast<uint32_t>(Decoration::Invariant)) && backend.support_precise_qualifier)
 		res += "precise "; // Not supported?
 
 	return res;
@@ -1027,7 +1027,7 @@ void CompilerHLSL::emit_interface_block_member_in_struct(const SPIRVariable &var
 
 	Bitset member_decorations = get_member_decoration_bitset(type.self, member_index);
 	if (has_decoration(var.self, Decoration::PerVertexKHR))
-		member_decorations.set(Decoration::PerVertexKHR);
+		member_decorations.set(static_cast<uint32_t>(Decoration::PerVertexKHR));
 
 	statement(to_interpolation_qualifiers(member_decorations),
 	          type_to_glsl(mbr_type),
@@ -1052,8 +1052,8 @@ void CompilerHLSL::emit_interface_block_in_struct(const SPIRVariable &var, unord
 	if (execution.model == ExecutionModel::Fragment && var.storage == StorageClass::Output)
 	{
 		// Dual-source blending is achieved in HLSL by emitting to SV_Target0 and 1.
-		uint32_t index = get_decoration(var.self, DecorationIndex);
-		uint32_t location = get_decoration(var.self, DecorationLocation);
+		uint32_t index = get_decoration(var.self, Decoration::Index);
+		uint32_t location = get_decoration(var.self, Decoration::Location);
 
 		if (index != 0 && location != 0)
 			SPIRV_CROSS_THROW("Dual-source blending is only supported on MRT #0 in HLSL.");
@@ -1084,8 +1084,8 @@ void CompilerHLSL::emit_interface_block_in_struct(const SPIRVariable &var, unord
 
 		// If an explicit location exists, use it with TEXCOORD[N] semantic.
 		// Otherwise, pick a vacant location.
-		if (has_decoration(var.self, DecorationLocation))
-			location_number = get_decoration(var.self, DecorationLocation);
+		if (has_decoration(var.self, Decoration::Location))
+			location_number = get_decoration(var.self, Decoration::Location);
 		else
 			location_number = get_vacant_location();
 
@@ -1194,9 +1194,9 @@ void CompilerHLSL::emit_builtin_variables()
 		auto &type = this->get<SPIRType>(var.basetype);
 		auto builtin = BuiltIn(get_decoration(var.self, Decoration::BuiltIn));
 
-		if (var.storage == StorageClass::Input && builtin == BuiltInSampleMask)
+		if (var.storage == StorageClass::Input && builtin == BuiltIn::SampleMask)
 			sample_mask_in_basetype = type.basetype;
-		else if (var.storage == StorageClass::Output && builtin == BuiltInSampleMask)
+		else if (var.storage == StorageClass::Output && builtin == BuiltIn::SampleMask)
 			sample_mask_out_basetype = type.basetype;
 
 		if (var.initializer && var.storage == StorageClass::Output)
@@ -1219,7 +1219,7 @@ void CompilerHLSL::emit_builtin_variables()
 			}
 			else if (has_decoration(var.self, Decoration::BuiltIn))
 			{
-				builtin_to_initializer[builtin] = var.initializer;
+				builtin_to_initializer[static_cast<uint32_t>(builtin)] = var.initializer;
 			}
 		}
 	});
@@ -1237,11 +1237,11 @@ void CompilerHLSL::emit_builtin_variables()
 
 		if (get_execution_model() == ExecutionModel::MeshEXT)
 		{
-			if (builtin == BuiltInPosition || builtin == BuiltInPointSize || builtin == BuiltInClipDistance ||
-			    builtin == BuiltInCullDistance || builtin == BuiltInLayer || builtin == BuiltInPrimitiveId ||
-			    builtin == BuiltInViewportIndex || builtin == BuiltInCullPrimitiveEXT ||
-			    builtin == BuiltInPrimitiveShadingRateKHR || builtin == BuiltInPrimitivePointIndicesEXT ||
-			    builtin == BuiltInPrimitiveLineIndicesEXT || builtin == BuiltInPrimitiveTriangleIndicesEXT)
+			if (builtin == BuiltIn::Position || builtin == BuiltIn::PointSize || builtin == BuiltIn::ClipDistance ||
+			    builtin == BuiltIn::CullDistance || builtin == BuiltIn::Layer || builtin == BuiltIn::PrimitiveId ||
+			    builtin == BuiltIn::ViewportIndex || builtin == BuiltIn::CullPrimitiveEXT ||
+			    builtin == BuiltIn::PrimitiveShadingRateKHR || builtin == BuiltIn::PrimitivePointIndicesEXT ||
+			    builtin == BuiltIn::PrimitiveLineIndicesEXT || builtin == BuiltIn::PrimitiveTriangleIndicesEXT)
 			{
 				return;
 			}
