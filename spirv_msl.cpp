@@ -9157,7 +9157,7 @@ bool CompilerMSL::emit_tessellation_access_chain(const uint32_t *ops, uint32_t l
 		if (meta.storage_physical_type != 0)
 			set_extended_decoration(ops[1], SPIRVCrossDecorationPhysicalTypeID, meta.storage_physical_type);
 		if (meta.storage_is_invariant)
-			set_decoration(ops[1], DecorationInvariant);
+			set_decoration(ops[1], Decoration::Invariant);
 		// Save the type we found in case the result is used in another access chain.
 		set_extended_decoration(ops[1], SPIRVCrossDecorationTessIOOriginalInputTypeID, expr_type->self);
 
@@ -10449,7 +10449,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		auto input_size = input_type1.vecsize;
 		if (instruction.length == 5)
 		{
-			if (ops[4] == static_cast<uint32_t>(PackedVector::PackedVectorFormat4x8Bit))
+			if (ops[4] == static_cast<uint32_t>(PackedVectorFormat::PackedVectorFormat4x8Bit))
 			{
 				string type = opcode == Op::OpSDot || opcode == Op::OpSUDot ? "char4" : "uchar4";
 				vec1input = join("as_type<", type, ">(", to_expression(vec1), ")");
@@ -10509,7 +10509,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		string vec1input, vec2input;
 		if (instruction.length == 6)
 		{
-			if (ops[5] == static_cast<uint32_t>(PackedVector::PackedVectorFormat4x8Bit))
+			if (ops[5] == static_cast<uint32_t>(PackedVectorFormat::PackedVectorFormat4x8Bit))
 			{
 				string type = opcode == Op::OpSDotAccSat || opcode == Op::OpSUDotAccSat ? "char4" : "uchar4";
 				vec1input = join("as_type<", type, ">(", to_expression(vec1), ")");
@@ -10663,7 +10663,7 @@ void CompilerMSL::emit_barrier(uint32_t id_exe_scope, uint32_t id_mem_scope, uin
 
 	bar_stmt += "(";
 
-	uint32_t mem_sem = id_mem_sem ? evaluate_constant_u32(id_mem_sem) : uint32_t(MemorySemanticsMaskNone);
+	uint32_t mem_sem = id_mem_sem ? evaluate_constant_u32(id_mem_sem) : uint32_t(MemorySemanticsMask::MaskNone);
 
 	// Use the | operator to combine flags if we can.
 	if (msl_options.supports_msl_version(1, 2))
@@ -10715,18 +10715,18 @@ void CompilerMSL::emit_barrier(uint32_t id_exe_scope, uint32_t id_mem_scope, uin
 		// If there's no device-related memory in the barrier, demote to workgroup scope.
 		// glslang seems to emit device scope even for memoryBarrierShared().
 		if (mem_scope == static_cast<uint32_t>(Scope::Device) &&
-		    (mem_sem & (MemorySemanticsMask::UniformMemory |
+		    (mem_sem & static_cast<uint32_t>((MemorySemanticsMask::UniformMemory |
 		                MemorySemanticsMask::ImageMemory |
-		                MemorySemanticsMask::CrossWorkgroupMemory)) == 0)
+		                MemorySemanticsMask::CrossWorkgroupMemory))) == 0)
 		{
 			mem_scope = static_cast<uint32_t>(Scope::Workgroup);
 		}
 
 		// MSL 3.2 only supports seq_cst or relaxed.
-		if (mem_sem & (MemorySemanticsMask::AcquireReleaseMask |
+		if (mem_sem & static_cast<uint32_t>((MemorySemanticsMask::AcquireReleaseMask |
 		               MemorySemanticsMask::Acquire |
 		               MemorySemanticsMask::Release |
-		               MemorySemanticsMask::SequentiallyConsistent))
+		               MemorySemanticsMask::SequentiallyConsistent)))
 		{
 			bar_stmt += ", memory_order_seq_cst";
 		}
@@ -10737,19 +10737,19 @@ void CompilerMSL::emit_barrier(uint32_t id_exe_scope, uint32_t id_mem_scope, uin
 
 		switch (mem_scope)
 		{
-		case Scope::Device:
+		case static_cast<uint32_t>(Scope::Device):
 			bar_stmt += ", thread_scope_device";
 			break;
 
-		case Scope::Workgroup:
+		case static_cast<uint32_t>(Scope::Workgroup):
 			bar_stmt += ", thread_scope_threadgroup";
 			break;
 
-		case Scope::Subgroup:
+		case static_cast<uint32_t>(Scope::Subgroup):
 			bar_stmt += ", thread_scope_subgroup";
 			break;
 
-		case Scope::Invocation:
+		case static_cast<uint32_t>(Scope::Invocation):
 			bar_stmt += ", thread_scope_thread";
 			break;
 
