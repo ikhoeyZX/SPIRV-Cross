@@ -10723,7 +10723,7 @@ void CompilerMSL::emit_barrier(uint32_t id_exe_scope, uint32_t id_mem_scope, uin
 		}
 
 		// MSL 3.2 only supports seq_cst or relaxed.
-		if (mem_sem & static_cast<uint32_t>((MemorySemanticsMask::AcquireReleaseMask |
+		if (mem_sem & static_cast<uint32_t>((MemorySemanticsMask::AcquireRelease |
 		               MemorySemanticsMask::Acquire |
 		               MemorySemanticsMask::Release |
 		               MemorySemanticsMask::SequentiallyConsistent)))
@@ -10808,13 +10808,13 @@ bool CompilerMSL::emit_array_copy(const char *expr, uint32_t lhs_id, uint32_t rh
 	auto *lhs_var = maybe_get_backing_variable(lhs_id);
 	if (lhs_var && lhs_storage == StorageClass::StorageBuffer && storage_class_array_is_thread(lhs_var->storage))
 		lhs_is_array_template = true;
-	else if (lhs_var && lhs_storage != StorageClassGeneric && type_is_explicit_layout(get<SPIRType>(lhs_var->basetype)))
+	else if (lhs_var && lhs_storage != StorageClass::Generic && type_is_explicit_layout(get<SPIRType>(lhs_var->basetype)))
 		lhs_is_array_template = false;
 
 	auto *rhs_var = maybe_get_backing_variable(rhs_id);
 	if (rhs_var && rhs_storage == StorageClass::StorageBuffer && storage_class_array_is_thread(rhs_var->storage))
 		rhs_is_array_template = true;
-	else if (rhs_var && rhs_storage != StorageClassGeneric && type_is_explicit_layout(get<SPIRType>(rhs_var->basetype)))
+	else if (rhs_var && rhs_storage != StorageClass::Generic && type_is_explicit_layout(get<SPIRType>(rhs_var->basetype)))
 		rhs_is_array_template = false;
 
 	// If threadgroup storage qualifiers are *not* used:
@@ -11002,7 +11002,7 @@ void CompilerMSL::emit_atomic_func_op(uint32_t result_type, uint32_t result_id, 
 
 	bool is_atomic_compare_exchange_strong = op1_is_pointer && op1;
 
-	bool check_discard = opcode != OpAtomicLoad && needs_frag_discard_checks() &&
+	bool check_discard = opcode != Op::OpAtomicLoad && needs_frag_discard_checks() &&
 	                     ptr_type.storage != StorageClass::Workgroup;
 
 	// Even compare exchange atomics are vec4 on metal for ... reasons :v
@@ -11063,7 +11063,7 @@ void CompilerMSL::emit_atomic_func_op(uint32_t result_type, uint32_t result_id, 
 				assert(spv_function_implementations.count(SPVFuncImplTextureCast) && "Should have been added above");
 
 				const auto *backing_type = &get<SPIRType>(backing_var->basetype);
-				while (backing_type->op != OpTypeImage)
+				while (backing_type->op != Op::OpTypeImage)
 					backing_type = &get<SPIRType>(backing_type->parent_type);
 
 				auto img_type = *backing_type;
@@ -11116,7 +11116,7 @@ void CompilerMSL::emit_atomic_func_op(uint32_t result_type, uint32_t result_id, 
 				exp += "volatile ";
 			exp += "device";
 		}
-		else if (var && ptr_type.storage != StorageClassPhysicalStorageBuffer)
+		else if (var && ptr_type.storage != StorageClass::PhysicalStorageBuffer)
 		{
 			exp += get_argument_address_space(*var);
 		}
@@ -11266,7 +11266,8 @@ void CompilerMSL::emit_glsl_op(uint32_t result_type, uint32_t id, uint32_t eop, 
 	auto &restype = get<SPIRType>(result_type);
 
 	// Only precise:: preserves NaN in trancendentals (supposedly, cannot find documentation for this).
-	const auto drop_nan_inf = FPFastMathModeMask::NotInf | FPFastMathModeMask::NotNaN;
+	auto drop_nan_inf_dec = FPFastMathModeMask::NotInf | FPFastMathModeMask::NotNaN;
+	const uint32_t drop_nan_inf = static_cast<uint32_t>(drop_nan_inf_dec);
 	bool preserve_nan = (get_fp_fast_math_flags_for_op(result_type, id) & drop_nan_inf) != drop_nan_inf;
 	const char *preserve_str = preserve_nan ? "precise" : "fast";
 
