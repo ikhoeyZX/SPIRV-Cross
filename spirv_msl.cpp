@@ -5152,8 +5152,9 @@ void CompilerMSL::align_struct(SPIRType &ib_type, unordered_set<uint32_t> &align
 bool CompilerMSL::validate_member_packing_rules_msl(const SPIRType &type, uint32_t index) const
 {
 	auto &mbr_type = get<SPIRType>(type.member_types[index]);
-	uint32_t spirv_offset = get_member_decoration(type.self, index, static_cast<uint32_t>(Decoration::Offset));
-
+	auto spirv_offset_decoration = get_member_decoration(type.self, index, static_cast<uint32_t>(Decoration::Offset));
+    uint32_t spirv_offset = static_cast<uint32_t>(spirv_offset_decoration);
+	
 	if (index + 1 < type.member_types.size())
 	{
 		// First, we will check offsets. If SPIR-V offset + MSL size > SPIR-V offset of next member,
@@ -5772,7 +5773,7 @@ void CompilerMSL::emit_header()
 	{
 		uint32_t contract_mask = static_cast<uint32_t>(FPFastMathModeMask::AllowContract);
 		uint32_t relax_mask = static_cast<uint32_t>((FPFastMathModeMask::NSZ | FPFastMathModeMask::AllowRecip | FPFastMathModeMask::AllowReassoc));
-		uint32_t fast_mask = static_cast<uint32_t>((relax_mask | FPFastMathModeMask::NotNaN | FPFastMathModeMask::NotInf));
+		uint32_t fast_mask = (relax_mask | static_cast<uint32_t>(FPFastMathModeMask::NotNaN | FPFastMathModeMask::NotInf));
 
 		// FP math mode
 		uint32_t fp_flags = get_fp_fast_math_flags(true);
@@ -8403,7 +8404,7 @@ void CompilerMSL::emit_specialization_constants_and_structs()
 				// This "default" value can be overridden to the true specialization constant by the API user.
 				// Specialization constants which are used as array length expressions cannot be function constants in MSL,
 				// so just fall back to macros.
-				if (msl_options.supports_msl_version(1, 2) && has_decoration(c.self, DecorationSpecId) &&
+				if (msl_options.supports_msl_version(1, 2) && has_decoration(c.self, Decoration::SpecId) &&
 				    !c.is_used_as_array_length)
 				{
 					// Only scalar, non-composite values can be function constants.
@@ -8926,7 +8927,7 @@ bool CompilerMSL::emit_tessellation_access_chain(const uint32_t *ops, uint32_t l
 			bi_type = BuiltIn(get_decoration(var->self, Decoration::BuiltIn));
 
 		variable_is_flat = !builtin_variable || is_block ||
-		                   bi_type == static_cast<uint32_t>(BuiltIn::Position) || bi_type == static_cast<uint32_t>(BuiltIn::PointSize) ||
+		                   bi_type == BuiltIn::Position || BuiltIn::PointSize ||
 		                   bi_type == BuiltIn::ClipDistance || bi_type == BuiltIn::CullDistance;
 	}
 
