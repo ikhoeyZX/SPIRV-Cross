@@ -5152,7 +5152,7 @@ void CompilerMSL::align_struct(SPIRType &ib_type, unordered_set<uint32_t> &align
 bool CompilerMSL::validate_member_packing_rules_msl(const SPIRType &type, uint32_t index) const
 {
 	auto &mbr_type = get<SPIRType>(type.member_types[index]);
-	uint32_t spirv_offset = get_member_decoration(type.self, index, DecorationOffset);
+	uint32_t spirv_offset = get_member_decoration(type.self, index, static_cast<uint32_t>(DecorationOffset));
 
 	if (index + 1 < type.member_types.size())
 	{
@@ -9805,8 +9805,8 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 			}
 		};
 
-		test(bias, ImageOperandsMask::Bias);
-		test(lod, ImageOperandsMask::Lod);
+		test(bias, static_cast<uint32_t>(ImageOperandsMask::Bias));
+		test(lod, static_cast<uint32_t>(ImageOperandsMask::Lod));
 
 		auto &texel_type = expression_type(texel_id);
 		auto store_type = texel_type;
@@ -10045,7 +10045,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		// In GLSL a memory barrier is often followed by a control barrier.
 		// But in MSL, memory barriers are also control barriers (before MSL 3.2), so don't
 		// emit a simple control barrier if a memory barrier has just been emitted.
-		if (previous_instruction_opcode != OpMemoryBarrier || msl_options.supports_msl_version(3, 2))
+		if (previous_instruction_opcode != Op::OpMemoryBarrier || msl_options.supports_msl_version(3, 2))
 			emit_barrier(ops[0], ops[1], ops[2]);
 		break;
 
@@ -10410,7 +10410,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		auto &type = get<SPIRType>(ops[0]);
 		auto &input_type = expression_type(ops[2]);
 
-		if (opcode != OpBitcast || is_pointer(type) || is_pointer(input_type))
+		if (opcode != Op::OpBitcast || is_pointer(type) || is_pointer(input_type))
 		{
 			string op;
 
@@ -10461,7 +10461,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		{
 			// Inputs are sign or zero-extended to their target width.
 			SPIRType::BaseType vec1_expected_type =
-					opcode != OpUDot ?
+					opcode != Op::OpUDot ?
 					to_signed_basetype(input_type1.width) :
 					to_unsigned_basetype(input_type1.width);
 
@@ -10522,7 +10522,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		{
 			// Inputs are sign or zero-extended to their target width.
 			SPIRType::BaseType vec1_expected_type =
-					opcode != OpUDotAccSat ?
+					opcode != Op::OpUDotAccSat ?
 					to_signed_basetype(input_type1.width) :
 					to_unsigned_basetype(input_type1.width);
 
@@ -10538,7 +10538,7 @@ void CompilerMSL::emit_instruction(const Instruction &instruction)
 		auto &type = get<SPIRType>(result_type);
 
 		SPIRType::BaseType pre_saturate_type =
-				opcode != OpUDotAccSat ?
+				opcode != Op::OpUDotAccSat ?
 				to_signed_basetype(type.width) :
 				to_unsigned_basetype(type.width);
 
@@ -10695,11 +10695,11 @@ void CompilerMSL::emit_barrier(uint32_t id_exe_scope, uint32_t id_mem_scope, uin
 	else
 	{
 		if ((mem_sem & (MemorySemanticsMask::UniformMemory | MemorySemanticsMask::CrossWorkgroupMemory)) &&
-		    (mem_sem & (MemorySemanticsMask::SubgroupMemory | MemorySemanticsMask::WorkgroupMemory)))
+		    (mem_sem & static_cast<uint32_t>((MemorySemanticsMask::SubgroupMemory | MemorySemanticsMask::WorkgroupMemory))))
 			bar_stmt += "mem_flags::mem_device_and_threadgroup";
 		else if (mem_sem & (MemorySemanticsMask::UniformMemory | MemorySemanticsMask::CrossWorkgroupMemory))
 			bar_stmt += "mem_flags::mem_device";
-		else if (mem_sem & (MemorySemanticsMask::SubgroupMemory | MemorySemanticsMask::WorkgroupMemory))
+		else if (mem_sem & static_cast<uint32_t>((MemorySemanticsMask::SubgroupMemory | MemorySemanticsMask::WorkgroupMemory)))
 			bar_stmt += "mem_flags::mem_threadgroup";
 		else if (mem_sem & MemorySemanticsMask::ImageMemory)
 			bar_stmt += "mem_flags::mem_texture";
@@ -10711,12 +10711,12 @@ void CompilerMSL::emit_barrier(uint32_t id_exe_scope, uint32_t id_mem_scope, uin
 	{
 		// If there's no device-related memory in the barrier, demote to workgroup scope.
 		// glslang seems to emit device scope even for memoryBarrierShared().
-		if (mem_scope == Scope::Device &&
+		if (mem_scope == static_cast<uint32_t>(Scope::Device) &&
 		    (mem_sem & (MemorySemanticsMask::UniformMemory |
 		                MemorySemanticsMask::ImageMemory |
 		                MemorySemanticsMask::CrossWorkgroupMemory)) == 0)
 		{
-			mem_scope = Scope::Workgroup;
+			mem_scope = static_cast<uint32_t>(Scope::Workgroup);
 		}
 
 		// MSL 3.2 only supports seq_cst or relaxed.
