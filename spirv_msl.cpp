@@ -11798,7 +11798,7 @@ void CompilerMSL::emit_function_prototype(SPIRFunction &func, const Bitset &)
 		for (auto &v : func.local_variables)
 		{
 			auto &var = get<SPIRVariable>(v);
-			if (var.storage != StorageClassTaskPayloadWorkgroupEXT)
+			if (var.storage != StorageClass::TaskPayloadWorkgroupEXT)
 				continue;
 
 			add_local_variable_name(v);
@@ -12049,7 +12049,7 @@ string CompilerMSL::to_function_name(const TextureFunctionNameArguments &args)
 
 string CompilerMSL::convert_to_f32(const string &expr, uint32_t components)
 {
-	SPIRType t { components > 1 ? OpTypeVector : OpTypeFloat };
+	SPIRType t { components > 1 ? Op::OpTypeVector : Op::OpTypeFloat };
 	t.basetype = SPIRType::Float;
 	t.vecsize = components;
 	t.columns = 1;
@@ -13411,7 +13411,7 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 	}
 
 	// Vertex function inputs
-	if (execution.model == ExecutionModel::Vertex && type.storage == static_cast<uint32_t>(StorageClass::Input))
+	if (execution.model == ExecutionModel::Vertex && type.storage == StorageClass::Input)
 	{
 		if (is_builtin)
 		{
@@ -13505,7 +13505,7 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 	}
 
 	// Tessellation control function inputs
-	if (is_tesc_shader() && type.storage == static_cast<uint32_t>(StorageClass::Input))
+	if (is_tesc_shader() && type.storage == StorageClass::Input)
 	{
 		if (is_builtin)
 		{
@@ -13553,7 +13553,7 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 	}
 
 	// Tessellation evaluation function inputs
-	if (is_tese_shader() && type.storage == static_cast<uint32_t>(StorageClass::Input))
+	if (is_tese_shader() && type.storage == StorageClass::Input)
 	{
 		if (is_builtin)
 		{
@@ -13590,7 +13590,7 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 	// Tessellation evaluation function outputs were handled above.
 
 	// Fragment function inputs
-	if (execution.model == ExecutionModel::Fragment && type.storage == static_cast<uint32_t>(StorageClass::Input))
+	if (execution.model == ExecutionModel::Fragment && type.storage == StorageClass::Input)
 	{
 		string quals;
 		if (is_builtin)
@@ -13732,7 +13732,7 @@ string CompilerMSL::member_attribute_qualifier(const SPIRType &type, uint32_t in
 	}
 
 	// Compute function inputs
-	if (execution.model == ExecutionModel::GLCompute && type.storage == static_cast<uint32_t>(StorageClass::Input))
+	if (execution.model == ExecutionModel::GLCompute && type.storage == StorageClass::Input)
 	{
 		if (is_builtin)
 		{
@@ -13840,8 +13840,8 @@ uint32_t CompilerMSL::get_or_allocate_builtin_input_member_location(spv::BuiltIn
 	if (!msl_options.raw_buffer_tese_input && is_tessellating_triangles() &&
 	    (builtin == BuiltIn::TessLevelInner || builtin == BuiltIn::TessLevelOuter))
 	{
-		builtin_to_automatic_input_location[BuiltIn::TessLevelInner] = loc;
-		builtin_to_automatic_input_location[BuiltIn::TessLevelOuter] = loc;
+		builtin_to_automatic_input_location[static_cast<uint32_t>(BuiltIn::TessLevelInner)] = loc;
+		builtin_to_automatic_input_location[static_cast<uint32_t>(BuiltIn::TessLevelOuter)] = loc;
 	}
 	else
 		builtin_to_automatic_input_location[builtin] = loc;
