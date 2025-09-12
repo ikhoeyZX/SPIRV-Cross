@@ -2624,9 +2624,9 @@ string CompilerHLSL::layout_for_member(const SPIRType &type, uint32_t index)
 
 	// Flip the convention. HLSL is a bit odd in that the memory layout is column major ... but the language API is "row-major".
 	// The way to deal with this is to multiply everything in inverse order, and reverse the memory layout.
-	if (flags.get(Decoration::ColMajor))
+	if (flags.get(static_cast<uint32_t>(Decoration::ColMajor)))
 		return "row_major ";
-	else if (flags.get(Decoration::RowMajor))
+	else if (flags.get(static_cast<uint32_t>(Decoration::RowMajor)))
 		return "column_major ";
 
 	return "";
@@ -2688,7 +2688,7 @@ void CompilerHLSL::emit_geometry_stream_append()
 	active_output_builtins.for_each_bit(
 	    [&](uint32_t i)
 	    {
-		    if (i == BuiltInPointSize && hlsl_options.shader_model > 30)
+		    if (i == BuiltIn::PointSize && hlsl_options.shader_model > 30)
 			    return;
 		    switch (static_cast<BuiltIn>(i))
 		    {
@@ -3033,15 +3033,15 @@ uint32_t CompilerHLSL::input_vertices_from_execution_mode(spirv_cross::SPIREntry
 {
 	uint32_t input_vertices = 1;
 
-	if (execution.flags.get(ExecutionModeInputLines))
+	if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::InputLines)))
 		input_vertices = 2;
-	else if (execution.flags.get(ExecutionModeInputLinesAdjacency))
+	else if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::InputLinesAdjacency)))
 		input_vertices = 4;
-	else if (execution.flags.get(ExecutionModeInputTrianglesAdjacency))
+	else if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::InputTrianglesAdjacency)))
 		input_vertices = 6;
-	else if (execution.flags.get(ExecutionModeTriangles))
+	else if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::Triangles)))
 		input_vertices = 3;
-	else if (execution.flags.get(ExecutionModeInputPoints))
+	else if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::InputPoints)))
 		input_vertices = 1;
 	else
 		SPIRV_CROSS_THROW("Unsupported execution model.");
@@ -3149,21 +3149,21 @@ void CompilerHLSL::emit_function_prototype(SPIRFunction &func, const Bitset &ret
 		uint32_t input_vertices = input_vertices_from_execution_mode(execution);
 
 		const char *prim;
-		if (execution.flags.get(ExecutionModeInputLinesAdjacency))
+		if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::InputLinesAdjacency)))
 			prim = "lineadj";
-		else if (execution.flags.get(ExecutionModeInputLines))
+		else if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::InputLines)))
 			prim = "line";
-		else if (execution.flags.get(ExecutionModeInputTrianglesAdjacency))
+		else if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::InputTrianglesAdjacency)))
 			prim = "triangleadj";
-		else if (execution.flags.get(ExecutionModeTriangles))
+		else if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::Triangles)))
 			prim = "triangle";
 		else
 			prim = "point";
 
 		const char *stream_type;
-		if (execution.flags.get(ExecutionMode::OutputPoints))
+		if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::OutputPoints)))
 			stream_type = "PointStream";
-		else if (execution.flags.get(ExecutionMode::OutputLineStrip))
+		else if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::OutputLineStrip)))
 			stream_type = "LineStream";
 		else
 			stream_type = "TriangleStream";
@@ -3191,28 +3191,28 @@ void CompilerHLSL::emit_hlsl_entry_point()
 
 	switch (execution.model)
 	{
-	case ExecutionModelGeometry:
+	case ExecutionModel::Geometry:
 	{
 		input_vertices = input_vertices_from_execution_mode(execution);
 
 		string prim;
-		if (execution.flags.get(ExecutionModeInputLinesAdjacency))
+		if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::InputLinesAdjacency)))
 			prim = "lineadj";
-		else if (execution.flags.get(ExecutionModeInputLines))
+		else if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::InputLines)))
 			prim = "line";
-		else if (execution.flags.get(ExecutionModeInputTrianglesAdjacency))
+		else if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::InputTrianglesAdjacency)))
 			prim = "triangleadj";
-		else if (execution.flags.get(ExecutionModeTriangles))
+		else if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::Triangles)))
 			prim = "triangle";
 		else
 			prim = "point";
 
 		string stream_type;
-		if (execution.flags.get(ExecutionMode::OutputPoints))
+		if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::OutputPoints)))
 		{
 			stream_type = "PointStream";
 		}
-		else if (execution.flags.get(ExecutionMode::OutputLineStrip))
+		else if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::OutputLineStrip)))
 		{
 			stream_type = "LineStream";
 		}
@@ -3226,17 +3226,17 @@ void CompilerHLSL::emit_hlsl_entry_point()
 		arguments.push_back(join("inout ", stream_type, "<SPIRV_Cross_Output> ", "geometry_stream"));
 		break;
 	}
-	case ExecutionModelTaskEXT:
-	case ExecutionModelMeshEXT:
-	case ExecutionModelGLCompute:
+	case ExecutionModel::TaskEXT:
+	case ExecutionModel::MeshEXT:
+	case ExecutionModel::GLCompute:
 	{
 		if (execution.model == ExecutionModel::MeshEXT)
 		{
-			if (execution.flags.get(ExecutionMode::OutputTrianglesEXT))
+			if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::OutputTrianglesEXT)))
 				statement("[outputtopology(\"triangle\")]");
-			else if (execution.flags.get(ExecutionMode::OutputLinesEXT))
+			else if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::OutputLinesEXT)))
 				statement("[outputtopology(\"line\")]");
-			else if (execution.flags.get(ExecutionMode::OutputPoints))
+			else if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::OutputPoints)))
 				SPIRV_CROSS_THROW("Topology mode \"points\" is not supported in DirectX");
 
 			auto &func = get<SPIRFunction>(ir.default_entry_point);
@@ -3252,7 +3252,7 @@ void CompilerHLSL::emit_hlsl_entry_point()
 				else if (block)
 				{
 					auto flags = get_buffer_block_flags(var.self);
-					if (flags.get(Decoration::PerPrimitiveEXT) || has_decoration(arg.id, Decoration::PerPrimitiveEXT))
+					if (flags.get(static_cast<uint32_t>(Decoration::PerPrimitiveEXT)) || has_decoration(arg.id, Decoration::PerPrimitiveEXT))
 					{
 						arguments.push_back("out primitives gl_MeshPerPrimitiveEXT gl_MeshPrimitivesEXT[" +
 						                    std::to_string(execution.output_primitives) + "]");
@@ -3265,7 +3265,7 @@ void CompilerHLSL::emit_hlsl_entry_point()
 				}
 				else
 				{
-					if (execution.flags.get(ExecutionMode::OutputTrianglesEXT))
+					if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::OutputTrianglesEXT)))
 					{
 						arguments.push_back("out indices uint3 gl_PrimitiveTriangleIndicesEXT[" +
 						                    std::to_string(execution.output_primitives) + "]");
@@ -3285,7 +3285,7 @@ void CompilerHLSL::emit_hlsl_entry_point()
 		uint32_t y = execution.workgroup_size.y;
 		uint32_t z = execution.workgroup_size.z;
 
-		if (!execution.workgroup_size.constant && execution.flags.get(ExecutionModeLocalSizeId))
+		if (!execution.workgroup_size.constant && execution.flags.get(ExecutionMode::LocalSizeId))
 		{
 			if (execution.workgroup_size.id_x)
 				x = get<SPIRConstant>(execution.workgroup_size.id_x).scalar();
@@ -3303,7 +3303,7 @@ void CompilerHLSL::emit_hlsl_entry_point()
 		break;
 	}
 	case ExecutionModel::Fragment:
-		if (execution.flags.get(ExecutionModeEarlyFragmentTests))
+		if (execution.flags.get(ExecutionMode::EarlyFragmentTests))
 			statement("[earlydepthstencil]");
 		break;
 	default:
@@ -3347,14 +3347,14 @@ void CompilerHLSL::emit_hlsl_entry_point()
 			{
 				if (hlsl_options.shader_model >= 68)
 				{
-					if (static_cast<BuiltIn>(i) == BuiltInInstanceIndex)
+					if (static_cast<BuiltIn>(i) == BuiltIn::InstanceIndex)
 						statement(builtin, " = int(stage_input.", builtin, " + stage_input.gl_BaseInstanceARB);");
 					else
 						statement(builtin, " = int(stage_input.", builtin, " + stage_input.gl_BaseVertexARB);");
 				}
 				else
 				{
-					if (static_cast<BuiltIn>(i) == BuiltInInstanceIndex)
+					if (static_cast<BuiltIn>(i) == BuiltIn::InstanceIndex)
 						statement(builtin, " = int(stage_input.", builtin, ") + SPIRV_Cross_BaseInstance;");
 					else
 						statement(builtin, " = int(stage_input.", builtin, ") + SPIRV_Cross_BaseVertex;");
@@ -3576,7 +3576,7 @@ void CompilerHLSL::emit_hlsl_entry_point()
 		// Copy builtins from globals to return struct.
 		active_output_builtins.for_each_bit([&](uint32_t i) {
 			// PointSize doesn't exist in HLSL SM 4+.
-			if (i == BuiltInPointSize && !legacy)
+			if (i == BuiltIn::PointSize && !legacy)
 				return;
 
 			switch (static_cast<BuiltIn>(i))
