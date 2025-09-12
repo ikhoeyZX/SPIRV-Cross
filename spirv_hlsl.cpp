@@ -1895,8 +1895,8 @@ void CompilerHLSL::emit_resources()
 				const char *storage = nullptr;
 				switch (var.storage)
 				{
-				case StorageClassWorkgroup:
-				case StorageClassTaskPayloadWorkgroupEXT:
+				case StorageClass::Workgroup:
+				case StorageClass::TaskPayloadWorkgroupEXT:
 					storage = "groupshared";
 					break;
 
@@ -2438,7 +2438,7 @@ void CompilerHLSL::analyze_meshlet_writes()
 		if (var.storage == StorageClass::Output && block && is_builtin_variable(var))
 		{
 			auto flags = get_buffer_block_flags(var.self);
-			if (flags.get(Decoration::PerPrimitiveEXT))
+			if (flags.get(static_cast<uint32_t>(Decoration::PerPrimitiveEXT)))
 				id_per_primitive = var.self;
 			else
 				id_per_vertex = var.self;
@@ -2451,7 +2451,7 @@ void CompilerHLSL::analyze_meshlet_writes()
 			else
 				flags = get_decoration_bitset(var.self);
 
-			if (flags.get(Decoration::PerPrimitiveEXT))
+			if (flags.get(static_cast<uint32_t>(Decoration::PerPrimitiveEXT)))
 				need_per_primitive = true;
 			else
 				need_per_vertex = true;
@@ -2470,7 +2470,7 @@ void CompilerHLSL::analyze_meshlet_writes()
 		uint32_t op_ptr = op_type + 2;
 		uint32_t op_var = op_type + 3;
 
-		auto &type = set<SPIRType>(op_type, OpTypeStruct);
+		auto &type = set<SPIRType>(op_type, Op::OpTypeStruct);
 		type.basetype = SPIRType::Struct;
 		set_name(op_type, block_name);
 		set_decoration(op_type, Decoration::Block);
@@ -2478,14 +2478,14 @@ void CompilerHLSL::analyze_meshlet_writes()
 			set_decoration(op_type, Decoration::PerPrimitiveEXT);
 
 		auto &arr = set<SPIRType>(op_arr, type);
-		arr.op = OpTypeArray;
+		arr.op = Op::OpTypeArray;
 		arr.parent_type = type.self;
 		arr.array.push_back(per_primitive ? execution.output_primitives : execution.output_vertices);
 		arr.array_size_literal.push_back(true);
 
 		auto &ptr = set<SPIRType>(op_ptr, arr);
 		ptr.parent_type = arr.self;
-		ptr.op = OpTypePointer;
+		ptr.op = Op::OpTypePointer;
 		ptr.pointer = true;
 		ptr.pointer_depth++;
 		ptr.storage = StorageClass::Output;
