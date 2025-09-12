@@ -2570,17 +2570,17 @@ void CompilerHLSL::analyze_meshlet_writes(uint32_t func_id, uint32_t id_per_vert
 			case Op::OpInBoundsPtrAccessChain:
 			case Op::OpArrayLength:
 			{
-				auto *var = maybe_get<SPIRVariable>(ops[op == OpStore ? 0 : 2]);
-				if (var && (var->storage == StorageClass::Output || var->storage == StorageClassTaskPayloadWorkgroupEXT))
+				auto *var = maybe_get<SPIRVariable>(ops[op == Op::OpStore ? 0 : 2]);
+				if (var && (var->storage == StorageClass::Output || var->storage == StorageClass::TaskPayloadWorkgroupEXT))
 				{
 					bool already_declared = false;
 					auto builtin_type = BuiltIn(get_decoration(var->self, Decoration::BuiltIn));
 
 					uint32_t var_id = var->self;
-					if (var->storage != StorageClassTaskPayloadWorkgroupEXT &&
-						builtin_type != BuiltInPrimitivePointIndicesEXT &&
-						builtin_type != BuiltInPrimitiveLineIndicesEXT &&
-						builtin_type != BuiltInPrimitiveTriangleIndicesEXT)
+					if (var->storage != StorageClass::TaskPayloadWorkgroupEXT &&
+						builtin_type != BuiltIn::PrimitivePointIndicesEXT &&
+						builtin_type != BuiltIn::PrimitiveLineIndicesEXT &&
+						builtin_type != BuiltIn::PrimitiveTriangleIndicesEXT)
 					{
 						var_id = is_per_primitive_variable(*var) ? id_per_primitive : id_per_vertex;
 					}
@@ -2599,7 +2599,7 @@ void CompilerHLSL::analyze_meshlet_writes(uint32_t func_id, uint32_t id_per_vert
 						// basetype is effectively ignored here since we declare the argument
 						// with explicit types. Just pass down a valid type.
 						uint32_t type_id = expression_type_id(var_id);
-						if (var->storage == StorageClassTaskPayloadWorkgroupEXT)
+						if (var->storage == StorageClass::TaskPayloadWorkgroupEXT)
 							func.arguments.push_back({ type_id, var_id, 1u, 0u, true });
 						else
 							func.arguments.push_back({ type_id, var_id, 1u, 1u, true });
@@ -2624,9 +2624,9 @@ string CompilerHLSL::layout_for_member(const SPIRType &type, uint32_t index)
 
 	// Flip the convention. HLSL is a bit odd in that the memory layout is column major ... but the language API is "row-major".
 	// The way to deal with this is to multiply everything in inverse order, and reverse the memory layout.
-	if (flags.get(DecorationColMajor))
+	if (flags.get(Decoration::ColMajor))
 		return "row_major ";
-	else if (flags.get(DecorationRowMajor))
+	else if (flags.get(Decoration::RowMajor))
 		return "column_major ";
 
 	return "";
@@ -2643,10 +2643,10 @@ void CompilerHLSL::emit_struct_member(const SPIRType &type, uint32_t member_type
 		memberflags = memb[index].decoration_flags;
 
 	string packing_offset;
-	bool is_push_constant = type.storage == StorageClassPushConstant;
+	bool is_push_constant = type.storage == StorageClass::PushConstant;
 
 	if ((has_extended_decoration(type.self, SPIRVCrossDecorationExplicitOffset) || is_push_constant) &&
-	    has_member_decoration(type.self, index, DecorationOffset))
+	    has_member_decoration(type.self, index, Decoration::Offset))
 	{
 		uint32_t offset = memb[index].offset - base_offset;
 		if (offset & 3)
@@ -2761,7 +2761,7 @@ void CompilerHLSL::emit_buffer_block(const SPIRVariable &var)
 {
 	auto &type = get<SPIRType>(var.basetype);
 
-	bool is_uav = var.storage == StorageClass::StorageBuffer || has_decoration(type.self, DecorationBufferBlock);
+	bool is_uav = var.storage == StorageClass::StorageBuffer || has_decoration(type.self, Decoration::BufferBlock);
 
 	if (flattened_buffer_blocks.count(var.self))
 	{
@@ -2770,8 +2770,8 @@ void CompilerHLSL::emit_buffer_block(const SPIRVariable &var)
 	else if (is_uav)
 	{
 		Bitset flags = ir.get_buffer_block_flags(var);
-		bool is_readonly = flags.get(Decoration::NonWritable) && !is_hlsl_force_storage_buffer_as_uav(var.self);
-		bool is_coherent = flags.get(DecorationCoherent) && !is_readonly;
+		bool is_readonly = flags.get(static_cast<uint32_t>(Decoration::NonWritable)) && !is_hlsl_force_storage_buffer_as_uav(var.self);
+		bool is_coherent = flags.get(static_cast<uint32_t>(Decoration::Coherent)) && !is_readonly;
 		bool is_interlocked = interlocked_resources.count(var.self) > 0;
 
 		auto to_structuredbuffer_subtype_name = [this](const SPIRType &parent_type) -> std::string
