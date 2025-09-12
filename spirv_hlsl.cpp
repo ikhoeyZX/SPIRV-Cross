@@ -1642,8 +1642,8 @@ void CompilerHLSL::emit_resources()
 		auto &type = this->get<SPIRType>(var.basetype);
 
 		bool is_block_storage = type.storage == StorageClass::StorageBuffer || type.storage == StorageClass::Uniform;
-		bool has_block_flags = ir.meta[type.self].decoration.decoration_flags.get(Decoration::Block) ||
-		                       ir.meta[type.self].decoration.decoration_flags.get(Decoration::BufferBlock);
+		bool has_block_flags = ir.meta[type.self].decoration.decoration_flags.get(static_cast<uint32_t>(Decoration::Block)) ||
+		                       ir.meta[type.self].decoration.decoration_flags.get(static_cast<uint32_t>(Decoration::BufferBlock));
 
 		if (var.storage != StorageClass::Function && type.pointer && is_block_storage && !is_hidden_variable(var) &&
 		    has_block_flags)
@@ -1803,15 +1803,15 @@ void CompilerHLSL::emit_resources()
 	};
 
 	auto input_builtins = active_input_builtins;
-	input_builtins.clear(BuiltIn::NumWorkgroups);
-	input_builtins.clear(BuiltIn::PointCoord);
-	input_builtins.clear(BuiltIn::SubgroupSize);
-	input_builtins.clear(BuiltIn::SubgroupLocalInvocationId);
-	input_builtins.clear(BuiltIn::SubgroupEqMask);
-	input_builtins.clear(BuiltIn::SubgroupLtMask);
-	input_builtins.clear(BuiltIn::SubgroupLeMask);
-	input_builtins.clear(BuiltIn::SubgroupGtMask);
-	input_builtins.clear(BuiltIn::SubgroupGeMask);
+	input_builtins.clear(static_cast<uint32_t>(BuiltIn::NumWorkgroups));
+	input_builtins.clear(static_cast<uint32_t>(BuiltIn::PointCoord));
+	input_builtins.clear(static_cast<uint32_t>(BuiltIn::SubgroupSize));
+	input_builtins.clear(static_cast<uint32_t>(BuiltIn::SubgroupLocalInvocationId));
+	input_builtins.clear(static_cast<uint32_t>(BuiltIn::SubgroupEqMask));
+	input_builtins.clear(static_cast<uint32_t>(BuiltIn::SubgroupLtMask));
+	input_builtins.clear(static_cast<uint32_t>(BuiltIn::SubgroupLeMask));
+	input_builtins.clear(static_cast<uint32_t>(BuiltIn::SubgroupGtMask));
+	input_builtins.clear(static_cast<uint32_t>(BuiltIn::SubgroupGeMask));
 
 	if (!input_variables.empty() || !input_builtins.empty())
 	{
