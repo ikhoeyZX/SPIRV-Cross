@@ -6356,7 +6356,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 			if (type.image.ms)
 			{
 				uint32_t operands = ops[4];
-				if (operands != ImageOperandsSampleMask || instruction.length != 6)
+				if (operands != static_cast<uint32_t>(ImageOperands::SampleMask) || instruction.length != 6)
 					SPIRV_CROSS_THROW("Multisampled image used in OpImageRead, but unexpected operand mask was used.");
 				uint32_t sample = ops[5];
 				imgexpr = join(to_non_uniform_aware_expression(ops[2]), ".Load(int2(gl_FragCoord.xy), ", to_expression(sample), ")");
@@ -6481,7 +6481,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 			semantics = evaluate_constant_u32(ops[2]);
 		}
 
-		if (memory == ScopeSubgroup)
+		if (memory == Scope::Subgroup)
 		{
 			// No Wave-barriers in HLSL.
 			break;
@@ -6495,7 +6495,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 			// If we are a memory barrier, and the next instruction is a control barrier, check if that memory barrier
 			// does what we need, so we avoid redundant barriers.
 			const Instruction *next = get_next_instruction_in_block(instruction);
-			if (next && next->op == OpControlBarrier)
+			if (next && next->op == Op::OpControlBarrier)
 			{
 				auto *next_ops = stream(*next);
 				uint32_t next_memory = evaluate_constant_u32(next_ops[1]);
@@ -6505,22 +6505,22 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 				// There is no "just execution barrier" in HLSL.
 				// If there are no memory semantics for next instruction, we will imply group shared memory is synced.
 				if (next_semantics == 0)
-					next_semantics = MemorySemanticsMask::WorkgroupMemory;
+					next_semantics = static_cast<uint32_t>(MemorySemanticsMask::WorkgroupMemory);
 
 				bool memory_scope_covered = false;
 				if (next_memory == memory)
 					memory_scope_covered = true;
-				else if (next_semantics == MemorySemanticsMask::WorkgroupMemory)
+				else if (next_semantics == static_cast<uint32_t>(MemorySemanticsMask::WorkgroupMemory))
 				{
 					// If we only care about workgroup memory, either Device or Workgroup scope is fine,
 					// scope does not have to match.
-					if ((next_memory == ScopeDevice || next_memory == ScopeWorkgroup) &&
-					    (memory == ScopeDevice || memory == ScopeWorkgroup))
+					if ((next_memory == Scope::Device || next_memory == Scope::Workgroup) &&
+					    (memory == Scope::Device || memory == Scope::Workgroup))
 					{
 						memory_scope_covered = true;
 					}
 				}
-				else if (memory == ScopeWorkgroup && next_memory == ScopeDevice)
+				else if (memory == Scope::Workgroup && next_memory == Scope::Device)
 				{
 					// The control barrier has device scope, but the memory barrier just has workgroup scope.
 					memory_scope_covered = true;
