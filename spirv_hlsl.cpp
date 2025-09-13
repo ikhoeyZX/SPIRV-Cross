@@ -3813,15 +3813,15 @@ void CompilerHLSL::emit_texture_op(const Instruction &i, bool sparse)
 		}
 	};
 
-	test(bias, ImageOperandsMask::Bias);
-	test(lod, ImageOperandsMask::Lod);
-	test(grad_x, ImageOperandsMask::Grad);
-	test(grad_y, ImageOperandsMask::Grad);
-	test(coffset, ImageOperandsMask::ConstOffset);
-	test(offset, ImageOperandsMask::Offset);
-	test(coffsets, ImageOperandsMask::ConstOffsets);
-	test(sample, ImageOperandsMask::Sample);
-	test(minlod, ImageOperandsMask::MinLod);
+	test(bias, static_cast<uint32_t>(ImageOperandsMask::Bias));
+	test(lod, static_cast<uint32_t>(ImageOperandsMask::Lod));
+	test(grad_x, static_cast<uint32_t>(ImageOperandsMask::Grad));
+	test(grad_y, static_cast<uint32_t>(ImageOperandsMask::Grad));
+	test(coffset, static_cast<uint32_t>(ImageOperandsMask::ConstOffset));
+	test(offset, static_cast<uint32_t>(ImageOperandsMask::Offset));
+	test(coffsets, static_cast<uint32_t>(ImageOperandsMask::ConstOffsets));
+	test(sample, static_cast<uint32_t>(ImageOperandsMask::Sample));
+	test(minlod, static_cast<uint32_t>(ImageOperandsMask::MinLod));
 
 	string expr;
 	string texop;
