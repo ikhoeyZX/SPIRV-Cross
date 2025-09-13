@@ -4206,7 +4206,7 @@ string CompilerHLSL::to_resource_binding(const SPIRVariable &var)
 			if (has_decoration(type.self, Decoration::BufferBlock))
 			{
 				Bitset flags = ir.get_buffer_block_flags(var);
-				bool is_readonly = flags.get(Decoration::NonWritable) && !is_hlsl_force_storage_buffer_as_uav(var.self);
+				bool is_readonly = flags.get(static_cast<uint32_t>(Decoration::NonWritable)) && !is_hlsl_force_storage_buffer_as_uav(var.self);
 				space = is_readonly ? 't' : 'u'; // UAV
 				resource_flags = is_readonly ? HLSL_BINDING_AUTO_SRV_BIT : HLSL_BINDING_AUTO_UAV_BIT;
 			}
@@ -4225,7 +4225,7 @@ string CompilerHLSL::to_resource_binding(const SPIRVariable &var)
 		{
 			// UAV or SRV depending on readonly flag.
 			Bitset flags = ir.get_buffer_block_flags(var);
-			bool is_readonly = flags.get(Decoration::NonWritable) && !is_hlsl_force_storage_buffer_as_uav(var.self);
+			bool is_readonly = flags.get(static_cast<uint32_t>(Decoration::NonWritable)) && !is_hlsl_force_storage_buffer_as_uav(var.self);
 			space = is_readonly ? 't' : 'u';
 			resource_flags = is_readonly ? HLSL_BINDING_AUTO_SRV_BIT : HLSL_BINDING_AUTO_UAV_BIT;
 		}
@@ -4769,7 +4769,7 @@ void CompilerHLSL::read_access_chain_struct(const string &lhs, const SPIRAccessC
 		if (member_type.columns > 1)
 		{
 			subchain.matrix_stride = type_struct_member_matrix_stride(type, i);
-			subchain.row_major_matrix = has_member_decoration(type.self, i, DecorationRowMajor);
+			subchain.row_major_matrix = has_member_decoration(type.self, i, Decoration::RowMajor);
 		}
 
 		if (!member_type.array.empty())
@@ -4783,7 +4783,7 @@ void CompilerHLSL::read_access_chain(string *expr, const string &lhs, const SPIR
 {
 	auto &type = get<SPIRType>(chain.basetype);
 
-	SPIRType target_type { is_scalar(type) ? OpTypeInt : type.op };
+	SPIRType target_type { is_scalar(type) ? Op::OpTypeInt : type.op };
 	target_type.basetype = SPIRType::UInt;
 	target_type.vecsize = type.vecsize;
 	target_type.columns = type.columns;
@@ -5018,8 +5018,8 @@ void CompilerHLSL::emit_load(const Instruction &instruction)
 		auto &res_type = get<SPIRType>(result_type);
 		if (get_execution_model() == ExecutionModel::MeshEXT &&
 		    has_decoration(ptr, Decoration::BuiltIn) &&
-		    (get_decoration(ptr, Decoration::BuiltIn) == BuiltInClipDistance ||
-		     get_decoration(ptr, Decoration::BuiltIn) == BuiltInCullDistance) &&
+		    (get_decoration(ptr, Decoration::BuiltIn) == BuiltIn::ClipDistance ||
+		     get_decoration(ptr, Decoration::BuiltIn) == BuiltIn::CullDistance) &&
 		    is_array(res_type) && !is_array(get<SPIRType>(res_type.parent_type)) &&
 		    to_array_size_literal(res_type) > 1)
 		{
@@ -5059,7 +5059,7 @@ void CompilerHLSL::write_access_chain_array(const SPIRAccessChain &chain, uint32
 
 	uint32_t id = ir.increase_bound_by(2);
 	uint32_t int_type_id = id + 1;
-	SPIRType int_type { OpTypeInt };
+	SPIRType int_type { Op::OpTypeInt };
 	int_type.basetype = SPIRType::Int;
 	int_type.width = 32;
 	set<SPIRType>(int_type_id, int_type);
@@ -5080,7 +5080,7 @@ void CompilerHLSL::write_access_chain_array(const SPIRAccessChain &chain, uint32
 	subcomposite_chain.push_back(0x80000000u | id);
 
 	if (!get<SPIRType>(subchain.basetype).array.empty())
-		subchain.array_stride = get_decoration(subchain.basetype, DecorationArrayStride);
+		subchain.array_stride = get_decoration(subchain.basetype, Decoration::ArrayStride);
 
 	write_access_chain(subchain, value, subcomposite_chain);
 	end_scope();
@@ -5110,7 +5110,7 @@ void CompilerHLSL::write_access_chain_struct(const SPIRAccessChain &chain, uint3
 		if (member_type.columns > 1)
 		{
 			subchain.matrix_stride = type_struct_member_matrix_stride(type, i);
-			subchain.row_major_matrix = has_member_decoration(type.self, i, DecorationRowMajor);
+			subchain.row_major_matrix = has_member_decoration(type.self, i, Decoration::RowMajor);
 		}
 
 		if (!member_type.array.empty())
@@ -5147,7 +5147,7 @@ void CompilerHLSL::write_access_chain(const SPIRAccessChain &chain, uint32_t val
 	// Make sure we trigger a read of the constituents in the access chain.
 	track_expression_read(chain.self);
 
-	SPIRType target_type { is_scalar(type) ? OpTypeInt : type.op };
+	SPIRType target_type { is_scalar(type) ? Op::OpTypeInt : type.op };
 	target_type.basetype = SPIRType::UInt;
 	target_type.vecsize = type.vecsize;
 	target_type.columns = type.columns;
@@ -5354,7 +5354,7 @@ void CompilerHLSL::emit_access_chain(const Instruction &instruction)
 		// Keep tacking on an existing access chain.
 		need_byte_access_chain = true;
 	}
-	else if (type.storage == StorageClassStorageBuffer || has_decoration(type.self, DecorationBufferBlock))
+	else if (type.storage == StorageClass::StorageBuffer || has_decoration(type.self, Decoration::BufferBlock))
 	{
 		// If we are starting to poke into an SSBO, we are dealing with ByteAddressBuffers, and we need
 		// to emit SPIRAccessChain rather than a plain SPIRExpression.
@@ -5441,8 +5441,8 @@ void CompilerHLSL::emit_atomic(const uint32_t *ops, uint32_t length, spv::Op op)
 	const char *atomic_op = nullptr;
 
 	string value_expr;
-	if (op != OpAtomicIDecrement && op != OpAtomicIIncrement && op != OpAtomicLoad && op != OpAtomicStore)
-		value_expr = to_expression(ops[op == OpAtomicCompareExchange ? 6 : 5]);
+	if (op != Op::OpAtomicIDecrement && op != Op::OpAtomicIIncrement && op != Op::OpAtomicLoad && op != Op::OpAtomicStore)
+		value_expr = to_expression(ops[op == Op::OpAtomicCompareExchange ? 6 : 5]);
 
 	bool is_atomic_store = false;
 
@@ -5526,7 +5526,7 @@ void CompilerHLSL::emit_atomic(const uint32_t *ops, uint32_t length, spv::Op op)
 			emit_uninitialized_temporary_expression(get_pointee_type(data_type).self, tmp_id);
 		}
 
-		if (data_type.storage == StorageClassImage || !chain)
+		if (data_type.storage == StorageClass::Image || !chain)
 		{
 			statement(atomic_op, "(", to_non_uniform_aware_expression(ops[0]), ", ",
 			          to_expression(ops[3]), ", ", to_expression(tmp_id), ");");
@@ -5553,7 +5553,7 @@ void CompilerHLSL::emit_atomic(const uint32_t *ops, uint32_t length, spv::Op op)
 		auto &data_type = expression_type(ops[2]);
 		auto *chain = maybe_get<SPIRAccessChain>(ops[2]);
 		SPIRType::BaseType expr_type;
-		if (data_type.storage == StorageClassImage || !chain)
+		if (data_type.storage == StorageClass::Image || !chain)
 		{
 			statement(atomic_op, "(", to_non_uniform_aware_expression(ops[2]), ", ", value_expr, ", ", to_name(id), ");");
 			expr_type = data_type.basetype;
@@ -5587,7 +5587,7 @@ void CompilerHLSL::emit_subgroup_op(const Instruction &i)
 	uint32_t id = ops[1];
 
 	auto scope = static_cast<Scope>(evaluate_constant_u32(ops[2]));
-	if (scope != ScopeSubgroup)
+	if (scope != Scope::Subgroup)
 		SPIRV_CROSS_THROW("Only subgroup scope is supported.");
 
 	const auto make_inclusive_Sum = [&](const string &expr) -> string {
@@ -5643,7 +5643,7 @@ void CompilerHLSL::emit_subgroup_op(const Instruction &i)
 	{
 		auto operation = static_cast<GroupOperation>(ops[3]);
 		bool forward = should_forward(ops[4]);
-		if (operation == GroupOperationReduce)
+		if (operation == GroupOperation::Reduce)
 		{
 			auto left = join("countbits(", to_enclosed_expression(ops[4]), ".x) + countbits(",
 			                 to_enclosed_expression(ops[4]), ".y)");
@@ -5652,7 +5652,7 @@ void CompilerHLSL::emit_subgroup_op(const Instruction &i)
 			emit_op(result_type, id, join(left, " + ", right), forward);
 			inherit_expression_dependencies(id, ops[4]);
 		}
-		else if (operation == GroupOperationInclusiveScan)
+		else if (operation == GroupOperation::InclusiveScan)
 		{
 			auto left = join("countbits(", to_enclosed_expression(ops[4]), ".x & gl_SubgroupLeMask.x) + countbits(",
 			                 to_enclosed_expression(ops[4]), ".y & gl_SubgroupLeMask.y)");
@@ -5665,7 +5665,7 @@ void CompilerHLSL::emit_subgroup_op(const Instruction &i)
 				force_recompile_guarantee_forward_progress();
 			}
 		}
-		else if (operation == GroupOperationExclusiveScan)
+		else if (operation == GroupOperation::ExclusiveScan)
 		{
 			auto left = join("countbits(", to_enclosed_expression(ops[4]), ".x & gl_SubgroupLtMask.x) + countbits(",
 			                 to_enclosed_expression(ops[4]), ".y & gl_SubgroupLtMask.y)");
@@ -5731,17 +5731,17 @@ void CompilerHLSL::emit_subgroup_op(const Instruction &i)
 case Op::OpGroupNonUniform##op: \
 	{ \
 		auto operation = static_cast<GroupOperation>(ops[3]); \
-		if (operation == GroupOperationReduce) \
+		if (operation == GroupOperation::Reduce) \
 			emit_unary_func_op(result_type, id, ops[4], "WaveActive" #hlsl_op); \
-		else if (operation == GroupOperationInclusiveScan && supports_scan) \
+		else if (operation == GroupOperation::InclusiveScan && supports_scan) \
         { \
 			bool forward = should_forward(ops[4]); \
 			emit_op(result_type, id, make_inclusive_##hlsl_op (join("WavePrefix" #hlsl_op, "(", to_expression(ops[4]), ")")), forward); \
 			inherit_expression_dependencies(id, ops[4]); \
         } \
-		else if (operation == GroupOperationExclusiveScan && supports_scan) \
+		else if (operation == GroupOperation::ExclusiveScan && supports_scan) \
 			emit_unary_func_op(result_type, id, ops[4], "WavePrefix" #hlsl_op); \
-		else if (operation == GroupOperationClusteredReduce) \
+		else if (operation == GroupOperation::ClusteredReduce) \
 			SPIRV_CROSS_THROW("Cannot trivially implement ClusteredReduce in HLSL."); \
 		else \
 			SPIRV_CROSS_THROW("Invalid group operation."); \
@@ -5752,7 +5752,7 @@ case Op::OpGroupNonUniform##op: \
 case Op::OpGroupNonUniform##op: \
 	{ \
 		auto operation = static_cast<GroupOperation>(ops[3]); \
-		if (operation == GroupOperationReduce) \
+		if (operation == GroupOperation::Reduce) \
 			emit_unary_func_op_cast(result_type, id, ops[4], "WaveActive" #hlsl_op, type, type); \
 		else \
 			SPIRV_CROSS_THROW("Invalid group operation."); \
