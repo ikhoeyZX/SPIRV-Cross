@@ -5018,8 +5018,8 @@ void CompilerHLSL::emit_load(const Instruction &instruction)
 		auto &res_type = get<SPIRType>(result_type);
 		if (get_execution_model() == ExecutionModel::MeshEXT &&
 		    has_decoration(ptr, Decoration::BuiltIn) &&
-		    (get_decoration(ptr, Decoration::BuiltIn) == BuiltIn::ClipDistance ||
-		     get_decoration(ptr, Decoration::BuiltIn) == BuiltIn::CullDistance) &&
+		    (get_decoration(ptr, Decoration::BuiltIn) == static_cast<uint32_t>(BuiltIn::ClipDistance) ||
+		     get_decoration(ptr, Decoration::BuiltIn) == static_cast<uint32_t>(BuiltIn::CullDistance)) &&
 		    is_array(res_type) && !is_array(get<SPIRType>(res_type.parent_type)) &&
 		    to_array_size_literal(res_type) > 1)
 		{
@@ -5659,9 +5659,9 @@ void CompilerHLSL::emit_subgroup_op(const Instruction &i)
 			auto right = join("countbits(", to_enclosed_expression(ops[4]), ".z & gl_SubgroupLeMask.z) + countbits(",
 			                  to_enclosed_expression(ops[4]), ".w & gl_SubgroupLeMask.w)");
 			emit_op(result_type, id, join(left, " + ", right), forward);
-			if (!active_input_builtins.get(BuiltIn::SubgroupLeMask))
+			if (!active_input_builtins.get(static_cast<uint32_t>(BuiltIn::SubgroupLeMask)))
 			{
-				active_input_builtins.set(BuiltIn::SubgroupLeMask);
+				active_input_builtins.set(static_cast<uint32_t>(BuiltIn::SubgroupLeMask));
 				force_recompile_guarantee_forward_progress();
 			}
 		}
@@ -5672,9 +5672,9 @@ void CompilerHLSL::emit_subgroup_op(const Instruction &i)
 			auto right = join("countbits(", to_enclosed_expression(ops[4]), ".z & gl_SubgroupLtMask.z) + countbits(",
 			                  to_enclosed_expression(ops[4]), ".w & gl_SubgroupLtMask.w)");
 			emit_op(result_type, id, join(left, " + ", right), forward);
-			if (!active_input_builtins.get(BuiltIn::SubgroupLtMask))
+			if (!active_input_builtins.get(static_cast<uint32_t>(BuiltIn::SubgroupLtMask)))
 			{
-				active_input_builtins.set(BuiltIn::SubgroupLtMask);
+				active_input_builtins.set(static_cast<uint32_t>(BuiltIn::SubgroupLtMask));
 				force_recompile_guarantee_forward_progress();
 			}
 		}
