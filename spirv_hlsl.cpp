@@ -4153,7 +4153,7 @@ string CompilerHLSL::to_resource_binding(const SPIRVariable &var)
 	const auto &type = get<SPIRType>(var.basetype);
 
 	// We can remap push constant blocks, even if they don't have any binding decoration.
-	if (type.storage != StorageClassPushConstant && !has_decoration(var.self, DecorationBinding))
+	if (type.storage != StorageClass::PushConstant && !has_decoration(var.self, Decoration::Binding))
 		return "";
 
 	char space = '\0';
@@ -4203,7 +4203,7 @@ string CompilerHLSL::to_resource_binding(const SPIRVariable &var)
 		auto storage = type.storage;
 		if (storage == StorageClass::Uniform)
 		{
-			if (has_decoration(type.self, DecorationBufferBlock))
+			if (has_decoration(type.self, Decoration::BufferBlock))
 			{
 				Bitset flags = ir.get_buffer_block_flags(var);
 				bool is_readonly = flags.get(Decoration::NonWritable) && !is_hlsl_force_storage_buffer_as_uav(var.self);
@@ -4216,12 +4216,12 @@ string CompilerHLSL::to_resource_binding(const SPIRVariable &var)
 				resource_flags = HLSL_BINDING_AUTO_CBV_BIT;
 			}
 		}
-		else if (storage == StorageClassPushConstant)
+		else if (storage == StorageClass::PushConstant)
 		{
 			space = 'b'; // Constant buffers
 			resource_flags = HLSL_BINDING_AUTO_PUSH_CONSTANT_BIT;
 		}
-		else if (storage == StorageClassStorageBuffer)
+		else if (storage == StorageClass::StorageBuffer)
 		{
 			// UAV or SRV depending on readonly flag.
 			Bitset flags = ir.get_buffer_block_flags(var);
@@ -4243,10 +4243,10 @@ string CompilerHLSL::to_resource_binding(const SPIRVariable &var)
 	    resource_flags == HLSL_BINDING_AUTO_PUSH_CONSTANT_BIT ? ResourceBindingPushConstantDescriptorSet : 0u;
 	uint32_t binding = resource_flags == HLSL_BINDING_AUTO_PUSH_CONSTANT_BIT ? ResourceBindingPushConstantBinding : 0u;
 
-	if (has_decoration(var.self, DecorationBinding))
-		binding = get_decoration(var.self, DecorationBinding);
-	if (has_decoration(var.self, DecorationDescriptorSet))
-		desc_set = get_decoration(var.self, DecorationDescriptorSet);
+	if (has_decoration(var.self, Decoration::Binding))
+		binding = get_decoration(var.self, Decoration::Binding);
+	if (has_decoration(var.self, Decoration::DescriptorSet))
+		desc_set = get_decoration(var.self, Decoration::DescriptorSet);
 
 	return to_resource_register(resource_flags, space, binding, desc_set);
 }
@@ -4254,11 +4254,11 @@ string CompilerHLSL::to_resource_binding(const SPIRVariable &var)
 string CompilerHLSL::to_resource_binding_sampler(const SPIRVariable &var)
 {
 	// For combined image samplers.
-	if (!has_decoration(var.self, DecorationBinding))
+	if (!has_decoration(var.self, Decoration::Binding))
 		return "";
 
-	return to_resource_register(HLSL_BINDING_AUTO_SAMPLER_BIT, 's', get_decoration(var.self, DecorationBinding),
-	                            get_decoration(var.self, DecorationDescriptorSet));
+	return to_resource_register(HLSL_BINDING_AUTO_SAMPLER_BIT, 's', get_decoration(var.self, Decoration::Binding),
+	                            get_decoration(var.self, Decoration::DescriptorSet));
 }
 
 void CompilerHLSL::remap_hlsl_resource_binding(HLSLBindingFlagBits type, uint32_t &desc_set, uint32_t &binding)
@@ -4328,7 +4328,7 @@ void CompilerHLSL::emit_modern_uniform(const SPIRVariable &var)
 	{
 		bool is_coherent = false;
 		if (type.basetype == SPIRType::Image && type.image.sampled == 2)
-			is_coherent = has_decoration(var.self, DecorationCoherent);
+			is_coherent = has_decoration(var.self, Decoration::Coherent);
 
 		statement(is_coherent ? "globallycoherent " : "", image_type_hlsl_modern(type, var.self), " ",
 		          to_name(var.self), type_to_array_glsl(type, var.self), to_resource_binding(var), ";");
@@ -4744,7 +4744,7 @@ void CompilerHLSL::read_access_chain_array(const string &lhs, const SPIRAccessCh
 	subchain.dynamic_index = join(ident, " * ", chain.array_stride, " + ", chain.dynamic_index);
 	subchain.basetype = type.parent_type;
 	if (!get<SPIRType>(subchain.basetype).array.empty())
-		subchain.array_stride = get_decoration(subchain.basetype, DecorationArrayStride);
+		subchain.array_stride = get_decoration(subchain.basetype, Decoration::ArrayStride);
 	read_access_chain(nullptr, join(lhs, "[", ident, "]"), subchain);
 	end_scope();
 }
