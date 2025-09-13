@@ -6481,7 +6481,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 			semantics = evaluate_constant_u32(ops[2]);
 		}
 
-		if (memory == Scope::Subgroup)
+		if (memory == static_cast<uint32_t>(Scope::Subgroup))
 		{
 			// No Wave-barriers in HLSL.
 			break;
@@ -6495,7 +6495,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 			// If we are a memory barrier, and the next instruction is a control barrier, check if that memory barrier
 			// does what we need, so we avoid redundant barriers.
 			const Instruction *next = get_next_instruction_in_block(instruction);
-			if (next && next->op == Op::OpControlBarrier)
+			if (next && next->op == static_cast<uint16_t>(Op::OpControlBarrier))
 			{
 				auto *next_ops = stream(*next);
 				uint32_t next_memory = evaluate_constant_u32(next_ops[1]);
@@ -6514,13 +6514,13 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 				{
 					// If we only care about workgroup memory, either Device or Workgroup scope is fine,
 					// scope does not have to match.
-					if ((next_memory == Scope::Device || next_memory == Scope::Workgroup) &&
-					    (memory == Scope::Device || memory == Scope::Workgroup))
+					if ((next_memory == static_cast<uint32_t>(Scope::Device) || next_memory == static_cast<uint32_t>(Scope::Workgroup)) &&
+					    (memory == static_cast<uint32_t>(Scope::Device) || memory == static_cast<uint32_t>(Scope::Workgroup)))
 					{
 						memory_scope_covered = true;
 					}
 				}
-				else if (memory == Scope::Workgroup && next_memory == Scope::Device)
+				else if (memory == static_cast<uint32_t>(Scope::Workgroup) && next_memory == static_cast<uint32_t>(Scope::Device))
 				{
 					// The control barrier has device scope, but the memory barrier just has workgroup scope.
 					memory_scope_covered = true;
@@ -6544,18 +6544,18 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 		if (opcode == Op::OpControlBarrier)
 		{
 			// We cannot emit just execution barrier, for no memory semantics pick the cheapest option.
-			if (semantics == MemorySemanticsMask::WorkgroupMemory || semantics == 0)
+			if (semantics == static_cast<uint32_t>(MemorySemanticsMask::WorkgroupMemory) || semantics == 0)
 				statement("GroupMemoryBarrierWithGroupSync();");
-			else if (semantics != 0 && (semantics & MemorySemanticsMask::WorkgroupMemory) == 0)
+			else if (semantics != 0 && (semantics & static_cast<uint32_t>(MemorySemanticsMask::WorkgroupMemory)) == 0)
 				statement("DeviceMemoryBarrierWithGroupSync();");
 			else
 				statement("AllMemoryBarrierWithGroupSync();");
 		}
 		else
 		{
-			if (semantics == MemorySemanticsMask::WorkgroupMemory)
+			if (semantics == static_cast<uint32_t>(MemorySemanticsMask::WorkgroupMemory))
 				statement("GroupMemoryBarrier();");
-			else if (semantics != 0 && (semantics & MemorySemanticsMask::WorkgroupMemory) == 0)
+			else if (semantics != 0 && (semantics & static_cast<uint32_t>(MemorySemanticsMask::WorkgroupMemory)) == 0)
 				statement("DeviceMemoryBarrier();");
 			else
 				statement("AllMemoryBarrier();");
@@ -6617,7 +6617,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 			SPIRV_CROSS_THROW("Array length must point directly to an SSBO block.");
 
 		auto &type = get<SPIRType>(var->basetype);
-		if (!has_decoration(type.self, Decoration::Block) && !has_decoration(type.self, DecorationBufferBlock))
+		if (!has_decoration(type.self, Decoration::Block) && !has_decoration(type.self, Decoration::BufferBlock))
 			SPIRV_CROSS_THROW("Array length expression must point to a block type.");
 
 		// This must be 32-bit uint, so we're good to go.
@@ -6886,7 +6886,7 @@ VariableID CompilerHLSL::remap_num_workgroups_builtin()
 {
 	update_active_builtins();
 
-	if (!active_input_builtins.get(BuiltIn::NumWorkgroups))
+	if (!active_input_builtins.get(static_cast<uint32_t>(BuiltIn::NumWorkgroups)))
 		return 0;
 
 	// Create a new, fake UBO.
@@ -6910,7 +6910,7 @@ VariableID CompilerHLSL::remap_num_workgroups_builtin()
 	set<SPIRType>(block_type_id, block_type);
 	set_decoration(block_type_id, Decoration::Block);
 	set_member_name(block_type_id, 0, "count");
-	set_member_decoration(block_type_id, 0, DecorationOffset, 0);
+	set_member_decoration(block_type_id, 0, Decoration::Offset, 0);
 
 	SPIRType block_pointer_type = block_type;
 	block_pointer_type.pointer = true;
@@ -6958,7 +6958,7 @@ void CompilerHLSL::validate_shader_model()
 		}
 	}
 
-	if (ir.addressing_model != AddressingModelLogical)
+	if (ir.addressing_model != AddressingModel::Logical)
 		SPIRV_CROSS_THROW("Only Logical addressing model can be used with HLSL.");
 
 	if (hlsl_options.enable_16bit_types && hlsl_options.shader_model < 62)
@@ -7018,15 +7018,15 @@ string CompilerHLSL::compile()
 
 	// Subpass input needs SV_Position.
 	if (need_subpass_input)
-		active_input_builtins.set(BuiltIn::FragCoord);
+		active_input_builtins.set(static_cast<uint32_t>(BuiltIn::FragCoord));
 
 	// Need to offset by BaseVertex/BaseInstance in SM 6.8+.
 	if (hlsl_options.shader_model >= 68)
 	{
-		if (active_input_builtins.get(BuiltIn::VertexIndex))
-			active_input_builtins.set(BuiltIn::BaseVertex);
-		if (active_input_builtins.get(BuiltIn::InstanceIndex))
-			active_input_builtins.set(BuiltIn::BaseInstance);
+		if (active_input_builtins.get(static_cast<uint32_t>(BuiltIn::VertexIndex)))
+			active_input_builtins.set(static_cast<uint32_t>(BuiltIn::BaseVertex));
+		if (active_input_builtins.get(static_cast<uint32_t>(BuiltIn::InstanceIndex)))
+			active_input_builtins.set(static_cast<uint32_t>(BuiltIn::BaseInstance));
 	}
 
 	uint32_t pass_count = 0;
@@ -7113,8 +7113,8 @@ bool CompilerHLSL::is_hlsl_force_storage_buffer_as_uav(ID id) const
 		return true;
 	}
 
-	const uint32_t desc_set = get_decoration(id, spv::DecorationDescriptorSet);
-	const uint32_t binding = get_decoration(id, spv::DecorationBinding);
+	const uint32_t desc_set = get_decoration(id, spv::Decoration::DescriptorSet);
+	const uint32_t binding = get_decoration(id, spv::Decoration::Binding);
 
 	return (force_uav_buffer_bindings.find({ desc_set, binding }) != force_uav_buffer_bindings.end());
 }
