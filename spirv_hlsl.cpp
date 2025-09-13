@@ -6356,7 +6356,7 @@ void CompilerHLSL::emit_instruction(const Instruction &instruction)
 			if (type.image.ms)
 			{
 				uint32_t operands = ops[4];
-				if (operands != static_cast<uint32_t>(ImageOperands::SampleMask) || instruction.length != 6)
+				if (operands != static_cast<uint32_t>(ImageOperandsMask::Sample) || instruction.length != 6)
 					SPIRV_CROSS_THROW("Multisampled image used in OpImageRead, but unexpected operand mask was used.");
 				uint32_t sample = ops[5];
 				imgexpr = join(to_non_uniform_aware_expression(ops[2]), ".Load(int2(gl_FragCoord.xy), ", to_expression(sample), ")");
@@ -7131,7 +7131,7 @@ bool CompilerHLSL::is_user_type_structured(uint32_t id) const
 	{
 		// Compare left hand side of string only as these user types can contain more meta data such as their subtypes,
 		// e.g. "structuredbuffer:int"
-		const std::string &user_type = get_decoration_string(id, DecorationUserTypeGOOGLE);
+		const std::string &user_type = get_decoration_string(id, Decoration::UserTypeGOOGLE);
 		return user_type.compare(0, 16, "structuredbuffer") == 0 ||
 		       user_type.compare(0, 18, "rwstructuredbuffer") == 0 ||
 		       user_type.compare(0, 33, "rasterizerorderedstructuredbuffer") == 0;
