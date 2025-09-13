@@ -2688,7 +2688,7 @@ void CompilerHLSL::emit_geometry_stream_append()
 	active_output_builtins.for_each_bit(
 	    [&](uint32_t i)
 	    {
-		    if (i == BuiltIn::PointSize && hlsl_options.shader_model > 30)
+		    if (i == static_cast<uint32_t>(BuiltIn::PointSize) && hlsl_options.shader_model > 30)
 			    return;
 		    switch (static_cast<BuiltIn>(i))
 		    {
@@ -3142,7 +3142,7 @@ void CompilerHLSL::emit_function_prototype(SPIRFunction &func, const Bitset &ret
 	}
 
 	if ((func.self == ir.default_entry_point || func.emits_geometry) &&
-	    get_entry_point().model == ExecutionModelGeometry)
+	    get_entry_point().model == ExecutionModel::Geometry)
 	{
 		auto &execution = get_entry_point();
 
@@ -3285,7 +3285,7 @@ void CompilerHLSL::emit_hlsl_entry_point()
 		uint32_t y = execution.workgroup_size.y;
 		uint32_t z = execution.workgroup_size.z;
 
-		if (!execution.workgroup_size.constant && execution.flags.get(ExecutionMode::LocalSizeId))
+		if (!execution.workgroup_size.constant && execution.flags.get(static_cast<uint32_t>(ExecutionMode::LocalSizeId)))
 		{
 			if (execution.workgroup_size.id_x)
 				x = get<SPIRConstant>(execution.workgroup_size.id_x).scalar();
@@ -3303,7 +3303,7 @@ void CompilerHLSL::emit_hlsl_entry_point()
 		break;
 	}
 	case ExecutionModel::Fragment:
-		if (execution.flags.get(ExecutionMode::EarlyFragmentTests))
+		if (execution.flags.get(static_cast<uint32_t>(ExecutionMode::EarlyFragmentTests)))
 			statement("[earlydepthstencil]");
 		break;
 	default:
@@ -3576,7 +3576,7 @@ void CompilerHLSL::emit_hlsl_entry_point()
 		// Copy builtins from globals to return struct.
 		active_output_builtins.for_each_bit([&](uint32_t i) {
 			// PointSize doesn't exist in HLSL SM 4+.
-			if (i == BuiltIn::PointSize && !legacy)
+			if (i == static_cast<uint32_t>(BuiltIn::PointSize) && !legacy)
 				return;
 
 			switch (static_cast<BuiltIn>(i))
@@ -3657,7 +3657,7 @@ void CompilerHLSL::emit_hlsl_entry_point()
 
 void CompilerHLSL::emit_fixup()
 {
-	if (is_vertex_like_shader() && active_output_builtins.get(BuiltIn::Position))
+	if (is_vertex_like_shader() && active_output_builtins.get(static_cast<uint32_t>(BuiltIn::Position)))
 	{
 		// Do various mangling on the gl_Position.
 		if (hlsl_options.shader_model <= 30)
@@ -3813,15 +3813,15 @@ void CompilerHLSL::emit_texture_op(const Instruction &i, bool sparse)
 		}
 	};
 
-	test(bias, ImageOperandsBiasMask);
-	test(lod, ImageOperandsLodMask);
-	test(grad_x, ImageOperandsGradMask);
-	test(grad_y, ImageOperandsGradMask);
-	test(coffset, ImageOperandsConstOffsetMask);
-	test(offset, ImageOperandsOffsetMask);
-	test(coffsets, ImageOperandsConstOffsetsMask);
-	test(sample, ImageOperandsSampleMask);
-	test(minlod, ImageOperandsMinLodMask);
+	test(bias, ImageOperandsMask::Bias);
+	test(lod, ImageOperandsMask::Lod);
+	test(grad_x, ImageOperandsMask::Grad);
+	test(grad_y, ImageOperandsMask::Grad);
+	test(coffset, ImageOperandsMask::ConstOffset);
+	test(offset, ImageOperandsMask::Offset);
+	test(coffsets, ImageOperandsMask::ConstOffsets);
+	test(sample, ImageOperandsMask::Sample);
+	test(minlod, ImageOperandsMask::MinLod);
 
 	string expr;
 	string texop;
@@ -3829,7 +3829,7 @@ void CompilerHLSL::emit_texture_op(const Instruction &i, bool sparse)
 	if (minlod != 0)
 		SPIRV_CROSS_THROW("MinLod texture operand not supported in HLSL.");
 
-	if (op == OpImageFetch)
+	if (op == Op::OpImageFetch)
 	{
 		if (hlsl_options.shader_model < 40)
 		{
@@ -3838,7 +3838,7 @@ void CompilerHLSL::emit_texture_op(const Instruction &i, bool sparse)
 		texop += img_expr;
 		texop += ".Load";
 	}
-	else if (op == OpImageQueryLod)
+	else if (op == Op::OpImageQueryLod)
 	{
 		texop += img_expr;
 		texop += ".CalculateLevelOfDetail";
@@ -3957,7 +3957,7 @@ void CompilerHLSL::emit_texture_op(const Instruction &i, bool sparse)
 			SPIRV_CROSS_THROW("Separate images/samplers are not supported in HLSL shader model 2/3.");
 		expr += to_expression(img);
 	}
-	else if (op != OpImageFetch)
+	else if (op != Op::OpImageFetch)
 	{
 		string sampler_expr;
 		if (combined_image)
@@ -4045,7 +4045,7 @@ void CompilerHLSL::emit_texture_op(const Instruction &i, bool sparse)
 			SPIRV_CROSS_THROW("Legacy HLSL can only use one of lod/bias/proj modifiers.");
 	}
 
-	if (op == OpImageFetch)
+	if (op == Op::OpImageFetch)
 	{
 		if (imgtype.image.dim != Dim::Buffer && !imgtype.image.ms)
 			coord_expr =
@@ -4076,7 +4076,7 @@ void CompilerHLSL::emit_texture_op(const Instruction &i, bool sparse)
 		expr += to_expression(grad_y);
 	}
 
-	if (!dref && lod && hlsl_options.shader_model >= 40 && op != OpImageFetch)
+	if (!dref && lod && hlsl_options.shader_model >= 40 && op != Op::OpImageFetch)
 	{
 		forward = forward && should_forward(lod);
 		expr += ", ";
@@ -4114,7 +4114,7 @@ void CompilerHLSL::emit_texture_op(const Instruction &i, bool sparse)
 	if (dref && hlsl_options.shader_model < 40)
 		expr += ".x";
 
-	if (op == OpImageQueryLod)
+	if (op == Op::OpImageQueryLod)
 	{
 		// This is rather awkward.
 		// textureQueryLod returns two values, the "accessed level",
