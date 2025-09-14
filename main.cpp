@@ -477,7 +477,7 @@ static void print_resources(const Compiler &compiler, const ShaderResources &res
 			fprintf(stderr, "  Invocations: %u\n", arg0);
 			break;
 
-		case ExecutionMode::localSize:
+		case ExecutionMode::LocalSize:
 			fprintf(stderr, "  LocalSize: (%u, %u, %u)\n", arg0, arg1, arg2);
 			break;
 
@@ -486,8 +486,8 @@ static void print_resources(const Compiler &compiler, const ShaderResources &res
 			break;
 
 #define CHECK_MODE(m)                  \
-	case ExecutionMode::m:             \
-		fprintf(stderr, "  %s\n", m);  \
+	case ExecutionMode::##m:             \
+		fprintf(stderr, "  %s\n", #m);  \
 		break
 			CHECK_MODE(SpacingEqual);
 			CHECK_MODE(SpacingFractionalEven);
