@@ -486,37 +486,37 @@ static void print_resources(const Compiler &compiler, const ShaderResources &res
 			break;
 
 #define CHECK_MODE(m)                  \
-	case ##m:             \
+	case Execution##m:             \
 		fprintf(stderr, "  %s\n", #m);  \
 		break
-			CHECK_MODE(ExecutionMode::SpacingEqual);
-			CHECK_MODE(ExecutionMode::SpacingFractionalEven);
-			CHECK_MODE(ExecutionMode::SpacingFractionalOdd);
-			CHECK_MODE(ExecutionMode::VertexOrderCw);
-			CHECK_MODE(ExecutionMode::VertexOrderCcw);
-			CHECK_MODE(ExecutionMode::PixelCenterInteger);
-			CHECK_MODE(ExecutionMode::OriginUpperLeft);
-			CHECK_MODE(ExecutionMode::OriginLowerLeft);
-			CHECK_MODE(ExecutionMode::EarlyFragmentTests);
-			CHECK_MODE(ExecutionMode::PointMode);
-			CHECK_MODE(ExecutionMode::Xfb);
-			CHECK_MODE(ExecutionMode::DepthReplacing);
-			CHECK_MODE(ExecutionMode::DepthGreater);
-			CHECK_MODE(ExecutionMode::DepthLess);
-			CHECK_MODE(ExecutionMode::DepthUnchanged);
-			CHECK_MODE(ExecutionMode::LocalSizeHint);
-			CHECK_MODE(ExecutionMode::InputPoints);
-			CHECK_MODE(ExecutionMode::InputLines);
-			CHECK_MODE(ExecutionMode::InputLinesAdjacency);
-			CHECK_MODE(ExecutionMode::Triangles);
-			CHECK_MODE(ExecutionMode::InputTrianglesAdjacency);
-			CHECK_MODE(ExecutionMode::Quads);
-			CHECK_MODE(ExecutionMode::Isolines);
-			CHECK_MODE(ExecutionMode::OutputPoints);
-			CHECK_MODE(ExecutionMode::OutputLineStrip);
-			CHECK_MODE(ExecutionMode::OutputTriangleStrip);
-			CHECK_MODE(ExecutionMode::VecTypeHint);
-			CHECK_MODE(ExecutionMode::ContractionOff);
+			CHECK_MODE(Mode::SpacingEqual);
+			CHECK_MODE(Mode::SpacingFractionalEven);
+			CHECK_MODE(Mode::SpacingFractionalOdd);
+			CHECK_MODE(Mode::VertexOrderCw);
+			CHECK_MODE(Mode::VertexOrderCcw);
+			CHECK_MODE(Mode::PixelCenterInteger);
+			CHECK_MODE(Mode::OriginUpperLeft);
+			CHECK_MODE(Mode::OriginLowerLeft);
+			CHECK_MODE(Mode::EarlyFragmentTests);
+			CHECK_MODE(Mode::PointMode);
+			CHECK_MODE(Mode::Xfb);
+			CHECK_MODE(Mode::DepthReplacing);
+			CHECK_MODE(Mode::DepthGreater);
+			CHECK_MODE(Mode::DepthLess);
+			CHECK_MODE(Mode::DepthUnchanged);
+			CHECK_MODE(Mode::LocalSizeHint);
+			CHECK_MODE(Mode::InputPoints);
+			CHECK_MODE(Mode::InputLines);
+			CHECK_MODE(Mode::InputLinesAdjacency);
+			CHECK_MODE(Mode::Triangles);
+			CHECK_MODE(Mode::InputTrianglesAdjacency);
+			CHECK_MODE(Mode::Quads);
+			CHECK_MODE(Mode::Isolines);
+			CHECK_MODE(Mode::OutputPoints);
+			CHECK_MODE(Mode::OutputLineStrip);
+			CHECK_MODE(Mode::OutputTriangleStrip);
+			CHECK_MODE(Mode::VecTypeHint);
+			CHECK_MODE(Mode::ContractionOff);
 
 		default:
 			break;
