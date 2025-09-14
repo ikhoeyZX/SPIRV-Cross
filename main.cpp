@@ -332,7 +332,7 @@ static void print_resources(const Compiler &compiler, spv::StorageClass storage,
 		case spv::BuiltIn::ClipDistance: builtin_str = "ClipDistance"; break;
 		case spv::BuiltIn::TessLevelInner: builtin_str = "TessLevelInner"; break;
 		case spv::BuiltIn::TessLevelOuter: builtin_str = "TessLevelOuter"; break;
-		default: builtin_str = string("builtin #") + to_string(res.builtin);
+		default: builtin_str = string("builtin #") + to_string(static_cast<uint32_t>(res.builtin));
 		}
 
 		fprintf(stderr, "Builtin %s (%s) (active: %s).\n", builtin_str.c_str(), type_str.c_str(), active ? "yes" : "no");
@@ -358,7 +358,7 @@ static void print_resources(const Compiler &compiler, const char *tag, const Sma
 		// Push constant blocks are still accessed by name and not block name, even though they are technically Blocks.
 		bool is_push_constant = compiler.get_storage_class(res.id) == StorageClass::PushConstant;
 		bool is_block = compiler.get_decoration_bitset(type.self).get(static_cast<uint32_t>(Decoration::Block)) ||
-		                compiler.get_decoration_bitset(type.self).get(static_cast<uint32_t>(DecorationBufferBlock));
+		                compiler.get_decoration_bitset(type.self).get(static_cast<uint32_t>(Decoration::BufferBlock));
 		bool is_sized_block = is_block && (compiler.get_storage_class(res.id) == StorageClass::Uniform ||
 		                                   compiler.get_storage_class(res.id) == StorageClass::UniformConstant);
 		ID fallback_id = !is_push_constant && is_block ? ID(res.base_type_id) : ID(res.id);
@@ -486,8 +486,8 @@ static void print_resources(const Compiler &compiler, const ShaderResources &res
 			break;
 
 #define CHECK_MODE(m)                  \
-	case ExecutionMode::##m:             \
-		fprintf(stderr, "  %s\n", #m);  \
+	case ExecutionMode::m:             \
+		fprintf(stderr, "  %s\n", m);  \
 		break
 			CHECK_MODE(SpacingEqual);
 			CHECK_MODE(SpacingFractionalEven);
