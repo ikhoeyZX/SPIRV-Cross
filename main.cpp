@@ -473,21 +473,21 @@ static void print_resources(const Compiler &compiler, const ShaderResources &res
 
 		switch (static_cast<ExecutionMode>(i))
 		{
-		case ExecutionModeInvocations:
+		case ExecutionMode::Invocations:
 			fprintf(stderr, "  Invocations: %u\n", arg0);
 			break;
 
-		case ExecutionModel::ocalSize:
+		case ExecutionMode::localSize:
 			fprintf(stderr, "  LocalSize: (%u, %u, %u)\n", arg0, arg1, arg2);
 			break;
 
-		case ExecutionModeOutputVertices:
+		case ExecutionMode::OutputVertices:
 			fprintf(stderr, "  OutputVertices: %u\n", arg0);
 			break;
 
 #define CHECK_MODE(m)                  \
 	case ExecutionMode::m:             \
-		fprintf(stderr, "  %s\n", #m); \
+		fprintf(stderr, "  %s\n", m);  \
 		break
 			CHECK_MODE(SpacingEqual);
 			CHECK_MODE(SpacingFractionalEven);
@@ -1175,9 +1175,9 @@ static ExecutionModel stage_to_execution_model(const std::string &stage)
 	else if (stage == "rcall")
 		return ExecutionModel::CallableKHR;
 	else if (stage == "mesh")
-		return spv::ExecutionModelMeshEXT;
+		return spv::ExecutionModel::MeshEXT;
 	else if (stage == "task")
-		return spv::ExecutionModelTaskEXT;
+		return spv::ExecutionModel::TaskEXT;
 	else
 		SPIRV_CROSS_THROW("Invalid stage.");
 }
@@ -1325,7 +1325,7 @@ static string compile_iteration(const CLIArguments &args, std::vector<uint32_t> 
 
 	auto entry_points = compiler->get_entry_points_and_stages();
 	auto entry_point = args.entry;
-	ExecutionModel model = ExecutionModelMax;
+	ExecutionModel model = ExecutionModel::Max;
 
 	if (!args.entry_stage.empty())
 	{
@@ -1885,7 +1885,7 @@ static int main_inner(int argc, char *argv[])
 	});
 
 	cbs.add("--rename-interface-variable", [&args](CLIParser &parser) {
-		StorageClass cls = StorageClassMax;
+		StorageClass cls = StorageClass::Max;
 		string clsStr = parser.next_string();
 		if (clsStr == "in")
 			cls = StorageClass::Input;
