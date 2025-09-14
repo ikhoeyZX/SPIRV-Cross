@@ -485,9 +485,9 @@ static void print_resources(const Compiler &compiler, const ShaderResources &res
 			fprintf(stderr, "  OutputVertices: %u\n", arg0);
 			break;
 
-#define CHECK_MODE(m)                  \
-	case ExecutionMode::m:             \
-		fprintf(stderr, "  %s\n", m);  \
+#define CHECK_MODE(ExecutionMode::m)                  \
+	case ##m:             \
+		fprintf(stderr, "  %s\n", #m);  \
 		break
 			CHECK_MODE(SpacingEqual);
 			CHECK_MODE(SpacingFractionalEven);
