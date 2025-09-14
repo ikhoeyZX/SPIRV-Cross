@@ -357,8 +357,8 @@ static void print_resources(const Compiler &compiler, const char *tag, const Sma
 		// for SSBOs and UBOs since those are the only meaningful names to use externally.
 		// Push constant blocks are still accessed by name and not block name, even though they are technically Blocks.
 		bool is_push_constant = compiler.get_storage_class(res.id) == StorageClass::PushConstant;
-		bool is_block = compiler.get_decoration_bitset(type.self).get(Decoration::Block) ||
-		                compiler.get_decoration_bitset(type.self).get(DecorationBufferBlock);
+		bool is_block = compiler.get_decoration_bitset(type.self).get(static_cast<uint32_t>(Decoration::Block)) ||
+		                compiler.get_decoration_bitset(type.self).get(static_cast<uint32_t>(DecorationBufferBlock));
 		bool is_sized_block = is_block && (compiler.get_storage_class(res.id) == StorageClass::Uniform ||
 		                                   compiler.get_storage_class(res.id) == StorageClass::UniformConstant);
 		ID fallback_id = !is_push_constant && is_block ? ID(res.base_type_id) : ID(res.id);
@@ -386,25 +386,25 @@ static void print_resources(const Compiler &compiler, const char *tag, const Sma
 		fprintf(stderr, " ID %03u : %s%s", uint32_t(res.id),
 		        !res.name.empty() ? res.name.c_str() : compiler.get_fallback_name(fallback_id).c_str(), array.c_str());
 
-		if (mask.get(Decoration::Location))
+		if (mask.get(static_cast<uint32_t>(Decoration::Location)))
 			fprintf(stderr, " (Location : %u)", compiler.get_decoration(res.id, Decoration::Location));
-		if (mask.get(Decoration::DescriptorSet))
+		if (mask.get(static_cast<uint32_t>(Decoration::DescriptorSet)))
 			fprintf(stderr, " (Set : %u)", compiler.get_decoration(res.id, Decoration::DescriptorSet));
-		if (mask.get(Decoration::Binding))
+		if (mask.get(static_cast<uint32_t>(Decoration::Binding)))
 			fprintf(stderr, " (Binding : %u)", compiler.get_decoration(res.id, Decoration::Binding));
 		if (static_cast<const CompilerGLSL &>(compiler).variable_is_depth_or_compare(res.id))
 			fprintf(stderr, " (comparison)");
-		if (mask.get(Decoration::InputAttachmentIndex))
+		if (mask.get(static_cast<uint32_t>(Decoration::InputAttachmentIndex)))
 			fprintf(stderr, " (Attachment : %u)", compiler.get_decoration(res.id, Decoration::InputAttachmentIndex));
-		if (mask.get(Decoration::NonReadable))
+		if (mask.get(static_cast<uint32_t>(Decoration::NonReadable)))
 			fprintf(stderr, " writeonly");
-		if (mask.get(Decoration::NonWritable))
+		if (mask.get(static_cast<uint32_t>(Decoration::NonWritable)))
 			fprintf(stderr, " readonly");
-		if (mask.get(Decoration::Restrict))
+		if (mask.get(static_cast<uint32_t>(Decoration::Restrict)))
 			fprintf(stderr, " restrict");
-		if (mask.get(Decoration::Coherent))
+		if (mask.get(static_cast<uint32_t>(Decoration::Coherent)))
 			fprintf(stderr, " coherent");
-		if (mask.get(Decoration::Volatile))
+		if (mask.get(static_cast<uint32_t>(Decoration::Volatile)))
 			fprintf(stderr, " volatile");
 		if (is_sized_block)
 		{
@@ -486,7 +486,7 @@ static void print_resources(const Compiler &compiler, const ShaderResources &res
 			break;
 
 #define CHECK_MODE(m)                  \
-	case ExecutionMode::##m:             \
+	case ExecutionMode::m:             \
 		fprintf(stderr, "  %s\n", #m); \
 		break
 			CHECK_MODE(SpacingEqual);
