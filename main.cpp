@@ -485,38 +485,38 @@ static void print_resources(const Compiler &compiler, const ShaderResources &res
 			fprintf(stderr, "  OutputVertices: %u\n", arg0);
 			break;
 
-#define CHECK_MODE(ExecutionMode::m)                  \
+#define CHECK_MODE(m)                  \
 	case ##m:             \
 		fprintf(stderr, "  %s\n", #m);  \
 		break
-			CHECK_MODE(SpacingEqual);
-			CHECK_MODE(SpacingFractionalEven);
-			CHECK_MODE(SpacingFractionalOdd);
-			CHECK_MODE(VertexOrderCw);
-			CHECK_MODE(VertexOrderCcw);
-			CHECK_MODE(PixelCenterInteger);
-			CHECK_MODE(OriginUpperLeft);
-			CHECK_MODE(OriginLowerLeft);
-			CHECK_MODE(EarlyFragmentTests);
-			CHECK_MODE(PointMode);
-			CHECK_MODE(Xfb);
-			CHECK_MODE(DepthReplacing);
-			CHECK_MODE(DepthGreater);
-			CHECK_MODE(DepthLess);
-			CHECK_MODE(DepthUnchanged);
-			CHECK_MODE(LocalSizeHint);
-			CHECK_MODE(InputPoints);
-			CHECK_MODE(InputLines);
-			CHECK_MODE(InputLinesAdjacency);
-			CHECK_MODE(Triangles);
-			CHECK_MODE(InputTrianglesAdjacency);
-			CHECK_MODE(Quads);
-			CHECK_MODE(Isolines);
-			CHECK_MODE(OutputPoints);
-			CHECK_MODE(OutputLineStrip);
-			CHECK_MODE(OutputTriangleStrip);
-			CHECK_MODE(VecTypeHint);
-			CHECK_MODE(ContractionOff);
+			CHECK_MODE(ExecutionMode::SpacingEqual);
+			CHECK_MODE(ExecutionMode::SpacingFractionalEven);
+			CHECK_MODE(ExecutionMode::SpacingFractionalOdd);
+			CHECK_MODE(ExecutionMode::VertexOrderCw);
+			CHECK_MODE(ExecutionMode::VertexOrderCcw);
+			CHECK_MODE(ExecutionMode::PixelCenterInteger);
+			CHECK_MODE(ExecutionMode::OriginUpperLeft);
+			CHECK_MODE(ExecutionMode::OriginLowerLeft);
+			CHECK_MODE(ExecutionMode::EarlyFragmentTests);
+			CHECK_MODE(ExecutionMode::PointMode);
+			CHECK_MODE(ExecutionMode::Xfb);
+			CHECK_MODE(ExecutionMode::DepthReplacing);
+			CHECK_MODE(ExecutionMode::DepthGreater);
+			CHECK_MODE(ExecutionMode::DepthLess);
+			CHECK_MODE(ExecutionMode::DepthUnchanged);
+			CHECK_MODE(ExecutionMode::LocalSizeHint);
+			CHECK_MODE(ExecutionMode::InputPoints);
+			CHECK_MODE(ExecutionMode::InputLines);
+			CHECK_MODE(ExecutionMode::InputLinesAdjacency);
+			CHECK_MODE(ExecutionMode::Triangles);
+			CHECK_MODE(ExecutionMode::InputTrianglesAdjacency);
+			CHECK_MODE(ExecutionMode::Quads);
+			CHECK_MODE(ExecutionMode::Isolines);
+			CHECK_MODE(ExecutionMode::OutputPoints);
+			CHECK_MODE(ExecutionMode::OutputLineStrip);
+			CHECK_MODE(ExecutionMode::OutputTriangleStrip);
+			CHECK_MODE(ExecutionMode::VecTypeHint);
+			CHECK_MODE(ExecutionMode::ContractionOff);
 
 		default:
 			break;
